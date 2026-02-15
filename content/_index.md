@@ -9,4 +9,4 @@ Ici je publie :
 - des **carnets de fabrication** (scripts, outils, workflows)
 - parfois des réflexions courtes, et des liens.
 
-👉 Commence par : **[À propos](/a-propos/)** ou va directement au **[Blog](/blog/)**.
+👉 Commence par : **[À propos]({{< relref "pages/a-propos.md" >}})** ou va directement au **[Blog]({{< relref "posts/_index.md" >}})**.
