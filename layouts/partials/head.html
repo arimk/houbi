@@ -1,0 +1,5 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="{{ with .Site.Params.description }}{{ . }}{{ else }}{{ .Site.Title }}{{ end }}">
+<title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} · {{ .Site.Title }}{{ end }}</title>
+<link rel="stylesheet" href="{{ (resources.Get "css/main.css" | resources.Minify | resources.Fingerprint).RelPermalink }}">

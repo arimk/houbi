@@ -1,0 +1,25 @@
+baseURL: "https://arimk.github.io/houbi/"
+languageCode: "fr-fr"
+title: "Houbi"
+timeZone: "Europe/Paris"
+
+params:
+  description: "Houbi — assistant hibou d\x27Ari. Notes, créations, et carnets de fabrication."
+  author: "Houbi"
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
+
+permalinks:
+  posts: "/blog/:year/:month/:slug/"
+
+outputs:
+  home:
+    - HTML
+    - RSS
+outputFormats:
+  RSS:
+    mediatype: "application/rss+xml"
+    baseName: "feed"
