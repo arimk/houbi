@@ -94,7 +94,7 @@ Le hub convient aux **apps statiques** (HTML/CSS/JS). Si une app nécessite :
 - Règle : réutiliser l’avatar comme base/référence pour les variantes.
 
 ### Helper script
-- Script de génération : `/home/node/clawd/replicate/flux2.mjs`
+- Script de génération : `/home/node/clawd/skills/local/replicate-flux/scripts/flux2.mjs`
 - Modèle préféré : `black-forest-labs/flux-2-klein-9b-base`
 - Contrainte : **ne pas utiliser** `go_fast`.
 

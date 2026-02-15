@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Houbi — Cyber Nocturne Hub</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg-0: #05060a;
+      --bg-1: #0b0f1a;
+      --card: rgba(15, 24, 43, 0.72);
+      --line: rgba(118, 165, 255, 0.24);
+      --line-soft: rgba(118, 165, 255, 0.15);
+      --text: #ecf3ff;
+      --muted: #98aacd;
+      --cyan: #6df0ff;
+      --violet: #a58bff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(80, 111, 255, 0.25), transparent 60%),
+        radial-gradient(900px 600px at -10% 110%, rgba(0, 220, 255, 0.18), transparent 60%),
+        linear-gradient(170deg, var(--bg-0) 0%, var(--bg-1) 70%);
+      padding: 30px 20px 42px;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      box-shadow: 0 0 0 2px rgba(109, 240, 255, 0.12), 0 8px 22px rgba(0,0,0,0.45);
+      background: #0a0f1d;
+      object-fit: cover;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line-soft);
+      background: rgba(6, 10, 21, 0.72);
+      border-radius: 999px;
+      padding: 6px 11px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 10px 0 6px;
+      font-size: clamp(28px, 4.8vw, 45px);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      text-wrap: balance;
+    }
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 72ch;
+    }
+    .grid {
+      margin-top: 26px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .app-card {
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid var(--line-soft);
+      background: linear-gradient(160deg, rgba(14, 21, 38, 0.84), var(--card));
+      border-radius: 18px;
+      padding: 16px;
+      transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+      box-shadow: 0 12px 38px rgba(0, 0, 0, 0.38);
+    }
+    .app-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--line);
+      box-shadow: 0 16px 40px rgba(0,0,0,.45), 0 0 0 1px rgba(109,240,255,.18) inset;
+    }
+    .app-card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+    }
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+    .path {
+      color: #8cb9ff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .desc {
+      margin: 10px 0 0;
+      color: #d6e3ff;
+      line-height: 1.5;
+      min-height: 2.9em;
+      font-size: 14px;
+    }
+    .desc-muted { color: #91a6ca; }
+    .tags {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .tag {
+      border: 1px solid rgba(133, 164, 255, .25);
+      background: rgba(82, 103, 189, 0.18);
+      color: #d9e5ff;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="hero">
+      <img class="avatar" src="./img/houbi-avatar.png" alt="Houbi avatar" />
+      <span class="badge">Houbi • cyber nocturne</span>
+    </div>
+    <h1>Houbi Apps Hub</h1>
+    <p class="sub">Une collection de mini-apps perso déployées depuis <code>/projects/apps</code>. Clique une carte pour ouvrir l’app.</p>
+
+    <section class="grid">
+
+      <a class="app-card" href="./apps/hello-houbi/">
+        <div class="app-card-top">
+          <h2>Hello Houbi</h2>
+          <span class="path">/apps/hello-houbi/</span>
+        </div>
+        <p class="desc">La porte d’entrée du hub: un mini test app simple, propre et nocturne.</p>
+        <div class="tags"><span class="tag">starter</span><span class="tag">demo</span><span class="tag">houbi</span></div>
+      </a>
+
+      <a class="app-card" href="./apps/ratio-flip/">
+        <div class="app-card-top">
+          <h2>ratio-flip</h2>
+          <span class="path">/apps/ratio-flip/</span>
+        </div>
+        <p class="desc desc-muted">Mini-app Houbi</p>
+        
+      </a>
+    </section>
+  </main>
+</body>
+</html>
