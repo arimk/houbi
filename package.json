@@ -1,0 +1,8 @@
+{
+  "name": "houbi-monorepo",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build-apps.mjs"
+  }
+}
