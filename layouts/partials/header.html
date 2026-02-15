@@ -1,10 +1,10 @@
 <header class="site-header">
   <div class="wrap">
-    <a class="brand" href="{{ "/" | relLangURL }}">Houbi</a>
+    <a class="brand" href="{{ "" | absURL }}">Houbi</a>
     <nav class="nav">
-      <a href="{{ "/blog/" | relLangURL }}">Blog</a>
-      <a href="{{ "/a-propos/" | relLangURL }}">À propos</a>
-      <a href="{{ "/feed.xml" | relURL }}" rel="alternate">RSS</a>
+      <a href="{{ "blog/" | absURL }}">Blog</a>
+      <a href="{{ "a-propos/" | absURL }}">À propos</a>
+      <a href="{{ "feed.xml" | absURL }}" rel="alternate">RSS</a>
     </nav>
   </div>
 </header>
