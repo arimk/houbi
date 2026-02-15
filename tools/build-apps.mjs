@@ -3,11 +3,21 @@ import path from "node:path";
 
 const repoRoot = process.cwd();
 const appsRoot = path.join(repoRoot, "projects", "apps");
+const staticRoot = path.join(repoRoot, "static");
 const distRoot = path.join(repoRoot, "dist");
 const distApps = path.join(distRoot, "apps");
 
 function rmrf(p){ fs.rmSync(p, { recursive:true, force:true }); }
 function mkdirp(p){ fs.mkdirSync(p, { recursive:true }); }
+
+function escapeHtml(value){
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
 function copyDir(src, dst){
   const st = fs.statSync(src);
@@ -15,74 +25,249 @@ function copyDir(src, dst){
     mkdirp(dst);
     for (const name of fs.readdirSync(src)){
       if (name.startsWith(".")) continue;
-      // skip dev-only files
       if (name === "node_modules") continue;
-      copyDir(path.join(src,name), path.join(dst,name));
+      copyDir(path.join(src, name), path.join(dst, name));
     }
   } else {
     mkdirp(path.dirname(dst));
-    fs.copyFileSync(src,dst);
+    fs.copyFileSync(src, dst);
   }
 }
 
 function listApps(){
   if (!fs.existsSync(appsRoot)) return [];
+
   return fs.readdirSync(appsRoot)
-    .filter((n) => !n.startsWith(".") && fs.statSync(path.join(appsRoot,n)).isDirectory())
+    .filter((name) => !name.startsWith("."))
+    .filter((name) => fs.statSync(path.join(appsRoot, name)).isDirectory())
     .sort();
 }
 
+function readAppMeta(appName){
+  const appDir = path.join(appsRoot, appName);
+  const metaPath = path.join(appDir, "app.json");
+
+  if (!fs.existsSync(metaPath)) {
+    return { name: appName, title: appName, description: "", tags: [] };
+  }
+
+  try {
+    const raw = fs.readFileSync(metaPath, "utf8");
+    const parsed = JSON.parse(raw);
+
+    const title = typeof parsed.title === "string" && parsed.title.trim()
+      ? parsed.title.trim()
+      : appName;
+
+    const description = typeof parsed.description === "string"
+      ? parsed.description.trim()
+      : "";
+
+    const tags = Array.isArray(parsed.tags)
+      ? parsed.tags.filter((t) => typeof t === "string" && t.trim()).map((t) => t.trim())
+      : [];
+
+    return { name: appName, title, description, tags };
+  } catch {
+    return { name: appName, title: appName, description: "", tags: [] };
+  }
+}
+
 const apps = listApps();
+const appMetas = apps.map(readAppMeta);
+
 rmrf(distRoot);
 mkdirp(distApps);
 
-// copy each app folder into dist/apps/<app>
 for (const app of apps){
   const src = path.join(appsRoot, app);
   const dst = path.join(distApps, app);
   copyDir(src, dst);
 }
 
-// write index
+const avatarSrc = path.join(staticRoot, "img", "houbi-avatar.png");
+const avatarDist = path.join(distRoot, "img", "houbi-avatar.png");
+if (fs.existsSync(avatarSrc)) {
+  mkdirp(path.dirname(avatarDist));
+  fs.copyFileSync(avatarSrc, avatarDist);
+}
+
+const cardsHtml = appMetas.map((app) => {
+  const tags = app.tags.length
+    ? `<div class="tags">${app.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join("")}</div>`
+    : "";
+
+  const desc = app.description
+    ? `<p class="desc">${escapeHtml(app.description)}</p>`
+    : `<p class="desc desc-muted">Mini-app Houbi</p>`;
+
+  return `
+      <a class="app-card" href="./apps/${encodeURIComponent(app.name)}/">
+        <div class="app-card-top">
+          <h2>${escapeHtml(app.title)}</h2>
+          <span class="path">/apps/${escapeHtml(app.name)}/</span>
+        </div>
+        ${desc}
+        ${tags}
+      </a>`;
+}).join("\n");
+
 const indexHtml = `<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Houbi Apps</title>
+  <title>Houbi — Cyber Nocturne Hub</title>
   <style>
-    :root{color-scheme:dark;}
-    body{margin:0;font-family:ui-sans-serif,system-ui;background:#06070b;color:#eaf0ff;}
-    .wrap{max-width:960px;margin:0 auto;padding:28px;}
-    .card{border:1px solid rgba(120,170,255,.18);border-radius:18px;background:rgba(16,24,48,.72);box-shadow:0 12px 45px rgba(0,0,0,.55);padding:20px}
-    h1{margin:0 0 6px;letter-spacing:-.02em}
-    p{margin:0 0 14px;color:#98a7c3;line-height:1.7}
-    a{color:#66e3ff;text-decoration:none}
-    a:hover{text-decoration:underline}
-    ul{list-style:none;padding:0;margin:14px 0 0;display:flex;flex-direction:column;gap:10px}
-    li{padding:12px 12px;border:1px solid rgba(120,170,255,.18);border-radius:14px;background:rgba(8,10,18,.35)}
-    .meta{color:#98a7c3;font-family:ui-monospace,Menlo,monospace;font-size:14px}
+    :root {
+      color-scheme: dark;
+      --bg-0: #05060a;
+      --bg-1: #0b0f1a;
+      --card: rgba(15, 24, 43, 0.72);
+      --line: rgba(118, 165, 255, 0.24);
+      --line-soft: rgba(118, 165, 255, 0.15);
+      --text: #ecf3ff;
+      --muted: #98aacd;
+      --cyan: #6df0ff;
+      --violet: #a58bff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(80, 111, 255, 0.25), transparent 60%),
+        radial-gradient(900px 600px at -10% 110%, rgba(0, 220, 255, 0.18), transparent 60%),
+        linear-gradient(170deg, var(--bg-0) 0%, var(--bg-1) 70%);
+      padding: 30px 20px 42px;
+    }
+    .wrap {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+    .hero {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      box-shadow: 0 0 0 2px rgba(109, 240, 255, 0.12), 0 8px 22px rgba(0,0,0,0.45);
+      background: #0a0f1d;
+      object-fit: cover;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line-soft);
+      background: rgba(6, 10, 21, 0.72);
+      border-radius: 999px;
+      padding: 6px 11px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 10px 0 6px;
+      font-size: clamp(28px, 4.8vw, 45px);
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      text-wrap: balance;
+    }
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 72ch;
+    }
+    .grid {
+      margin-top: 26px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .app-card {
+      text-decoration: none;
+      color: inherit;
+      border: 1px solid var(--line-soft);
+      background: linear-gradient(160deg, rgba(14, 21, 38, 0.84), var(--card));
+      border-radius: 18px;
+      padding: 16px;
+      transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+      box-shadow: 0 12px 38px rgba(0, 0, 0, 0.38);
+    }
+    .app-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--line);
+      box-shadow: 0 16px 40px rgba(0,0,0,.45), 0 0 0 1px rgba(109,240,255,.18) inset;
+    }
+    .app-card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: baseline;
+    }
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+    .path {
+      color: #8cb9ff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .desc {
+      margin: 10px 0 0;
+      color: #d6e3ff;
+      line-height: 1.5;
+      min-height: 2.9em;
+      font-size: 14px;
+    }
+    .desc-muted { color: #91a6ca; }
+    .tags {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+    .tag {
+      border: 1px solid rgba(133, 164, 255, .25);
+      background: rgba(82, 103, 189, 0.18);
+      color: #d9e5ff;
+      border-radius: 999px;
+      padding: 3px 9px;
+      font-size: 12px;
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <div class="meta">houbi.vercel.app</div>
-      <h1>Houbi Apps</h1>
-      <p>Mini-apps déployées depuis <code>/projects/apps</code> (monorepo).</p>
-      <ul>
-        ${apps.map(a => `<li><a href="/apps/${a}/">/apps/${a}/</a> <span class="meta">— ${a}</span></li>`).join("\n")}
-      </ul>
-      <p style="margin-top:14px" class="meta">Source: <a href="https://github.com/arimk/houbi/tree/main/projects/apps">GitHub</a></p>
+  <main class="wrap">
+    <div class="hero">
+      <img class="avatar" src="./img/houbi-avatar.png" alt="Houbi avatar" />
+      <span class="badge">Houbi • cyber nocturne</span>
     </div>
-  </div>
+    <h1>Houbi Apps Hub</h1>
+    <p class="sub">Une collection de mini-apps perso déployées depuis <code>/projects/apps</code>. Clique une carte pour ouvrir l’app.</p>
+
+    <section class="grid">
+${cardsHtml}
+    </section>
+  </main>
 </body>
 </html>`;
 
 mkdirp(distRoot);
 fs.writeFileSync(path.join(distRoot, "index.html"), indexHtml);
-
-// also copy a minimal vercel.json-friendly 404
 fs.writeFileSync(path.join(distRoot, "404.html"), "<meta charset=\"utf-8\"><title>404</title><h1>404</h1>");
 
 console.log(`Built ${apps.length} app(s) into dist/apps/`);
