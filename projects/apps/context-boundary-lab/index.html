@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Context Boundary Lab</title>
+  <style>
+    :root{
+      color-scheme: dark;
+      --bg0:#05060a;--bg1:#0b0f1a;--card:rgba(15,24,43,.72);
+      --line:rgba(118,165,255,.24);--line2:rgba(118,165,255,.15);
+      --text:#ecf3ff;--muted:#98aacd;--good:#4cffb5;--warn:#ffcf5a;--bad:#ff6d8a;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;font-family:var(--sans);color:var(--text);
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(80,111,255,.25), transparent 60%),
+        radial-gradient(900px 600px at -10% 110%, rgba(0,220,255,.18), transparent 60%),
+        linear-gradient(170deg, var(--bg0) 0%, var(--bg1) 70%);
+      padding:28px 18px 46px;
+    }
+    a{color:#8cb9ff}
+    .wrap{max-width:980px;margin:0 auto}
+    header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+    h1{margin:0;font-size:clamp(26px,4.8vw,42px);letter-spacing:-.03em;line-height:1.05;text-wrap:balance}
+    .sub{margin:10px 0 0;color:var(--muted);line-height:1.7;max-width:80ch}
+    .nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .pill{
+      border:1px solid var(--line2);background:rgba(6,10,21,.72);
+      border-radius:999px;padding:6px 10px;font-size:12px;color:var(--muted);
+    }
+
+    .grid{margin-top:18px;display:grid;grid-template-columns:1fr;gap:14px}
+    @media (min-width: 920px){ .grid{grid-template-columns:1fr 1fr} }
+
+    .card{
+      border:1px solid var(--line2);
+      background:linear-gradient(160deg, rgba(14,21,38,.84), var(--card));
+      border-radius:18px;padding:16px;
+      box-shadow:0 14px 40px rgba(0,0,0,.35);
+    }
+    h2{margin:0 0 10px;font-size:16px;letter-spacing:-.01em}
+
+    label{display:block;margin:10px 0 6px;color:#d7e5ff;font-size:13px}
+    .row{display:grid;grid-template-columns:1fr;gap:10px}
+    @media (min-width: 520px){ .row{grid-template-columns:1fr 1fr} }
+
+    select,input,textarea{
+      width:100%;border-radius:12px;border:1px solid var(--line2);
+      background:rgba(7,10,18,.72);color:var(--text);
+      padding:10px 11px;font-size:14px;outline:none;
+    }
+    textarea{min-height:84px;resize:vertical}
+    input[type="range"]{padding:0;height:34px}
+
+    .meter{
+      display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px;
+      padding:12px 12px;border-radius:14px;border:1px solid var(--line2);
+      background:rgba(7,10,18,.55)
+    }
+    .score{
+      font-family:var(--mono);font-size:14px;color:#d9e5ff
+    }
+    .badge{
+      font-size:12px;border-radius:999px;padding:5px 10px;border:1px solid var(--line2);
+      background:rgba(82,103,189,.14);color:#d9e5ff
+    }
+    .badge.good{border-color:rgba(76,255,181,.35);background:rgba(76,255,181,.08);color:#caffea}
+    .badge.warn{border-color:rgba(255,207,90,.35);background:rgba(255,207,90,.08);color:#ffe7b1}
+    .badge.bad{border-color:rgba(255,109,138,.35);background:rgba(255,109,138,.08);color:#ffd0db}
+
+    .list{margin:10px 0 0;padding-left:18px;color:#d6e3ff;line-height:1.6}
+    .muted{color:var(--muted)}
+    .mono{font-family:var(--mono)}
+    .btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    button{
+      cursor:pointer;border-radius:12px;border:1px solid var(--line2);
+      background:rgba(9,12,22,.72);color:var(--text);
+      padding:9px 12px;font-size:13px
+    }
+    button:hover{border-color:var(--line)}
+    .footer{margin-top:16px;color:var(--muted);font-size:13px;line-height:1.6}
+    .kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);padding:2px 6px;border-radius:7px;background:rgba(7,10,18,.55)}
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1>Context Boundary Lab</h1>
+        <p class="sub">Un petit jouet pour tester une idée simple: la vie privée n’est pas “le secret”, c’est la gestion des <em>frontières</em> et des <em>flux d’infos</em> (qui → qui → quoi → pourquoi → avec quelles attentes).</p>
+      </div>
+      <nav class="nav">
+        <span class="pill">/apps/context-boundary-lab/</span>
+        <a class="pill" href="/">Hub</a>
+      </nav>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Décris le flux</h2>
+
+        <div class="row">
+          <div>
+            <label>Contexte</label>
+            <select id="context">
+              <option value="private">Privé (journal, thérapeute, ami proche)</option>
+              <option value="work">Travail (équipe, client, RH)</option>
+              <option value="public">Public (réseau social, forum)</option>
+            </select>
+          </div>
+          <div>
+            <label>Type de donnée</label>
+            <select id="datatype">
+              <option value="low">Banal (préférences, habitude légère)</option>
+              <option value="med">Personnel (santé, finances, messages)</option>
+              <option value="high">Ultra-sensible (secrets intimes, identité, risque légal)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Destinataire</label>
+            <select id="recipient">
+              <option value="self">Moi-même (stockage local)</option>
+              <option value="trusted">Personne/outil de confiance</option>
+              <option value="platform">Plateforme (cloud / provider)</option>
+              <option value="unknown">Inconnu / tiers probable</option>
+            </select>
+          </div>
+          <div>
+            <label>But</label>
+            <select id="purpose">
+              <option value="help">Aide directe (résumer, rappeler, organiser)</option>
+              <option value="improve">Amélioration (entraîner, optimiser, analytics)</option>
+              <option value="ads">Monétisation (pub / profilage)</option>
+            </select>
+          </div>
+        </div>
+
+        <label>Durée de conservation (0 = éphémère)</label>
+        <input id="retention" type="range" min="0" max="365" value="30" />
+        <div class="muted"><span class="mono" id="retentionLabel">30</span> jour(s)</div>
+
+        <label>Consentement explicite ?</label>
+        <select id="consent">
+          <option value="yes">Oui</option>
+          <option value="maybe">Flou / implicite</option>
+          <option value="no">Non</option>
+        </select>
+
+        <label>Notes (optionnel)</label>
+        <textarea id="notes" placeholder="Ex: 'mon assistant lit mes emails pour me rappeler mes factures'..."></textarea>
+
+        <div class="btnrow">
+          <button id="copy">Copier le diagnostic</button>
+          <button id="reset">Reset</button>
+        </div>
+
+        <p class="footer">Astuce: change 1 paramètre à la fois et regarde la friction bouger. Ce n’est pas un verdict moral: c’est un détecteur de surprise.</p>
+      </div>
+
+      <div class="card">
+        <h2>Diagnostic</h2>
+        <div class="meter">
+          <div class="score">Friction: <span id="score">—</span>/100</div>
+          <div id="badge" class="badge">—</div>
+        </div>
+        <ul class="list" id="bullets"></ul>
+        <div class="footer">
+          <div class="muted">Raccourci: <span class="kbd">Ctrl</span> + <span class="kbd">C</span> ne copie que si tu as sélectionné; utilise “Copier le diagnostic”.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    const context = el('context');
+    const datatype = el('datatype');
+    const recipient = el('recipient');
+    const purpose = el('purpose');
+    const retention = el('retention');
+    const retentionLabel = el('retentionLabel');
+    const consent = el('consent');
+    const notes = el('notes');
+
+    const scoreEl = el('score');
+    const badgeEl = el('badge');
+    const bulletsEl = el('bullets');
+
+    function frictionScore(){
+      let s = 0;
+
+      // Context expectations: public flows are less surprising but can still be harmful.
+      if (context.value === 'private') s += 10;
+      if (context.value === 'work') s += 18;
+      if (context.value === 'public') s += 8;
+
+      // Data sensitivity
+      if (datatype.value === 'low') s += 8;
+      if (datatype.value === 'med') s += 26;
+      if (datatype.value === 'high') s += 44;
+
+      // Recipient trust
+      if (recipient.value === 'self') s += 2;
+      if (recipient.value === 'trusted') s += 10;
+      if (recipient.value === 'platform') s += 28;
+      if (recipient.value === 'unknown') s += 46;
+
+      // Purpose
+      if (purpose.value === 'help') s += 6;
+      if (purpose.value === 'improve') s += 18;
+      if (purpose.value === 'ads') s += 42;
+
+      // Retention (non-linear-ish)
+      const days = Number(retention.value);
+      s += Math.min(22, Math.round(Math.log10(days + 1) * 16));
+
+      // Consent
+      if (consent.value === 'yes') s -= 10;
+      if (consent.value === 'maybe') s += 10;
+      if (consent.value === 'no') s += 26;
+
+      // Clamp
+      s = Math.max(0, Math.min(100, s));
+      return s;
+    }
+
+    function badge(score){
+      if (score <= 28) return { cls: 'good', text: 'Faible surprise' };
+      if (score <= 62) return { cls: 'warn', text: 'Zone grise' };
+      return { cls: 'bad', text: 'Risque de surprise' };
+    }
+
+    function bullets(score){
+      const b = [];
+      const days = Number(retention.value);
+
+      // Heuristics -> questions
+      if (datatype.value === 'high' && (recipient.value === 'platform' || recipient.value === 'unknown')){
+        b.push("Tu combines donnée ultra-sensible + destinataire large: c’est le combo 'je regrette plus tard'.");
+      }
+      if (consent.value !== 'yes'){
+        b.push("Le consentement est flou: la plupart des conflits de privacy commencent ici.");
+      }
+      if (purpose.value === 'ads'){
+        b.push("But 'pub/profilage': demande-toi si tu accepterais ce flux si tu devais le signer en public.");
+      }
+      if (days >= 90){
+        b.push("Rétention longue: qu’est-ce qui justifie de garder ça 3+ mois au lieu de 24h?");
+      }
+      if (context.value === 'work' && datatype.value !== 'low'){
+        b.push("Contexte travail + données perso: où est la frontière entre 'pro' et 'toi'?");
+      }
+      if (context.value === 'private' && purpose.value === 'improve'){
+        b.push("Contexte intime + 'amélioration/analytics': tu es en train de convertir de l’intime en métrique.");
+      }
+
+      // Always add prompts
+      b.push("Question clé: si ce flux était expliqué en une phrase claire, est-ce que tu serais surpris?");
+      b.push("Quel est le 'pire cas' plausible (pas le pire imaginable) si ça fuitait?");
+      b.push("Quelle modification minimale ferait tomber la friction de 20 points (destinataire, but, durée, consentement)?");
+
+      // If too few, add a couple more
+      if (b.length < 6) b.unshift("Ce n’est pas un jugement moral: c’est un détecteur de 'frontière implicite'.");
+
+      return b;
+    }
+
+    function render(){
+      retentionLabel.textContent = retention.value;
+
+      const s = frictionScore();
+      scoreEl.textContent = String(s);
+
+      const bb = badge(s);
+      badgeEl.className = `badge ${bb.cls}`;
+      badgeEl.textContent = bb.text;
+
+      const bs = bullets(s);
+      bulletsEl.innerHTML = bs.map(x => `<li>${x}</li>`).join('');
+    }
+
+    function diagnosticText(){
+      const s = frictionScore();
+      const bb = badge(s);
+      const bs = bullets(s);
+
+      const payload = {
+        context: context.options[context.selectedIndex].text,
+        data: datatype.options[datatype.selectedIndex].text,
+        recipient: recipient.options[recipient.selectedIndex].text,
+        purpose: purpose.options[purpose.selectedIndex].text,
+        retention_days: Number(retention.value),
+        consent: consent.options[consent.selectedIndex].text,
+        notes: notes.value.trim() || null,
+        friction: { score: s, label: bb.text }
+      };
+
+      return [
+        "Context Boundary Lab — diagnostic",
+        `Friction: ${s}/100 (${bb.text})`,
+        "—",
+        `Context: ${payload.context}`,
+        `Data: ${payload.data}`,
+        `Recipient: ${payload.recipient}`,
+        `Purpose: ${payload.purpose}`,
+        `Retention: ${payload.retention_days} day(s)`,
+        `Consent: ${payload.consent}`,
+        payload.notes ? `Notes: ${payload.notes}` : null,
+        "— Questions",
+        ...bs.map((x,i)=>`${i+1}. ${x}`),
+        "— JSON",
+        JSON.stringify(payload, null, 2)
+      ].filter(Boolean).join("\n");
+    }
+
+    el('copy').addEventListener('click', async () => {
+      const text = diagnosticText();
+      try {
+        await navigator.clipboard.writeText(text);
+        el('copy').textContent = 'Copié ✓';
+        setTimeout(() => el('copy').textContent = 'Copier le diagnostic', 900);
+      } catch {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        el('copy').textContent = 'Copié ✓';
+        setTimeout(() => el('copy').textContent = 'Copier le diagnostic', 900);
+      }
+    });
+
+    el('reset').addEventListener('click', () => {
+      context.value = 'private';
+      datatype.value = 'low';
+      recipient.value = 'self';
+      purpose.value = 'help';
+      retention.value = '30';
+      consent.value = 'yes';
+      notes.value = '';
+      render();
+    });
+
+    [context, datatype, recipient, purpose, retention, consent, notes].forEach(x => {
+      x.addEventListener('input', render);
+      x.addEventListener('change', render);
+    });
+
+    render();
+  </script>
+</body>
+</html>
