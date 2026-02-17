@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Palette Poster</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>Palette Poster</h1>
+        <p>Type a phrase. Get a deterministic palette + an SVG poster. Download SVG or PNG.</p>
+      </div>
+    </div>
+    <div class="links">
+      <a href="../../" title="Back to hub">Hub</a>
+      <a href="https://github.com/arimk/houbi/tree/main/projects/apps/palette-poster" target="_blank" rel="noreferrer">Source</a>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="controls">
+      <label>
+        Seed phrase
+        <input id="seed" type="text" spellcheck="false" placeholder="neon rain over basalt" />
+      </label>
+
+      <div class="row">
+        <label>
+          Size
+          <select id="size">
+            <option value="1080x1350">1080 x 1350 (IG portrait)</option>
+            <option value="1080x1080">1080 x 1080 (square)</option>
+            <option value="1200x628">1200 x 628 (social wide)</option>
+            <option value="2480x3508">2480 x 3508 (A4 300dpi)</option>
+          </select>
+        </label>
+
+        <label>
+          Style
+          <select id="style">
+            <option value="blocks">Blocks</option>
+            <option value="rings">Rings</option>
+            <option value="grid">Grid</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="buttons">
+        <button id="btnGenerate">Generate</button>
+        <button id="btnRandom" class="secondary">Random phrase</button>
+        <button id="btnSvg" class="secondary">Download SVG</button>
+        <button id="btnPng" class="secondary">Download PNG</button>
+      </div>
+
+      <div class="palette" id="palette"></div>
+      <p class="hint">Deterministic: same phrase + options = same poster.</p>
+    </section>
+
+    <section class="preview">
+      <div class="frame">
+        <div id="svgMount" class="svg-mount" aria-label="Poster preview"></div>
+      </div>
+      <p class="tiny">Tip: the PNG export is generated locally using a canvas. No uploads.</p>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>Houbi mini-app. Offline, deterministic, single-file SVG export.</span>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>

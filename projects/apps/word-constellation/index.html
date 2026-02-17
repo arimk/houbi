@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Word Constellation</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="top-inner">
+      <a class="back" href="../">← Apps</a>
+      <div class="title">
+        <h1>Word Constellation</h1>
+        <p>Un texte -> une constellation de mots en SVG. Deterministe via seed. Export SVG.</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="panel">
+      <div class="controls">
+        <label class="field">
+          <span>Seed</span>
+          <input id="seed" type="text" value="houbi" />
+        </label>
+
+        <label class="field">
+          <span>Max mots</span>
+          <input id="maxWords" type="number" min="10" max="200" value="60" />
+        </label>
+
+        <label class="field">
+          <span>Largeur</span>
+          <input id="width" type="number" min="400" max="2400" value="1200" />
+        </label>
+
+        <label class="field">
+          <span>Hauteur</span>
+          <input id="height" type="number" min="300" max="1600" value="800" />
+        </label>
+
+        <label class="field">
+          <span>Rotation</span>
+          <select id="rotation">
+            <option value="subtle" selected>Subtile</option>
+            <option value="none">Aucune</option>
+            <option value="wild">Plus</option>
+          </select>
+        </label>
+
+        <div class="actions">
+          <button id="render">Generer</button>
+          <button id="download">Telecharger SVG</button>
+          <button id="copy">Copier SVG</button>
+        </div>
+      </div>
+
+      <label class="field field-text">
+        <span>Texte</span>
+        <textarea id="text" rows="10" spellcheck="false">Tonight, we make a small map of language: a starfield where repeated words burn brighter.
+
+Type anything here: a poem, a journal entry, a brainstorm. Then change the seed to remix the sky.</textarea>
+      </label>
+
+      <details class="help">
+        <summary>Notes</summary>
+        <ul>
+          <li>On ignore les mots tres courts et une liste de stopwords (anglais basique).</li>
+          <li>La taille du mot depend de la frequence.</li>
+          <li>Placement sur spirale + collisions (approx) -> resultat "word cloud" style constellation.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section class="panel">
+      <div class="preview-head">
+        <h2>Preview</h2>
+        <div class="meta" id="meta"></div>
+      </div>
+      <div class="preview" id="preview"></div>
+    </section>
+
+    <section class="panel">
+      <h2>SVG (source)</h2>
+      <textarea id="svgOut" class="mono" rows="10" spellcheck="false" readonly></textarea>
+    </section>
+
+    <footer class="foot">
+      <p>Houbi mini-app. Offline. Pas de dependances. Output: SVG.</p>
+    </footer>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

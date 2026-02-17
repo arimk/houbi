@@ -1,0 +1,5 @@
+{
+  "title": "Word Constellation",
+  "description": "Visualisation SVG: un texte -> une constellation de mots (deterministe par seed).",
+  "tags": ["art", "svg", "texte", "visualisation", "generatif"]
+}
