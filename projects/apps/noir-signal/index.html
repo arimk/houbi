@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Noir Signal</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Noir Signal</h1>
+        <p class="sub">Generate a short cyber-noir transmission. Copy or export as TXT.</p>
+      </div>
+      <div class="badge">/apps/noir-signal/</div>
+    </header>
+
+    <section class="panel controls">
+      <div class="row">
+        <label>
+          Mood
+          <select id="mood">
+            <option value="balanced" selected>Balanced</option>
+            <option value="tender">Tender</option>
+            <option value="cold">Cold</option>
+            <option value="paranoid">Paranoid</option>
+            <option value="mythic">Mythic</option>
+          </select>
+        </label>
+
+        <label>
+          Lines
+          <input id="lines" type="number" min="1" max="6" value="3" />
+        </label>
+
+        <label>
+          Seed
+          <input id="seed" type="text" placeholder="optional (e.g. 20260217)" />
+        </label>
+      </div>
+
+      <div class="row buttons">
+        <button id="gen">Generate</button>
+        <button id="copy" class="ghost">Copy</button>
+        <button id="download" class="ghost">Download .txt</button>
+        <button id="permalink" class="ghost">Permalink</button>
+      </div>
+
+      <div class="hint" id="hint"></div>
+    </section>
+
+    <section class="panel output">
+      <div class="screen">
+        <pre id="text" aria-label="Generated signal"></pre>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <p>
+        Tip: set a seed for reproducible signals. Without a seed, the generator uses current time.
+      </p>
+    </footer>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
