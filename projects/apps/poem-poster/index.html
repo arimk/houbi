@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Poem Poster — offline</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#0f1620;
+      --fg:#e8eef6;
+      --muted:rgba(232,238,246,.72);
+      --accent:#8bd3ff;
+      --border:rgba(139,211,255,.22);
+    }
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+    .wrap{max-width:1100px;margin:0 auto;padding:28px 18px 60px;}
+    h1{font-weight:650;font-size:22px;margin:0 0 8px;color:var(--fg);}
+    p{margin:0 0 18px;color:var(--muted);line-height:1.35;}
+    .grid{display:grid;grid-template-columns:1fr;gap:14px;}
+    @media (min-width: 900px){ .grid{grid-template-columns: 420px 1fr;} }
+    .card{background:linear-gradient(180deg,rgba(16,26,36,.9),rgba(6,8,11,.85));border:1px solid var(--border);border-radius:16px; padding:14px;}
+    label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px;}
+    input,textarea{width:100%;box-sizing:border-box;border-radius:12px;border:1px solid rgba(232,238,246,.15);background:rgba(15,22,32,.7);color:var(--fg);padding:10px 12px;font: 13px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    textarea{min-height:220px;resize:vertical;}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px;}
+    button{border-radius:12px;border:1px solid rgba(139,211,255,.35);background:rgba(139,211,255,.12);color:var(--fg);padding:10px 12px;font-weight:650;cursor:pointer;}
+    button.secondary{border-color:rgba(232,238,246,.2);background:rgba(232,238,246,.06);font-weight:600;}
+    button:disabled{opacity:.55;cursor:not-allowed;}
+    .preview{display:block;width:100%;height:780px;border-radius:16px;border:1px solid rgba(232,238,246,.12);background:#06080b;}
+    .hint{margin-top:10px;font-size:12px;color:var(--muted);}
+    a{color:var(--accent);text-decoration:none;}
+    .tiny{font-size:12px;color:var(--muted);margin-top:14px}
+    .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Poem Poster (offline)</h1>
+    <p>Deterministic generator: same seed → same poem + SVG poster. Works fully offline in your browser.</p>
+
+    <div class="grid">
+      <div class="card">
+        <label for="seed">Seed</label>
+        <input id="seed" placeholder="e.g. tuesday 1023 utc" value="tuesday 1023 utc" />
+
+        <label for="title">Title</label>
+        <input id="title" placeholder="Six-hour creative sprint" value="Six-hour creative sprint" />
+
+        <div class="row">
+          <button id="btnGenerate">Generate poem + poster</button>
+          <button id="btnDownloadSvg" class="secondary" disabled>Download SVG</button>
+          <button id="btnDownloadPoem" class="secondary" disabled>Download poem.txt</button>
+        </div>
+
+        <label for="poem">Poem (editable)</label>
+        <textarea id="poem" spellcheck="false"></textarea>
+
+        <div class="hint">Tip: edit the poem, then click <span class="mono">Generate poem + poster</span> again to re-render the SVG using your text.</div>
+        <div class="tiny">Made for Houbi’s 6-hour creative sprint ritual. Fonts are system monospace for portability.</div>
+      </div>
+
+      <div class="card">
+        <iframe id="preview" class="preview" sandbox="allow-same-origin"></iframe>
+        <div class="hint">If the preview is blank, try downloading the SVG and opening it directly.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+
+  const THEMES = ["minute","spark","draft","garden","signal","hinge","map","thread","kernel","lantern","rhythm","orbit"];
+  const VERBS  = ["braid","tune","sketch","fold","polish","harvest","measure","trade","name","stitch","tilt","carry"];
+  const NOUNS  = ["silence","coffee","paper","cursor","clock","window","wire","shadow","notebook","blueprint","shelf","seed"];
+  const ADJS   = ["small","bright","plain","patient","quick","gentle","honest","useful","strange","fresh","steady","quiet"];
+
+  const INITIALS = Array.from("HOUBISPRINT");
+  const STARTERS = {
+    H: "Hold", O: "Open", U: "Unspool", B: "Build", I: "Ink",
+    S: "Shape", P: "Place", R: "Repeat", N: "Notice", T: "Test",
+  };
+
+  function esc(s){
+    return String(s)
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;');
+  }
+
+  async function sha256Hex(str){
+    const data = new TextEncoder().encode(str);
+    const buf = await crypto.subtle.digest('SHA-256', data);
+    const arr = Array.from(new Uint8Array(buf));
+    return arr.map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function mulberry32(seed32){
+    let a = seed32 >>> 0;
+    return function(){
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  async function rngFromSeed(seed){
+    const h = await sha256Hex(seed);
+    // mimic python: take first 16 hex chars; we take first 8 for 32-bit PRNG
+    const n = parseInt(h.slice(0, 8), 16) >>> 0;
+    return mulberry32(n);
+  }
+
+  function pick(rng, arr){
+    return arr[Math.floor(rng() * arr.length)];
+  }
+
+  async function generatePoem(seed){
+    const rng = await rngFromSeed(seed);
+    const lines = [];
+    for (let i=0;i<INITIALS.length;i++){
+      const initial = INITIALS[i];
+      const t = pick(rng, THEMES);
+      const v = pick(rng, VERBS);
+      const n = pick(rng, NOUNS);
+      const a = pick(rng, ADJS);
+      const start = STARTERS[initial] || initial;
+      let line;
+      if (i % 4 === 0) line = `${start} a ${a} ${t}; ${v} the ${n}.`;
+      else if (i % 4 === 1) line = `${start} the timer: six hours, one real thing.`;
+      else if (i % 4 === 2) line = `${start} the doubt; keep it ${a} and kind.`;
+      else line = `${start} the loop: ${v}, then ship.`;
+
+      if (!line.startsWith(initial)) line = initial + line;
+      lines.push(line);
+    }
+    lines.push('');
+    lines.push(`(generated offline; seed: ${seed})`);
+    return lines.join('\n');
+  }
+
+  function poemToSvg({poem, title, seed, width=1200, height=1600}){
+    const bg = '#0b0f14';
+    const fg = '#e8eef6';
+    const accent = '#8bd3ff';
+
+    const marginX = 90;
+    let y = 140;
+    const lineH = 62;
+
+    const lines = poem.split(/\r?\n/);
+    const stamp = new Date().toISOString().slice(0,16).replace('T',' ') + ' UTC';
+
+    const parts = [];
+    parts.push(`<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}' viewBox='0 0 ${width} ${height}'>`);
+    parts.push(`  <rect x='0' y='0' width='${width}' height='${height}' fill='${bg}'/>`);
+    parts.push('  <defs>');
+    parts.push("    <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>");
+    parts.push("      <stop offset='0%' stop-color='#101a24' stop-opacity='1' />");
+    parts.push("      <stop offset='100%' stop-color='#06080b' stop-opacity='1' />");
+    parts.push('    </linearGradient>');
+    parts.push('  </defs>');
+    parts.push(`  <rect x='30' y='30' width='${width-60}' height='${height-60}' rx='28' fill='url(#g)' stroke='${accent}' stroke-opacity='0.35' stroke-width='2'/>`);
+
+    parts.push(`  <text x='${marginX}' y='${y}' fill='${accent}' font-size='44' font-family='ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'>`);
+    parts.push(`    ${esc(title)}`);
+    parts.push('  </text>');
+
+    y += 90;
+    parts.push(`  <text x='${marginX}' y='${y}' fill='${fg}' font-size='30' font-family='ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' opacity='0.85'>`);
+    parts.push(`    Seed: ${esc(seed)}`);
+    parts.push('  </text>');
+
+    y += 110;
+    for (const line of lines){
+      if (line.trim() === ''){ y += Math.floor(lineH * 0.65); continue; }
+      parts.push(`  <text x='${marginX}' y='${y}' fill='${fg}' font-size='42' font-family='ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'>`);
+      parts.push(`    ${esc(line)}`);
+      parts.push('  </text>');
+      y += lineH;
+    }
+
+    parts.push(`  <text x='${marginX}' y='${height-90}' fill='${fg}' font-size='24' opacity='0.55' font-family='ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace'>`);
+    parts.push(`    Rendered: ${esc(stamp)}`);
+    parts.push('  </text>');
+
+    parts.push('</svg>');
+    return parts.join('\n') + '\n';
+  }
+
+  function downloadText(filename, text, mime='text/plain'){
+    const blob = new Blob([text], {type: mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 500);
+  }
+
+  let lastSvg = '';
+  let lastPoem = '';
+
+  async function render(){
+    const seed = $('seed').value.trim() || 'seed';
+    const title = $('title').value.trim() || 'Six-hour creative sprint';
+
+    const existing = $('poem').value;
+    const poem = existing.trim().length ? existing : await generatePoem(seed);
+
+    lastPoem = poem.endsWith('\n') ? poem : poem + '\n';
+    $('poem').value = lastPoem;
+
+    lastSvg = poemToSvg({poem: lastPoem, title, seed});
+
+    const doc = `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:#06080b}</style>${lastSvg}`;
+    $('preview').srcdoc = doc;
+
+    $('btnDownloadSvg').disabled = false;
+    $('btnDownloadPoem').disabled = false;
+  }
+
+  $('btnGenerate').addEventListener('click', async () => {
+    $('btnGenerate').disabled = true;
+    try { await render(); }
+    finally { $('btnGenerate').disabled = false; }
+  });
+
+  $('btnDownloadSvg').addEventListener('click', () => {
+    if (!lastSvg) return;
+    downloadText('poster.svg', lastSvg, 'image/svg+xml');
+  });
+
+  $('btnDownloadPoem').addEventListener('click', () => {
+    if (!lastPoem) return;
+    downloadText('poem.txt', lastPoem, 'text/plain');
+  });
+
+  // initial
+  (async () => { await render(); })();
+</script>
+</body>
+</html>
