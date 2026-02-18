@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Haiku Circuit</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg0: #05060a;
+      --bg1: #0b0f1a;
+      --card: rgba(15, 24, 43, 0.72);
+      --line: rgba(118, 165, 255, 0.24);
+      --lineSoft: rgba(118, 165, 255, 0.14);
+      --text: #ecf3ff;
+      --muted: #98aacd;
+      --accent: #6df0ff;
+      --good: #7bffb5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(80, 111, 255, 0.25), transparent 60%),
+        radial-gradient(900px 600px at -10% 110%, rgba(0, 220, 255, 0.18), transparent 60%),
+        linear-gradient(170deg, var(--bg0) 0%, var(--bg1) 70%);
+      padding: 26px 18px 42px;
+    }
+    a { color: #8cb9ff; }
+    .wrap { max-width: 1100px; margin: 0 auto; }
+    header { display: grid; gap: 10px; margin-bottom: 14px; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--lineSoft);
+      background: rgba(6, 10, 21, 0.72);
+      border-radius: 999px;
+      padding: 6px 11px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4.8vw, 44px);
+      letter-spacing: -0.03em;
+      line-height: 1.06;
+      text-wrap: balance;
+    }
+    .sub { margin: 0; color: var(--muted); line-height: 1.7; max-width: 86ch; }
+
+    .grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 14px; }
+    @media (min-width: 980px) {
+      .grid { grid-template-columns: 0.9fr 1.1fr; align-items: start; }
+    }
+
+    .panel {
+      border: 1px solid var(--lineSoft);
+      background: linear-gradient(160deg, rgba(14, 21, 38, 0.84), var(--card));
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 12px 38px rgba(0, 0, 0, 0.38);
+    }
+
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"], input[type="number"], select, textarea {
+      width: 100%;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--lineSoft);
+      background: rgba(4, 7, 14, 0.75);
+      color: var(--text);
+      outline: none;
+    }
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .controls { display: grid; gap: 10px; }
+    .row { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 10px; }
+
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+    button {
+      border-radius: 999px;
+      padding: 10px 14px;
+      border: 1px solid var(--lineSoft);
+      background: rgba(10, 16, 30, 0.7);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+    button:hover { border-color: var(--line); box-shadow: 0 0 0 3px rgba(109, 240, 255, 0.10); }
+    button.primary { border-color: rgba(109, 240, 255, 0.30); }
+
+    .out {
+      display: grid;
+      gap: 10px;
+    }
+
+    .frame {
+      border-radius: 14px;
+      border: 1px solid var(--lineSoft);
+      background: rgba(0, 0, 0, 0.20);
+      overflow: hidden;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 10px;
+    }
+    .pill { border: 1px solid var(--lineSoft); border-radius: 999px; padding: 4px 10px; background: rgba(6,10,21,0.58); }
+    .ok { color: var(--good); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="badge">offline SVG poem + circuit</div>
+      <h1>Haiku Circuit</h1>
+      <p class="sub">
+        Un mini-outil pour generer un haiku (5-7-5 approx.) et un petit schema de circuit assorti en SVG.
+        Tout est deterministe via un seed. Export: SVG.
+      </p>
+    </header>
+
+    <div class="grid">
+      <section class="panel">
+        <div class="controls">
+          <div class="row">
+            <div>
+              <label for="seed">Seed (texte)</label>
+              <input id="seed" type="text" placeholder="ex: feb-18-night" />
+            </div>
+            <div>
+              <label for="mood">Mood</label>
+              <select id="mood">
+                <option value="nocturne">nocturne</option>
+                <option value="signal">signal</option>
+                <option value="garden">garden</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="density">Circuit density (3-14)</label>
+              <input id="density" type="number" min="3" max="14" value="9" />
+            </div>
+            <div>
+              <label for="size">Size</label>
+              <select id="size">
+                <option value="1080">1080 x 1080</option>
+                <option value="1350">1080 x 1350</option>
+                <option value="1600">1600 x 1000</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="btns">
+            <button class="primary" id="btnGenerate">Generate</button>
+            <button id="btnCopy">Copy haiku</button>
+            <button id="btnDownload">Download SVG</button>
+          </div>
+
+          <div>
+            <label for="haiku">Haiku</label>
+            <textarea id="haiku" readonly></textarea>
+          </div>
+
+          <div class="meta">
+            <div class="pill" id="metaSeed">seed: -</div>
+            <div class="pill" id="metaHash">hash: -</div>
+            <div class="pill" id="metaOk">status: <span class="ok">ready</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel out">
+        <div class="frame" id="svgFrame"></div>
+        <div class="meta">
+          <div class="pill">Tip: change seed to share a specific piece.</div>
+          <div class="pill"><a href="../">Back to apps</a></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script type="module" src="./haiku-circuit.js"></script>
+</body>
+</html>

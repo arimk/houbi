@@ -1,0 +1,5 @@
+{
+  "title": "Haiku Circuit",
+  "description": "Generateur offline de haiku + schema de circuit en SVG, pilote par un seed, exportable en .svg.",
+  "tags": ["creative", "apps", "svg", "poetry", "generator", "offline"]
+}
