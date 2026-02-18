@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Time Tapestry</title>
+  <meta name="description" content="Generative canvas driven by UTC time." />
+  <style>
+    :root{
+      color-scheme: dark;
+      --bg0:#06070b;
+      --bg1:#0b1020;
+      --panel: rgba(12, 18, 34, 0.72);
+      --line: rgba(118, 165, 255, 0.22);
+      --text: #eef4ff;
+      --muted:#a4b4d3;
+      --accent:#78f0ff;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(900px 520px at 90% -15%, rgba(118, 165, 255, 0.26), transparent 60%),
+        radial-gradient(760px 520px at -10% 110%, rgba(120, 240, 255, 0.18), transparent 60%),
+        linear-gradient(180deg, var(--bg0), var(--bg1));
+      padding: 18px;
+    }
+    .wrap{ max-width: 1080px; margin: 0 auto; }
+    header{ display:flex; gap:12px; align-items:baseline; justify-content:space-between; flex-wrap:wrap; }
+    h1{ margin:0; font-size: 26px; letter-spacing: -0.02em; }
+    .sub{ margin:6px 0 0; color:var(--muted); line-height:1.55; max-width: 70ch; }
+
+    .grid{ margin-top: 14px; display:grid; grid-template-columns: 1fr; gap: 12px; }
+    @media (min-width: 920px){
+      .grid{ grid-template-columns: 1.5fr 1fr; align-items:start; }
+    }
+
+    .card{
+      border: 1px solid var(--line);
+      background: linear-gradient(160deg, rgba(16, 24, 45, 0.84), var(--panel));
+      border-radius: 16px;
+      box-shadow: 0 18px 52px rgba(0,0,0,0.45);
+      padding: 14px;
+    }
+
+    canvas{
+      width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      border-radius: 12px;
+      border: 1px solid rgba(118, 165, 255, 0.18);
+      background: #04050a;
+      display:block;
+    }
+
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    label{ font-size: 12px; color: var(--muted); display:flex; gap:8px; align-items:center; }
+    input[type="range"]{ width: 160px; }
+    input[type="text"]{
+      width: 220px;
+      border: 1px solid rgba(118,165,255,0.25);
+      background: rgba(4,7,13,0.55);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 9px 10px;
+      outline: none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+    }
+    button{
+      border: 1px solid rgba(118,165,255,0.28);
+      background: rgba(10, 18, 35, 0.75);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor:pointer;
+      font-size: 13px;
+    }
+    button:hover{ border-color: rgba(120,240,255,0.35); }
+
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+    .tiny{ font-size: 12px; color: var(--muted); line-height: 1.55; }
+    .kbd{ border:1px solid rgba(118,165,255,0.24); padding:2px 7px; border-radius:8px; background: rgba(7,10,20,0.6); }
+    .titleline{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .pill{ border:1px solid rgba(120,240,255,0.18); background: rgba(120,240,255,0.08); padding: 4px 10px; border-radius: 999px; font-size: 12px; color: #cfefff; }
+    a{ color: var(--accent); text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <div class="titleline">
+          <h1>Time Tapestry</h1>
+          <span class="pill mono" id="utcStamp">UTC</span>
+        </div>
+        <p class="sub">A tiny generative art toy: a woven field of vectors and ink, seeded by UTC time (or your own seed). Save a frame as PNG.</p>
+      </div>
+      <div class="row">
+        <button id="btnRedraw" title="Redraw (space)">Redraw</button>
+        <button id="btnAnimate" title="Toggle animation (a)">Animate</button>
+        <button id="btnSave" title="Save PNG">Save PNG</button>
+      </div>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <canvas id="c" width="1024" height="1024"></canvas>
+        <p class="tiny">Keys: <span class="kbd">space</span> redraw, <span class="kbd">a</span> animate, <span class="kbd">s</span> save.</p>
+      </div>
+
+      <div class="card">
+        <div class="row" style="margin-bottom:10px">
+          <label>Seed <input id="seed" type="text" spellcheck="false" autocomplete="off" /></label>
+          <button id="btnUtc">Use UTC seed</button>
+        </div>
+
+        <div class="row" style="margin-bottom:10px">
+          <label>Density <input id="density" type="range" min="20" max="140" value="72" /></label>
+          <span class="mono" id="densityV"></span>
+        </div>
+
+        <div class="row" style="margin-bottom:10px">
+          <label>Ink <input id="ink" type="range" min="20" max="220" value="120" /></label>
+          <span class="mono" id="inkV"></span>
+        </div>
+
+        <div class="row" style="margin-bottom:10px">
+          <label>Warp <input id="warp" type="range" min="0" max="100" value="44" /></label>
+          <span class="mono" id="warpV"></span>
+        </div>
+
+        <div class="row" style="margin-bottom:10px">
+          <label>Palette <input id="palette" type="range" min="0" max="4" value="1" /></label>
+          <span class="mono" id="paletteV"></span>
+        </div>
+
+        <p class="tiny">
+          Tip: put any phrase in Seed (a title, a memory, a coordinate). The same seed always generates the same tapestry.
+        </p>
+
+        <hr style="border:0;border-top:1px solid rgba(118,165,255,0.18);margin:12px 0">
+
+        <p class="tiny mono" id="recipe"></p>
+        <p class="tiny">Built for Houbi creative sprints. Offline, no dependencies.</p>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./time-tapestry.js"></script>
+</body>
+</html>

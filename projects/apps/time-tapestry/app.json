@@ -1,0 +1,5 @@
+{
+  "title": "Time Tapestry",
+  "description": "Generative canvas driven by UTC time. Save a frame as PNG.",
+  "tags": ["generative", "canvas", "time", "art", "offline"]
+}
