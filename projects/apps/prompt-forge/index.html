@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Prompt Forge</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg0: #05060a;
+      --bg1: #0b0f1a;
+      --card: rgba(15, 24, 43, 0.72);
+      --line: rgba(118, 165, 255, 0.24);
+      --lineSoft: rgba(118, 165, 255, 0.14);
+      --text: #ecf3ff;
+      --muted: #98aacd;
+      --cyan: #6df0ff;
+      --violet: #a58bff;
+      --good: #7bffb5;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(80, 111, 255, 0.25), transparent 60%),
+        radial-gradient(900px 600px at -10% 110%, rgba(0, 220, 255, 0.18), transparent 60%),
+        linear-gradient(170deg, var(--bg0) 0%, var(--bg1) 70%);
+      padding: 26px 18px 42px;
+    }
+    a { color: #8cb9ff; }
+    .wrap { max-width: 1040px; margin: 0 auto; }
+    header {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--lineSoft);
+      background: rgba(6, 10, 21, 0.72);
+      border-radius: 999px;
+      padding: 6px 11px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: .03em;
+      text-transform: uppercase;
+      width: fit-content;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4.8vw, 44px);
+      letter-spacing: -0.03em;
+      line-height: 1.06;
+      text-wrap: balance;
+    }
+    .sub {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      max-width: 78ch;
+    }
+
+    .panel {
+      border: 1px solid var(--lineSoft);
+      background: linear-gradient(160deg, rgba(14, 21, 38, 0.84), var(--card));
+      border-radius: 18px;
+      padding: 14px;
+      box-shadow: 0 12px 38px rgba(0, 0, 0, 0.38);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1.2fr 0.7fr;
+      gap: 10px;
+    }
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"], input[type="number"], textarea {
+      width: 100%;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--lineSoft);
+      background: rgba(4, 7, 14, 0.75);
+      color: var(--text);
+      outline: none;
+    }
+    input[type="number"] { appearance: textfield; }
+    textarea { min-height: 170px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; }
+
+    .checks { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .checks label { margin: 0; display: inline-flex; gap: 8px; align-items: center; }
+
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    button {
+      border-radius: 999px;
+      padding: 10px 14px;
+      border: 1px solid var(--lineSoft);
+      background: rgba(10, 16, 30, 0.7);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: .01em;
+    }
+    button:hover { border-color: var(--line); box-shadow: 0 0 0 3px rgba(109, 240, 255, 0.10); }
+    button.primary { border-color: rgba(109, 240, 255, 0.30); }
+
+    .grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 12px;
+    }
+
+    .idea {
+      border: 1px solid var(--lineSoft);
+      background: rgba(6, 10, 21, 0.58);
+      border-radius: 16px;
+      padding: 14px;
+    }
+    .idea h3 { margin: 0 0 8px; font-size: 16px; letter-spacing: -0.01em; }
+    .idea p { margin: 0 0 10px; color: #d6e3ff; line-height: 1.55; font-size: 13px; }
+    .constraints { margin: 0; padding-left: 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    .deliverable {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(118, 165, 255, 0.12);
+    }
+    .deliverable .label { color: var(--muted); font-size: 12px; }
+    .deliverable .value { color: var(--good); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+    .copy { margin-top: 10px; }
+
+    footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    code { color: #d9e5ff; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <span class="badge">Houbi app - creative sprint</span>
+      <h1>Prompt Forge</h1>
+      <p class="sub">Forge des idees actionnables en 20-60 minutes. Deterministe via seed. Copie une idee en Markdown, ou telecharge tout le set.</p>
+    </header>
+
+    <section class="panel">
+      <div class="controls">
+        <div class="row">
+          <div>
+            <label for="seed">Seed</label>
+            <input id="seed" type="text" placeholder="ex: 2026-02-18" />
+          </div>
+          <div>
+            <label for="count">Nombre d'idees</label>
+            <input id="count" type="number" min="1" max="50" value="10" />
+          </div>
+        </div>
+
+        <div class="checks">
+          <label><input id="moreConstraints" type="checkbox" /> plus de contraintes</label>
+        </div>
+
+        <div class="btns">
+          <button id="generate" class="primary" type="button">Generer</button>
+          <button id="remixSeed" type="button">Remix seed</button>
+          <button id="downloadMd" type="button">Telecharger Markdown</button>
+        </div>
+
+        <div>
+          <label for="markdown">Export Markdown (fallback si clipboard bloque)</label>
+          <textarea id="markdown"></textarea>
+        </div>
+      </div>
+
+      <section>
+        <div class="grid" id="ideas"></div>
+      </section>
+
+      <footer>
+        Notes: offline, zero dependance. Suggestion: choisis une idee, puis reduis-la a <code>1 entree + 1 bouton + 1 export</code>.
+      </footer>
+    </section>
+  </main>
+
+  <script type="module" src="./prompt-forge.js"></script>
+</body>
+</html>
