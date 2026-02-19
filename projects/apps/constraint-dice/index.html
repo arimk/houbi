@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Constraint Dice - Houbi</title>
+  <style>
+    :root{
+      color-scheme: dark;
+      --bg0:#05060a;
+      --bg1:#0b0f1a;
+      --card:rgba(15,24,43,.76);
+      --line:rgba(118,165,255,.22);
+      --line2:rgba(118,165,255,.14);
+      --text:#ecf3ff;
+      --muted:#9ab0d7;
+      --cyan:#6df0ff;
+      --violet:#a58bff;
+      --ok:#4dffb5;
+      --warn:#ffd56d;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(80,111,255,.25), transparent 60%),
+        radial-gradient(900px 600px at -10% 110%, rgba(0,220,255,.18), transparent 60%),
+        linear-gradient(170deg, var(--bg0) 0%, var(--bg1) 70%);
+      padding: 24px 16px 36px;
+    }
+    a{ color:inherit; }
+    .wrap{ max-width: 980px; margin: 0 auto; }
+    .top{
+      display:flex;
+      align-items:baseline;
+      justify-content:space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    h1{ margin: 0; font-size: clamp(26px, 4vw, 40px); letter-spacing:-.03em; }
+    .sub{ margin: 6px 0 0; color: var(--muted); line-height: 1.6; max-width: 75ch; }
+    .grid{
+      margin-top: 18px;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    @media (min-width: 920px){
+      .grid{ grid-template-columns: 360px 1fr; }
+    }
+    .card{
+      border: 1px solid var(--line2);
+      background: linear-gradient(160deg, rgba(14,21,38,.84), var(--card));
+      border-radius: 18px;
+      box-shadow: 0 12px 38px rgba(0,0,0,.38);
+      padding: 14px;
+    }
+    .card h2{ margin: 0 0 10px; font-size: 16px; letter-spacing:-.01em; color: #dbe7ff; }
+    label{ display:block; margin: 10px 0 6px; color: #cfe0ff; font-size: 13px; }
+    input[type="text"], input[type="number"], select, textarea{
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--line2);
+      background: rgba(6,10,21,.72);
+      color: var(--text);
+      padding: 10px 11px;
+      outline: none;
+    }
+    textarea{ min-height: 210px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 1.5; }
+    .row{ display:flex; gap: 10px; }
+    .row > *{ flex: 1; }
+    .btns{ display:flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    button{
+      border: 1px solid var(--line2);
+      background: rgba(6,10,21,.72);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform .12s ease, border-color .12s ease;
+      font-weight: 600;
+    }
+    button:hover{ transform: translateY(-1px); border-color: var(--line); }
+    button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(109,240,255,.12) inset; }
+    .hint{ margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.55; }
+    .kpi{ display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px; }
+    .pill{ border:1px solid rgba(133,164,255,.25); background: rgba(82,103,189,.18); padding: 5px 10px; border-radius: 999px; font-size: 12px; color: #d9e5ff; }
+    .pill strong{ color: var(--cyan); }
+    .status{ margin-top: 10px; font-size: 12px; color: var(--muted); }
+    .status.ok{ color: var(--ok); }
+    .status.warn{ color: var(--warn); }
+    .footer{ margin-top: 16px; color: var(--muted); font-size: 12px; }
+    code{ color: #b7d6ff; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="top">
+      <div>
+        <h1>Constraint Dice</h1>
+        <p class="sub">Seeded (deterministic) creative briefs. Roll constraints, get a tiny plan, export Markdown, then build it in 20-60 minutes.</p>
+      </div>
+      <div class="pill"><strong>Offline</strong> / static</div>
+    </div>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Controls</h2>
+
+        <label for="seed">Seed</label>
+        <input id="seed" type="text" placeholder="e.g. 2026-02-19" />
+
+        <div class="row">
+          <div>
+            <label for="minutes">Timebox (minutes)</label>
+            <input id="minutes" type="number" min="10" max="180" step="5" value="45" />
+          </div>
+          <div>
+            <label for="mode">Mode</label>
+            <select id="mode">
+              <option value="mixed" selected>Mixed</option>
+              <option value="software">Software</option>
+              <option value="writing">Writing</option>
+              <option value="art">Art prompt</option>
+              <option value="automation">Automation</option>
+              <option value="dataviz">Data viz</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="roll" class="primary">Roll brief</button>
+          <button id="remix">Remix seed</button>
+          <button id="copy">Copy Markdown</button>
+          <button id="download">Download .md</button>
+        </div>
+
+        <div class="status" id="status">Ready.</div>
+        <div class="hint">Tip: Keep the seed if you want to iterate. Change the mode if you feel stuck. Remix creates a new seed based on time.</div>
+      </div>
+
+      <div class="card">
+        <h2>Brief (Markdown)</h2>
+        <div class="kpi" id="kpi"></div>
+        <textarea id="out" spellcheck="false"></textarea>
+        <div class="footer">Hub path: <code>/apps/constraint-dice/</code>. Source: <code>/projects/apps/constraint-dice/</code>.</div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./constraint-dice.js"></script>
+</body>
+</html>

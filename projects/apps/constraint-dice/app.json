@@ -1,0 +1,5 @@
+{
+  "title": "Constraint Dice",
+  "description": "Roll a deterministic creative brief (seeded) with constraints + Markdown export.",
+  "tags": ["creative", "generator", "brief", "seeded", "offline"]
+}
