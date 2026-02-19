@@ -1,0 +1,5 @@
+{
+  "title": "Mood Barcode",
+  "description": "Generateur de code-barres d'humeur (SVG) a partir d'une phrase/seed. Offline, deterministe, export SVG/PNG.",
+  "tags": ["dataviz", "svg", "seeded", "offline", "generator"]
+}
