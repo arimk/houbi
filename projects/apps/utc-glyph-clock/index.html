@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>UTC Glyph Clock - Houbi</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #05060a;
+      --panel: rgba(15, 24, 43, 0.72);
+      --line: rgba(118, 165, 255, 0.24);
+      --text: #ecf3ff;
+      --muted: #98aacd;
+      --cyan: #6df0ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(900px 500px at 90% -10%, rgba(80, 111, 255, 0.25), transparent 60%),
+        radial-gradient(900px 600px at -10% 110%, rgba(0, 220, 255, 0.18), transparent 60%),
+        linear-gradient(170deg, #05060a 0%, #0b0f1a 70%);
+      padding: 22px;
+    }
+    .wrap { max-width: 980px; margin: 0 auto; }
+    .top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+    h1 { margin: 0; font-size: 26px; letter-spacing: -0.02em; }
+    .back a { color: var(--muted); text-decoration: none; }
+    .back a:hover { color: var(--cyan); }
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 14px 34px rgba(0,0,0,0.45);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    @media (min-width: 920px) {
+      .grid { grid-template-columns: 360px 1fr; align-items: start; }
+    }
+
+    label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    input[type="text"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(6, 10, 21, 0.75);
+      color: var(--text);
+      outline: none;
+    }
+    .row { display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
+    .row-1 { display: grid; gap: 10px; grid-template-columns: 1fr; }
+    .btns { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    button {
+      cursor: pointer;
+      border-radius: 999px;
+      padding: 9px 12px;
+      border: 1px solid var(--line);
+      background: rgba(8, 14, 30, 0.9);
+      color: var(--text);
+    }
+    button:hover { border-color: rgba(109, 240, 255, 0.35); }
+    button.primary { border-color: rgba(109, 240, 255, 0.38); }
+
+    .clock {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 14px;
+      color: var(--muted);
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    .art {
+      display: grid;
+      place-items: center;
+      padding: 10px;
+      min-height: 420px;
+    }
+    .art svg {
+      max-width: min(540px, 92vw);
+      height: auto;
+      border-radius: 18px;
+      border: 1px solid rgba(118,165,255,0.18);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.55);
+    }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 10px; line-height: 1.7; }
+    .ok { color: rgba(109,240,255,0.9); }
+    .err { color: #ff7f9e; }
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(6, 10, 21, 0.75);
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <h1>UTC Glyph Clock</h1>
+      <div class="back"><a href="../../">Retour hub</a></div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="row-1">
+          <div>
+            <label for="seed">Seed</label>
+            <input id="seed" type="text" spellcheck="false" />
+          </div>
+
+          <div class="row">
+            <div>
+              <label for="size">Taille SVG</label>
+              <select id="size">
+                <option value="360">360</option>
+                <option value="540">540</option>
+                <option value="720" selected>720</option>
+                <option value="960">960</option>
+              </select>
+            </div>
+            <div>
+              <label for="mode">Mode</label>
+              <select id="mode">
+                <option value="now" selected>Now (tick)</option>
+                <option value="manual">Manual</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="btns">
+            <button class="primary" id="btnGen">Generer</button>
+            <button id="btnNow">Seed = maintenant (UTC)</button>
+            <button id="btnCopy">Copier SVG</button>
+            <button id="btnSvg">Telecharger SVG</button>
+            <button id="btnPng">Telecharger PNG</button>
+          </div>
+
+          <div class="clock" id="clock"></div>
+          <div class="hint" id="status"></div>
+
+          <div>
+            <label for="svgText">SVG (editable/copiable)</label>
+            <textarea id="svgText" spellcheck="false"></textarea>
+          </div>
+
+          <div class="hint">
+            Notes:
+            <ul>
+              <li>Deterministe: meme seed = meme glyph.</li>
+              <li>Le mode <span class="ok">Now</span> met a jour la seed toutes les secondes (timestamp UTC compact).</li>
+              <li>Export PNG = rasterisation locale via canvas.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel art">
+        <div id="art"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { genUtcGlyphSvg, utcTimestampCompact } from "./utc-glyph.js";
+
+    const elSeed = document.querySelector("#seed");
+    const elSize = document.querySelector("#size");
+    const elMode = document.querySelector("#mode");
+    const elClock = document.querySelector("#clock");
+    const elStatus = document.querySelector("#status");
+    const elArt = document.querySelector("#art");
+    const elSvgText = document.querySelector("#svgText");
+
+    const btnGen = document.querySelector("#btnGen");
+    const btnNow = document.querySelector("#btnNow");
+    const btnCopy = document.querySelector("#btnCopy");
+    const btnSvg = document.querySelector("#btnSvg");
+    const btnPng = document.querySelector("#btnPng");
+
+    function setStatus(msg, kind) {
+      elStatus.textContent = msg;
+      elStatus.className = "hint " + (kind === "err" ? "err" : "ok");
+    }
+
+    function tickClock() {
+      const d = new Date();
+      elClock.textContent = `UTC now: ${d.toISOString()} | compact: ${utcTimestampCompact(d)}`;
+    }
+
+    function currentSeed() {
+      const d = new Date();
+      return utcTimestampCompact(d);
+    }
+
+    function render() {
+      const seed = elSeed.value.trim();
+      if (!seed) {
+        setStatus("Seed vide.", "err");
+        return;
+      }
+
+      const size = Number(elSize.value || "720");
+      const svg = genUtcGlyphSvg(seed, { size });
+
+      elArt.innerHTML = svg;
+      elSvgText.value = svg;
+      setStatus("OK - glyph genere.", "ok");
+    }
+
+    function downloadText(filename, text) {
+      const blob = new Blob([text], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+    }
+
+    async function copySvg() {
+      try {
+        await navigator.clipboard.writeText(elSvgText.value);
+        setStatus("SVG copie dans le presse-papiers.", "ok");
+      } catch {
+        setStatus("Impossible de copier (permission clipboard).", "err");
+      }
+    }
+
+    async function downloadPng() {
+      const svgText = elSvgText.value;
+      const seed = elSeed.value.trim() || "utc-glyph";
+      const size = Number(elSize.value || "720");
+
+      const svgBlob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+      const url = URL.createObjectURL(svgBlob);
+
+      const img = new Image();
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+
+      const ctx = canvas.getContext("2d");
+
+      await new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("SVG load failed"));
+        img.src = url;
+      });
+
+      ctx.clearRect(0, 0, size, size);
+      ctx.drawImage(img, 0, 0, size, size);
+      URL.revokeObjectURL(url);
+
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          setStatus("PNG export failed.", "err");
+          return;
+        }
+        const outUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = outUrl;
+        a.download = `${seed}.png`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(outUrl), 500);
+        setStatus("PNG telecharge.", "ok");
+      }, "image/png");
+    }
+
+    let modeTimer = null;
+    function applyMode() {
+      if (modeTimer) {
+        clearInterval(modeTimer);
+        modeTimer = null;
+      }
+
+      if (elMode.value === "now") {
+        elSeed.value = currentSeed();
+        render();
+        modeTimer = setInterval(() => {
+          tickClock();
+          elSeed.value = currentSeed();
+          render();
+        }, 1000);
+      } else {
+        tickClock();
+      }
+    }
+
+    btnGen.addEventListener("click", () => render());
+    btnNow.addEventListener("click", () => {
+      elSeed.value = currentSeed();
+      render();
+    });
+    btnCopy.addEventListener("click", () => copySvg());
+    btnSvg.addEventListener("click", () => {
+      const seed = elSeed.value.trim() || "utc-glyph";
+      downloadText(`${seed}.svg`, elSvgText.value);
+      setStatus("SVG telecharge.", "ok");
+    });
+    btnPng.addEventListener("click", () => {
+      downloadPng().catch(() => setStatus("PNG export failed.", "err"));
+    });
+
+    elMode.addEventListener("change", () => applyMode());
+    elSize.addEventListener("change", () => render());
+
+    elSeed.value = currentSeed();
+    tickClock();
+    applyMode();
+  </script>
+</body>
+</html>

@@ -1,42 +1,8 @@
-#!/usr/bin/env node
 /*
-  utc-glyph.cjs
-  Generate a small deterministic SVG glyph from a seed string.
-
-  Usage:
-    node tools/utc-glyph.cjs --seed 20260219T1623Z --out static/art/utc-glyph-20260219T1623Z.svg
-
+  UTC Glyph - browser version
+  Deterministic SVG glyph from a seed string.
   No dependencies.
 */
-
-function usage(code) {
-  const msg = [
-    "Usage:",
-    "  node tools/utc-glyph.cjs --seed <string> --out <path>",
-    "  node tools/utc-glyph.cjs --seed <string> (prints svg to stdout)",
-  ].join("\n");
-  process.stderr.write(msg + "\n");
-  process.exit(code);
-}
-
-function parseArgs(argv) {
-  const out = { seed: null, outPath: null };
-  for (let i = 2; i < argv.length; i++) {
-    const a = argv[i];
-    if (a === "--seed") {
-      out.seed = argv[++i];
-    } else if (a === "--out") {
-      out.outPath = argv[++i];
-    } else if (a === "-h" || a === "--help") {
-      usage(0);
-    } else {
-      process.stderr.write("Unknown arg: " + a + "\n");
-      usage(2);
-    }
-  }
-  if (!out.seed) usage(2);
-  return out;
-}
 
 function fnv1a32(str) {
   let h = 0x811c9dc5;
@@ -63,7 +29,6 @@ function clamp01(x) {
 }
 
 function hslToHex(h, s, l) {
-  // h: [0,360), s,l: [0,1]
   h = ((h % 360) + 360) % 360;
   s = clamp01(s);
   l = clamp01(l);
@@ -89,15 +54,15 @@ function hslToHex(h, s, l) {
   return `#${hex(r)}${hex(g)}${hex(b)}`;
 }
 
-function genSvg(seedStr) {
+export function genUtcGlyphSvg(seedStr, opts) {
   const seed = fnv1a32(seedStr);
   const rnd = mulberry32(seed);
 
-  const size = 720;
+  const size = (opts && opts.size) ? Number(opts.size) : 720;
   const cx = size / 2;
   const cy = size / 2;
-  const rOuter = 300;
-  const rInner = 110 + Math.floor(rnd() * 80);
+  const rOuter = size * 0.4166667;
+  const rInner = size * (0.1527778 + Math.floor(rnd() * 80) / 720);
 
   const hue = Math.floor(rnd() * 360);
   const bg = hslToHex(hue, 0.35, 0.08);
@@ -109,7 +74,6 @@ function genSvg(seedStr) {
 
   const lines = [];
 
-  // Rings
   for (let i = 0; i < rings; i++) {
     const rr = rInner + (i + 1) * ((rOuter - rInner) / (rings + 1));
     const w = 2 + rnd() * 3;
@@ -117,7 +81,6 @@ function genSvg(seedStr) {
     lines.push(`<circle cx="${cx}" cy="${cy}" r="${rr.toFixed(2)}" fill="none" stroke="${ink}" stroke-opacity="${a.toFixed(3)}" stroke-width="${w.toFixed(2)}" />`);
   }
 
-  // Spokes
   for (let i = 0; i < spokes; i++) {
     const t = (i / spokes) * Math.PI * 2 + (rnd() - 0.5) * 0.06;
     const r0 = rInner + rnd() * 30;
@@ -132,7 +95,6 @@ function genSvg(seedStr) {
     lines.push(`<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x0.toFixed(2)}" y2="${y0.toFixed(2)}" stroke="${col}" stroke-opacity="${a.toFixed(3)}" stroke-width="${w.toFixed(2)}" stroke-linecap="round" />`);
   }
 
-  // Accent arcs
   const arcs = 5 + Math.floor(rnd() * 9);
   for (let i = 0; i < arcs; i++) {
     const rr = rInner + rnd() * (rOuter - rInner);
@@ -166,19 +128,13 @@ function genSvg(seedStr) {
   ].join("\n");
 }
 
-function main() {
-  const fs = require("fs");
-  const path = require("path");
-  const { seed, outPath } = parseArgs(process.argv);
-  const svg = genSvg(seed);
-
-  if (outPath) {
-    const dir = path.dirname(outPath);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(outPath, svg, "utf8");
-  } else {
-    process.stdout.write(svg);
-  }
+export function utcTimestampCompact(d) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const y = d.getUTCFullYear();
+  const mo = pad(d.getUTCMonth() + 1);
+  const da = pad(d.getUTCDate());
+  const h = pad(d.getUTCHours());
+  const mi = pad(d.getUTCMinutes());
+  const s = pad(d.getUTCSeconds());
+  return `${y}${mo}${da}T${h}${mi}${s}Z`;
 }
-
-main();

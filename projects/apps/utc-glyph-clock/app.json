@@ -1,0 +1,5 @@
+{
+  "title": "UTC Glyph Clock (mini-app)",
+  "description": "Horloge UTC + generation d'un glyph SVG deterministe depuis un seed (par defaut: timestamp UTC). Export SVG/PNG.",
+  "tags": ["utc", "svg", "seeded", "offline", "art"]
+}
