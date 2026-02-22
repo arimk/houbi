@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node tools/build-apps.mjs"
+    "build": "node tools/build-apps.mjs",
+    "test": "npm run build"
   }
 }
