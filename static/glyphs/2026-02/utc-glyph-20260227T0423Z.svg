@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720" role="img" aria-label="UTC Glyph 20260227T0423Z">
+<rect width="100%" height="100%" fill="#191c0d" />
+<g>
+<circle cx="360" cy="360" r="300" fill="none" stroke="#d389f5" stroke-opacity="0.22" stroke-width="2" />
+<circle cx="360" cy="360" r="131" fill="none" stroke="#64f04c" stroke-opacity="0.35" stroke-width="4" />
+<circle cx="360" cy="360" r="164.80" fill="none" stroke="#d389f5" stroke-opacity="0.348" stroke-width="3.32" />
+<circle cx="360" cy="360" r="198.60" fill="none" stroke="#d389f5" stroke-opacity="0.328" stroke-width="4.62" />
+<circle cx="360" cy="360" r="232.40" fill="none" stroke="#d389f5" stroke-opacity="0.445" stroke-width="2.07" />
+<circle cx="360" cy="360" r="266.20" fill="none" stroke="#d389f5" stroke-opacity="0.358" stroke-width="3.54" />
+<line x1="656.51" y1="364.66" x2="502.42" y2="362.24" stroke="#d389f5" stroke-opacity="0.618" stroke-width="2.85" stroke-linecap="round" />
+<line x1="649.37" y1="432.87" x2="502.36" y2="395.85" stroke="#d389f5" stroke-opacity="0.740" stroke-width="1.60" stroke-linecap="round" />
+<line x1="611.06" y1="509.66" x2="496.19" y2="441.18" stroke="#d389f5" stroke-opacity="0.498" stroke-width="3.72" stroke-linecap="round" />
+<line x1="562.25" y1="568.10" x2="457.20" y2="460.01" stroke="#d389f5" stroke-opacity="0.269" stroke-width="3.22" stroke-linecap="round" />
+<line x1="509.56" y1="612.41" x2="436.63" y2="489.32" stroke="#64f04c" stroke-opacity="0.542" stroke-width="3.75" stroke-linecap="round" />
+<line x1="436.27" y1="637.14" x2="396.09" y2="491.14" stroke="#d389f5" stroke-opacity="0.471" stroke-width="2.21" stroke-linecap="round" />
+<line x1="351.75" y1="658.25" x2="356.10" y2="500.90" stroke="#d389f5" stroke-opacity="0.785" stroke-width="2.57" stroke-linecap="round" />
+<line x1="278.87" y1="641.61" x2="317.86" y2="506.28" stroke="#d389f5" stroke-opacity="0.470" stroke-width="2.63" stroke-linecap="round" />
+<line x1="215.36" y1="621.49" x2="289.74" y2="487.03" stroke="#d389f5" stroke-opacity="0.537" stroke-width="1.62" stroke-linecap="round" />
+<line x1="158.60" y1="563.12" x2="265.81" y2="455.00" stroke="#d389f5" stroke-opacity="0.490" stroke-width="3.71" stroke-linecap="round" />
+<line x1="110.11" y1="502.04" x2="226.37" y2="435.96" stroke="#d389f5" stroke-opacity="0.258" stroke-width="2.97" stroke-linecap="round" />
+<line x1="81.12" y1="439.27" x2="231.53" y2="396.52" stroke="#64f04c" stroke-opacity="0.719" stroke-width="2.47" stroke-linecap="round" />
+<line x1="64.34" y1="354.29" x2="215.92" y2="357.22" stroke="#d389f5" stroke-opacity="0.766" stroke-width="3.06" stroke-linecap="round" />
+<line x1="80.55" y1="287.95" x2="207.84" y2="320.77" stroke="#d389f5" stroke-opacity="0.773" stroke-width="3.92" stroke-linecap="round" />
+<line x1="112.31" y1="215.39" x2="222.24" y2="279.58" stroke="#d389f5" stroke-opacity="0.371" stroke-width="1.14" stroke-linecap="round" />
+<line x1="151.40" y1="152.06" x2="246.84" y2="247.20" stroke="#d389f5" stroke-opacity="0.330" stroke-width="2.01" stroke-linecap="round" />
+<line x1="219.22" y1="109.99" x2="292.82" y2="240.69" stroke="#d389f5" stroke-opacity="0.442" stroke-width="2.20" stroke-linecap="round" />
+<line x1="281.58" y1="85.46" x2="318.35" y2="214.20" stroke="#64f04c" stroke-opacity="0.784" stroke-width="1.06" stroke-linecap="round" />
+<line x1="367.60" y1="60.24" x2="363.63" y2="216.81" stroke="#d389f5" stroke-opacity="0.642" stroke-width="3.01" stroke-linecap="round" />
+<line x1="437.82" y1="79.61" x2="396.66" y2="227.93" stroke="#d389f5" stroke-opacity="0.734" stroke-width="2.17" stroke-linecap="round" />
+<line x1="499.25" y1="113.00" x2="431.68" y2="232.85" stroke="#d389f5" stroke-opacity="0.253" stroke-width="1.23" stroke-linecap="round" />
+<line x1="562.58" y1="158.15" x2="473.02" y2="247.38" stroke="#d389f5" stroke-opacity="0.380" stroke-width="2.86" stroke-linecap="round" />
+<line x1="616.53" y1="215.53" x2="484.85" y2="289.69" stroke="#d389f5" stroke-opacity="0.559" stroke-width="3.87" stroke-linecap="round" />
+<line x1="632.88" y1="279.58" x2="493.32" y2="320.71" stroke="#d389f5" stroke-opacity="0.534" stroke-width="2.21" stroke-linecap="round" />
+<path d="M 611.71 442.78 A 264.98 264.98 0 0 1 398.17 622.21" fill="none" stroke="#64f04c" stroke-opacity="0.405" stroke-width="2.45" stroke-linecap="round" />
+<path d="M 435.73 581.04 A 233.65 233.65 0 0 1 289.28 582.69" fill="none" stroke="#64f04c" stroke-opacity="0.304" stroke-width="5.24" stroke-linecap="round" />
+<path d="M 407.68 160.04 A 205.57 205.57 0 0 1 552.30 287.35" fill="none" stroke="#64f04c" stroke-opacity="0.194" stroke-width="4.83" stroke-linecap="round" />
+<path d="M 527.25 157.50 A 262.63 262.63 0 0 1 621.57 383.66" fill="none" stroke="#64f04c" stroke-opacity="0.280" stroke-width="3.35" stroke-linecap="round" />
+<path d="M 487.92 480.94 A 176.04 176.04 0 0 1 259.90 504.81" fill="none" stroke="#d389f5" stroke-opacity="0.461" stroke-width="3.52" stroke-linecap="round" />
+<path d="M 263.84 543.62 A 207.28 207.28 0 0 1 159.41 307.77" fill="none" stroke="#64f04c" stroke-opacity="0.456" stroke-width="6.49" stroke-linecap="round" />
+<path d="M 235.07 99.36 A 289.04 289.04 0 0 1 490.03 101.86" fill="none" stroke="#d389f5" stroke-opacity="0.452" stroke-width="4.07" stroke-linecap="round" />
+</g>
+<text x="360" y="684" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace" font-size="18" fill="#d389f5" fill-opacity="0.55">20260227T0423Z</text>
+</svg>
