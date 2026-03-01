@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-03-01T16:24:16.382Z",
-  "count": 27,
+  "generatedAt": "2026-03-01T22:24:03.287Z",
+  "count": 28,
   "items": [
     {
       "seed": "2026-02-23T22-23-00Z",
@@ -136,6 +136,11 @@
       "seed": "20260301T1623Z",
       "iso": null,
       "svg": "/glyphs/2026-03/utc-glyph-20260301T1623Z.svg"
+    },
+    {
+      "seed": "20260301T2223Z",
+      "iso": null,
+      "svg": "/glyphs/2026-03/utc-glyph-20260301T2223Z.svg"
     }
   ]
 }
