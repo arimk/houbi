@@ -158,7 +158,14 @@
 
         <div class="btnrow">
           <button id="copy">Copier le diagnostic</button>
+          <button id="share">Copier le lien</button>
           <button id="reset">Reset</button>
+          <select id="example" aria-label="Exemples">
+            <option value="">Charger un exemple...</option>
+            <option value="assistant-email">Assistant + emails (factures)</option>
+            <option value="health-app">Appli sante + cloud</option>
+            <option value="public-post">Post public (banal)</option>
+          </select>
         </div>
 
         <p class="footer">Astuce: change 1 paramètre à la fois et regarde la friction bouger. Ce n’est pas un verdict moral: c’est un détecteur de surprise.</p>
@@ -190,9 +197,77 @@
     const consent = el('consent');
     const notes = el('notes');
 
+    const example = el('example');
+
     const scoreEl = el('score');
     const badgeEl = el('badge');
     const bulletsEl = el('bullets');
+
+    function clampText(x, maxLen){
+      const s = String(x || '');
+      if (s.length <= maxLen) return s;
+      return s.slice(0, maxLen);
+    }
+
+    function currentState(){
+      return {
+        context: context.value,
+        datatype: datatype.value,
+        recipient: recipient.value,
+        purpose: purpose.value,
+        retention: String(retention.value),
+        consent: consent.value,
+        notes: clampText(notes.value, 800)
+      };
+    }
+
+    function applyState(st){
+      if (st.context) context.value = st.context;
+      if (st.datatype) datatype.value = st.datatype;
+      if (st.recipient) recipient.value = st.recipient;
+      if (st.purpose) purpose.value = st.purpose;
+      if (st.retention) retention.value = st.retention;
+      if (st.consent) consent.value = st.consent;
+      if (typeof st.notes === 'string') notes.value = st.notes;
+    }
+
+    function stateFromUrl(){
+      const sp = new URLSearchParams(window.location.search);
+      const st = {};
+      if (sp.get('c')) st.context = sp.get('c');
+      if (sp.get('d')) st.datatype = sp.get('d');
+      if (sp.get('r')) st.recipient = sp.get('r');
+      if (sp.get('p')) st.purpose = sp.get('p');
+      if (sp.get('t')) st.retention = sp.get('t');
+      if (sp.get('k')) st.consent = sp.get('k');
+      if (sp.get('n')) st.notes = sp.get('n');
+      return st;
+    }
+
+    function urlForState(st){
+      const sp = new URLSearchParams();
+      if (st.context) sp.set('c', st.context);
+      if (st.datatype) sp.set('d', st.datatype);
+      if (st.recipient) sp.set('r', st.recipient);
+      if (st.purpose) sp.set('p', st.purpose);
+      if (st.retention) sp.set('t', st.retention);
+      if (st.consent) sp.set('k', st.consent);
+      if (st.notes) sp.set('n', st.notes);
+
+      const qs = sp.toString();
+      const base = window.location.pathname;
+      return qs ? `${base}?${qs}` : base;
+    }
+
+    let urlSyncTimer = null;
+    function scheduleUrlSync(){
+      if (urlSyncTimer) window.clearTimeout(urlSyncTimer);
+      urlSyncTimer = window.setTimeout(() => {
+        const st = currentState();
+        const u = urlForState(st);
+        window.history.replaceState(null, '', u);
+      }, 120);
+    }
 
     function frictionScore(){
       let s = 0;
@@ -325,7 +400,7 @@
       const text = diagnosticText();
       try {
         await navigator.clipboard.writeText(text);
-        el('copy').textContent = 'Copié ✓';
+        el('copy').textContent = 'Copie ✓';
         setTimeout(() => el('copy').textContent = 'Copier le diagnostic', 900);
       } catch {
         // fallback
@@ -335,9 +410,67 @@
         ta.select();
         document.execCommand('copy');
         ta.remove();
-        el('copy').textContent = 'Copié ✓';
+        el('copy').textContent = 'Copie ✓';
         setTimeout(() => el('copy').textContent = 'Copier le diagnostic', 900);
       }
+    });
+
+    el('share').addEventListener('click', async () => {
+      const u = window.location.origin + urlForState(currentState());
+      try {
+        await navigator.clipboard.writeText(u);
+        el('share').textContent = 'Lien ✓';
+        setTimeout(() => el('share').textContent = 'Copier le lien', 900);
+      } catch {
+        // fallback
+        const ta = document.createElement('textarea');
+        ta.value = u;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+        el('share').textContent = 'Lien ✓';
+        setTimeout(() => el('share').textContent = 'Copier le lien', 900);
+      }
+    });
+
+    const examples = {
+      'assistant-email': {
+        context: 'private',
+        datatype: 'med',
+        recipient: 'platform',
+        purpose: 'help',
+        retention: '30',
+        consent: 'yes',
+        notes: 'Mon assistant lit mes emails pour me rappeler mes factures et mes delais.'
+      },
+      'health-app': {
+        context: 'private',
+        datatype: 'high',
+        recipient: 'platform',
+        purpose: 'improve',
+        retention: '365',
+        consent: 'maybe',
+        notes: 'Appli sante: sommeil + humeur. Sync cloud. Analytics pour optimiser.'
+      },
+      'public-post': {
+        context: 'public',
+        datatype: 'low',
+        recipient: 'unknown',
+        purpose: 'help',
+        retention: '0',
+        consent: 'yes',
+        notes: 'Je poste une recommandation de cafe. Rien de perso.'
+      }
+    };
+
+    example.addEventListener('change', () => {
+      const key = example.value;
+      if (!key) return;
+      applyState(examples[key] || {});
+      example.value = '';
+      render();
+      scheduleUrlSync();
     });
 
     el('reset').addEventListener('click', () => {
@@ -349,14 +482,24 @@
       consent.value = 'yes';
       notes.value = '';
       render();
+      scheduleUrlSync();
     });
 
     [context, datatype, recipient, purpose, retention, consent, notes].forEach(x => {
-      x.addEventListener('input', render);
-      x.addEventListener('change', render);
+      x.addEventListener('input', () => {
+        render();
+        scheduleUrlSync();
+      });
+      x.addEventListener('change', () => {
+        render();
+        scheduleUrlSync();
+      });
     });
 
+    // Hydrate from URL (shareable links)
+    applyState(stateFromUrl());
     render();
+    scheduleUrlSync();
   </script>
 </body>
 </html>
