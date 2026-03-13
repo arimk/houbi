@@ -180,6 +180,12 @@ function toTxtFilename(mood, seed){
   return `noir-signal_${safeMood}_${safeSeed}.txt`;
 }
 
+function toSvgFilename(mood, seed){
+  const safeMood = String(mood || "balanced").replace(/[^a-z0-9_-]/gi, "-").toLowerCase();
+  const safeSeed = String(seed || "seed").replace(/[^a-z0-9_-]/gi, "-").toLowerCase();
+  return `noir-signal_${safeMood}_${safeSeed}.svg`;
+}
+
 function updatePermalink({ mood, lines, seed }){
   const u = new URL(window.location.href);
   u.searchParams.set("mood", mood);
@@ -189,17 +195,76 @@ function updatePermalink({ mood, lines, seed }){
   return u.toString();
 }
 
+function escapeXml(s){
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&apos;");
+}
+
+function buildSvgCard({ mood, seed, text }){
+  const lines = String(text || "").split("\n");
+  const pad = 28;
+  const lineH = 26;
+  const fontSize = 18;
+  const width = 960;
+  const height = pad * 2 + (lines.length * lineH) + 96;
+
+  const ts = new Date().toISOString();
+
+  const tspans = lines.map((ln, i) => {
+    const y = pad + 56 + (i * lineH);
+    return `<text x="${pad}" y="${y}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="${fontSize}" fill="#ecf3ff">${escapeXml(ln)}</text>`;
+  }).join("\n");
+
+  const meta = `mood=${mood}  seed=${seed}  generated=${ts}`;
+
+  return [
+    `<?xml version="1.0" encoding="UTF-8"?>`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`,
+    `<defs>`,
+    `<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">`,
+    `<stop offset="0%" stop-color="#04050a"/>`,
+    `<stop offset="100%" stop-color="#070b14"/>`,
+    `</linearGradient>`,
+    `</defs>`,
+    `<rect x="0" y="0" width="${width}" height="${height}" rx="22" fill="url(#bg)"/>`,
+    `<rect x="18" y="18" width="${width - 36}" height="${height - 36}" rx="18" fill="#0a1020" fill-opacity="0.55" stroke="#7aa5ff" stroke-opacity="0.18"/>`,
+    `<text x="${pad}" y="${pad + 26}" font-family="ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial" font-size="18" fill="#9ab0d2">Noir Signal</text>`,
+    `<text x="${pad}" y="${height - 34}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="14" fill="#9ab0d2">${escapeXml(meta)}</text>`,
+    tspans,
+    `</svg>`
+  ].join("\n");
+}
+
+function downloadText(filename, text, mime){
+  const blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  URL.revokeObjectURL(a.href);
+  a.remove();
+}
+
 const els = {
   mood: document.getElementById("mood"),
   lines: document.getElementById("lines"),
   seed: document.getElementById("seed"),
   gen: document.getElementById("gen"),
   copy: document.getElementById("copy"),
+  copyMd: document.getElementById("copyMd"),
   download: document.getElementById("download"),
+  downloadSvg: document.getElementById("downloadSvg"),
   permalink: document.getElementById("permalink"),
   text: document.getElementById("text"),
   hint: document.getElementById("hint")
 };
+
+let lastRender = { mood: "balanced", lines: 3, seed: "", text: "" };
 
 function readState(){
   const mood = els.mood.value;
@@ -224,6 +289,8 @@ function render(){
   const { seed, text } = generateSignal(state);
   els.text.textContent = text;
 
+  lastRender = { ...state, seed, text };
+
   const link = updatePermalink({ ...state, seed });
   window.history.replaceState({}, "", link);
 
@@ -239,18 +306,41 @@ async function copyText(){
   }
 }
 
+async function copyMarkdown(){
+  const md = [
+    "# Noir Signal",
+    "",
+    `- Mood: **${lastRender.mood}**`,
+    `- Lines: **${lastRender.lines}**`,
+    `- Seed: \`${lastRender.seed}\``,
+    "",
+    "```",
+    (lastRender.text || "").trimEnd(),
+    "```",
+    ""
+  ].join("\n");
+
+  try {
+    await navigator.clipboard.writeText(md);
+    setHint(els.hint, "Copied Markdown.", "ok");
+  } catch {
+    setHint(els.hint, "Clipboard failed (try manual copy).", "err");
+  }
+}
+
 function downloadTxt(){
   const state = readState();
   const seed = (state.seed && state.seed.trim()) ? state.seed.trim() : nowSeed();
   const name = toTxtFilename(state.mood, seed);
-  const blob = new Blob([els.text.textContent || ""], { type: "text/plain;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  URL.revokeObjectURL(a.href);
-  a.remove();
+  downloadText(name, els.text.textContent || "", "text/plain;charset=utf-8");
+  setHint(els.hint, `Downloaded: ${name}`, "ok");
+}
+
+function downloadSvg(){
+  const { mood, seed, text } = lastRender;
+  const name = toSvgFilename(mood, seed || nowSeed());
+  const svg = buildSvgCard({ mood, seed: seed || nowSeed(), text });
+  downloadText(name, svg, "image/svg+xml;charset=utf-8");
   setHint(els.hint, `Downloaded: ${name}`, "ok");
 }
 
@@ -265,7 +355,9 @@ async function copyPermalink(){
 
 els.gen.addEventListener("click", render);
 els.copy.addEventListener("click", copyText);
+els.copyMd.addEventListener("click", copyMarkdown);
 els.download.addEventListener("click", downloadTxt);
+els.downloadSvg.addEventListener("click", downloadSvg);
 els.permalink.addEventListener("click", copyPermalink);
 
 applyFromUrl();
