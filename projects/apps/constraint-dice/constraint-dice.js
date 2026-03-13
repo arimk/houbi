@@ -23,17 +23,6 @@ function pick(rng, arr){
   return arr[Math.floor(rng() * arr.length)];
 }
 
-function pickN(rng, arr, n){
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--){
-    const j = Math.floor(rng() * (i + 1));
-    const tmp = a[i];
-    a[i] = a[j];
-    a[j] = tmp;
-  }
-  return a.slice(0, Math.max(0, Math.min(n, a.length)));
-}
-
 function pad2(n){ return String(n).padStart(2, "0"); }
 function utcStamp(){
   const d = new Date();
@@ -45,6 +34,68 @@ function clampInt(v, lo, hi, fallback){
   const n = Number.parseInt(String(v), 10);
   if (!Number.isFinite(n)) return fallback;
   return Math.max(lo, Math.min(hi, n));
+}
+
+function normalizeMode(mode){
+  const m = String(mode || "").trim();
+  const ok = ["mixed", "software", "writing", "art", "automation", "dataviz"];
+  return ok.includes(m) ? m : "mixed";
+}
+
+function readQuery(){
+  const sp = new URLSearchParams(window.location.search || "");
+  const seed = (sp.get("seed") || "").trim();
+  const minutes = (sp.get("minutes") || "").trim();
+  const mode = (sp.get("mode") || "").trim();
+  return { seed, minutes, mode };
+}
+
+function setQuery({ seed, minutes, mode }){
+  const sp = new URLSearchParams(window.location.search || "");
+  if (seed) sp.set("seed", seed); else sp.delete("seed");
+  if (minutes) sp.set("minutes", String(minutes)); else sp.delete("minutes");
+  if (mode) sp.set("mode", mode); else sp.delete("mode");
+  const qs = sp.toString();
+  const url = window.location.pathname + (qs ? ("?" + qs) : "") + window.location.hash;
+  window.history.replaceState(null, "", url);
+}
+
+function currentLink(){
+  return window.location.origin + window.location.pathname + window.location.search;
+}
+
+const HISTORY_KEY = "houbi_constraint_dice_history_v1";
+
+function loadHistory(){
+  try {
+    const raw = window.localStorage.getItem(HISTORY_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((x) => x && typeof x === "object");
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(items){
+  try {
+    window.localStorage.setItem(HISTORY_KEY, JSON.stringify(items));
+  } catch {
+    // ignore
+  }
+}
+
+function upsertHistory(entry){
+  const items = loadHistory();
+  const id = String(entry.seed || "") + "|" + String(entry.minutes || "") + "|" + String(entry.mode || "");
+  const deduped = items.filter((it) => {
+    const itId = String(it.seed || "") + "|" + String(it.minutes || "") + "|" + String(it.mode || "");
+    return itId !== id;
+  });
+  const next = [entry].concat(deduped).slice(0, 12);
+  saveHistory(next);
+  return next;
 }
 
 const BANK = {
@@ -142,37 +193,43 @@ function buildBrief({ seed, minutes, mode }){
   };
 
   const md = [
-    `# Constraint Dice Brief`,
-    ``,
-    `- Seed: \`${seed}\``,
-    `- Mode: **${mode}**`,
-    `- Timebox: **${minutes} min**`,
-    `- Timestamp (UTC): \`${new Date().toISOString()}\``,
-    ``,
-    `## What to make`,
-    `Build a **${medium}** about **${topic}**.`,
-    ``,
-    `## Lens`,
-    `- ${lens}`,
-    ``,
-    `## Constraints (roll)`,
-    ...picks.constraints.map((c) => `- ${c}`),
-    `- Twist: ${twist}`,
-    ``,
-    `## Deliverable`,
-    `- Ship: ${deliverable}`,
-    ``,
-    `## Tiny plan (${minutes} min)`,
-    ...steps.map((s, i) => `- [ ] ${s}`),
-    ``,
-    `## Notes`,
-    `-`,
-    ``,
-    `## Examples (fill these)`,
-    `1)`,
-    `2)`,
-    `3)`,
-    ``
+    "# Constraint Dice Brief",
+    "",
+    "- Seed: `" + seed + "`",
+    "- Mode: **" + mode + "**",
+    "- Timebox: **" + minutes + " min**",
+    "- Timestamp (UTC): `" + new Date().toISOString() + "`",
+    "",
+    "## What to make",
+    "Build a **" + medium + "** about **" + topic + "**.",
+    "",
+    "## Lens",
+    "- " + lens,
+    "",
+    "## Constraints (roll)",
+    "- " + picks.constraints[0],
+    "- " + picks.constraints[1],
+    "- " + picks.constraints[2],
+    "- Twist: " + twist,
+    "",
+    "## Deliverable",
+    "- Ship: " + deliverable,
+    "",
+    "## Tiny plan (" + minutes + " min)",
+    "- [ ] " + steps[0],
+    "- [ ] " + steps[1],
+    "- [ ] " + steps[2],
+    "- [ ] " + steps[3],
+    "- [ ] " + steps[4],
+    "",
+    "## Notes",
+    "-",
+    "",
+    "## Examples (fill these)",
+    "1)",
+    "2)",
+    "3)",
+    ""
   ].join("\n");
 
   return { picks, md };
@@ -217,7 +274,11 @@ const $status = document.getElementById("status");
 const $roll = document.getElementById("roll");
 const $remix = document.getElementById("remix");
 const $copy = document.getElementById("copy");
+const $copyLink = document.getElementById("copyLink");
 const $download = document.getElementById("download");
+
+const $historyList = document.getElementById("historyList");
+const $clearHistory = document.getElementById("clearHistory");
 
 function setKpi(p){
   const items = [
@@ -225,7 +286,7 @@ function setKpi(p){
     { k: "Topic", v: p.topic },
     { k: "Deliver", v: p.deliverable }
   ];
-  $kpi.innerHTML = items.map((it) => `<div class="pill"><strong>${it.k}:</strong> ${it.v}</div>`).join("");
+  $kpi.innerHTML = items.map((it) => "<div class=\"pill\"><strong>" + it.k + ":</strong> " + it.v + "</div>").join("");
 }
 
 function ensureSeed(){
@@ -236,15 +297,39 @@ function ensureSeed(){
   return s;
 }
 
+function renderHistory(items){
+  const arr = Array.isArray(items) ? items : [];
+  if (!$historyList) return;
+  if (!arr.length){
+    $historyList.innerHTML = "<li><a href=\"#\"><span class=\"meta\">No history yet. Roll a brief.</span></a></li>";
+    return;
+  }
+  $historyList.innerHTML = arr.map((it) => {
+    const seed = String(it.seed || "");
+    const minutes = String(it.minutes || "");
+    const mode = normalizeMode(it.mode);
+    const label = seed + "  (" + minutes + "m, " + mode + ")";
+    const qs = new URLSearchParams({ seed, minutes, mode }).toString();
+    return "<li><a href=\"?" + qs + "\">" + label + "</a></li>";
+  }).join("");
+}
+
 function roll(){
   const seed = ensureSeed();
   const minutes = clampInt($minutes.value, 10, 180, 45);
   $minutes.value = String(minutes);
-  const mode = String($mode.value || "mixed");
+  const mode = normalizeMode($mode.value || "mixed");
+  $mode.value = mode;
+
+  setQuery({ seed, minutes, mode });
 
   const { picks, md } = buildBrief({ seed, minutes, mode });
   $out.value = md;
   setKpi(picks);
+
+  const items = upsertHistory({ seed, minutes, mode, ts: Date.now() });
+  renderHistory(items);
+
   setStatus($status, "Rolled. Build it before the heat fades.", "ok");
 }
 
@@ -271,6 +356,15 @@ $copy.addEventListener("click", async () => {
   }
 });
 
+$copyLink.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(currentLink());
+    setStatus($status, "Copied link to clipboard.", "ok");
+  } catch {
+    setStatus($status, "Clipboard blocked. Copy from address bar.", "warn");
+  }
+});
+
 $download.addEventListener("click", () => {
   const text = String($out.value || "");
   if (!text.trim()){
@@ -283,5 +377,19 @@ $download.addEventListener("click", () => {
   setStatus($status, "Downloaded: " + fn, "ok");
 });
 
-// initial
-roll();
+$clearHistory.addEventListener("click", () => {
+  saveHistory([]);
+  renderHistory([]);
+  setStatus($status, "Cleared history.", "ok");
+});
+
+// initial (hydrate from query)
+(function init(){
+  const q = readQuery();
+  if (q.seed) $seed.value = q.seed;
+  if (q.minutes) $minutes.value = String(clampInt(q.minutes, 10, 180, 45));
+  if (q.mode) $mode.value = normalizeMode(q.mode);
+
+  renderHistory(loadHistory());
+  roll();
+})();

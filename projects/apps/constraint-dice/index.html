@@ -94,6 +94,38 @@
     .status.warn{ color: var(--warn); }
     .footer{ margin-top: 16px; color: var(--muted); font-size: 12px; }
     code{ color: #b7d6ff; }
+
+    .history{
+      margin-top: 12px;
+      border-top: 1px solid var(--line2);
+      padding-top: 12px;
+    }
+    .history-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .history h3{
+      margin: 0;
+      font-size: 13px;
+      color: #dbe7ff;
+      letter-spacing: -.01em;
+    }
+    .history ul{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap: 6px; }
+    .history a{
+      display:block;
+      text-decoration:none;
+      border: 1px solid var(--line2);
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: rgba(6,10,21,.55);
+      color: #d9e5ff;
+      font-size: 12px;
+    }
+    .history a:hover{ border-color: var(--line); }
+    .history .meta{ color: var(--muted); }
   </style>
 </head>
 <body>
@@ -135,11 +167,21 @@
           <button id="roll" class="primary">Roll brief</button>
           <button id="remix">Remix seed</button>
           <button id="copy">Copy Markdown</button>
+          <button id="copyLink">Copy link</button>
           <button id="download">Download .md</button>
         </div>
 
         <div class="status" id="status">Ready.</div>
         <div class="hint">Tip: Keep the seed if you want to iterate. Change the mode if you feel stuck. Remix creates a new seed based on time.</div>
+
+        <div class="history" id="history">
+          <div class="history-head">
+            <h3>Recent rolls</h3>
+            <button id="clearHistory" type="button">Clear</button>
+          </div>
+          <ul id="historyList"></ul>
+          <div class="hint">These are stored locally in your browser (localStorage). Click one to reload that brief.</div>
+        </div>
       </div>
 
       <div class="card">
