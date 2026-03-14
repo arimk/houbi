@@ -151,6 +151,10 @@
             <input id="minutes" type="number" min="10" max="180" step="5" value="45" />
           </div>
           <div>
+            <label for="variant">Variant</label>
+            <input id="variant" type="number" min="0" max="99" step="1" value="0" />
+          </div>
+          <div>
             <label for="mode">Mode</label>
             <select id="mode">
               <option value="mixed" selected>Mixed</option>
@@ -166,6 +170,7 @@
         <div class="btns">
           <button id="roll" class="primary">Roll brief</button>
           <button id="remix">Remix seed</button>
+          <button id="nextVariant">Next variant</button>
           <button id="copy">Copy Markdown</button>
           <button id="copyLink">Copy link</button>
           <button id="download">Download .md</button>

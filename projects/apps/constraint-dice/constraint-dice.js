@@ -46,14 +46,16 @@ function readQuery(){
   const sp = new URLSearchParams(window.location.search || "");
   const seed = (sp.get("seed") || "").trim();
   const minutes = (sp.get("minutes") || "").trim();
+  const variant = (sp.get("v") || "").trim();
   const mode = (sp.get("mode") || "").trim();
-  return { seed, minutes, mode };
+  return { seed, minutes, variant, mode };
 }
 
-function setQuery({ seed, minutes, mode }){
+function setQuery({ seed, minutes, variant, mode }){
   const sp = new URLSearchParams(window.location.search || "");
   if (seed) sp.set("seed", seed); else sp.delete("seed");
-  if (minutes) sp.set("minutes", String(minutes)); else sp.delete("minutes");
+  if (minutes !== "") sp.set("minutes", String(minutes)); else sp.delete("minutes");
+  if (variant !== "") sp.set("v", String(variant)); else sp.delete("v");
   if (mode) sp.set("mode", mode); else sp.delete("mode");
   const qs = sp.toString();
   const url = window.location.pathname + (qs ? ("?" + qs) : "") + window.location.hash;
@@ -88,9 +90,9 @@ function saveHistory(items){
 
 function upsertHistory(entry){
   const items = loadHistory();
-  const id = String(entry.seed || "") + "|" + String(entry.minutes || "") + "|" + String(entry.mode || "");
+  const id = String(entry.seed || "") + "|" + String(entry.minutes || "") + "|" + String(entry.variant || "") + "|" + String(entry.mode || "");
   const deduped = items.filter((it) => {
-    const itId = String(it.seed || "") + "|" + String(it.minutes || "") + "|" + String(it.mode || "");
+    const itId = String(it.seed || "") + "|" + String(it.minutes || "") + "|" + String(it.variant || "") + "|" + String(it.mode || "");
     return itId !== id;
   });
   const next = [entry].concat(deduped).slice(0, 12);
@@ -159,8 +161,10 @@ const BANK = {
   ]
 };
 
-function buildBrief({ seed, minutes, mode }){
-  const rng = mulberry32(hashStringToUint32(seed));
+function buildBrief({ seed, variant, minutes, mode }){
+  const v = clampInt(variant, 0, 99, 0);
+  const combinedSeed = String(seed) + "::v" + String(v);
+  const rng = mulberry32(hashStringToUint32(combinedSeed));
 
   const medium = pick(rng, BANK.mediums[mode] || BANK.mediums.mixed);
   const topic = pick(rng, BANK.topics);
@@ -182,6 +186,8 @@ function buildBrief({ seed, minutes, mode }){
 
   const picks = {
     seed,
+    variant: v,
+    combinedSeed,
     minutes,
     mode,
     medium,
@@ -196,9 +202,11 @@ function buildBrief({ seed, minutes, mode }){
     "# Constraint Dice Brief",
     "",
     "- Seed: `" + seed + "`",
+    "- Variant: **" + String(v) + "**",
+    "- Hash seed: `" + combinedSeed + "`",
     "- Mode: **" + mode + "**",
     "- Timebox: **" + minutes + " min**",
-    "- Timestamp (UTC): `" + new Date().toISOString() + "`",
+    "- Timestamp (UTC): `" + new Date().toISOString() + "`", 
     "",
     "## What to make",
     "Build a **" + medium + "** about **" + topic + "**.",
@@ -266,6 +274,7 @@ function downloadText(filename, text){
 
 const $seed = document.getElementById("seed");
 const $minutes = document.getElementById("minutes");
+const $variant = document.getElementById("variant");
 const $mode = document.getElementById("mode");
 const $out = document.getElementById("out");
 const $kpi = document.getElementById("kpi");
@@ -273,6 +282,7 @@ const $status = document.getElementById("status");
 
 const $roll = document.getElementById("roll");
 const $remix = document.getElementById("remix");
+const $nextVariant = document.getElementById("nextVariant");
 const $copy = document.getElementById("copy");
 const $copyLink = document.getElementById("copyLink");
 const $download = document.getElementById("download");
@@ -307,9 +317,10 @@ function renderHistory(items){
   $historyList.innerHTML = arr.map((it) => {
     const seed = String(it.seed || "");
     const minutes = String(it.minutes || "");
+    const variant = String(it.variant || "0");
     const mode = normalizeMode(it.mode);
-    const label = seed + "  (" + minutes + "m, " + mode + ")";
-    const qs = new URLSearchParams({ seed, minutes, mode }).toString();
+    const label = seed + "  (" + minutes + "m, v" + variant + ", " + mode + ")";
+    const qs = new URLSearchParams({ seed, minutes, v: variant, mode }).toString();
     return "<li><a href=\"?" + qs + "\">" + label + "</a></li>";
   }).join("");
 }
@@ -318,16 +329,18 @@ function roll(){
   const seed = ensureSeed();
   const minutes = clampInt($minutes.value, 10, 180, 45);
   $minutes.value = String(minutes);
+  const variant = clampInt($variant.value, 0, 99, 0);
+  $variant.value = String(variant);
   const mode = normalizeMode($mode.value || "mixed");
   $mode.value = mode;
 
-  setQuery({ seed, minutes, mode });
+  setQuery({ seed, minutes, variant, mode });
 
-  const { picks, md } = buildBrief({ seed, minutes, mode });
+  const { picks, md } = buildBrief({ seed, variant, minutes, mode });
   $out.value = md;
   setKpi(picks);
 
-  const items = upsertHistory({ seed, minutes, mode, ts: Date.now() });
+  const items = upsertHistory({ seed, minutes, variant, mode, ts: Date.now() });
   renderHistory(items);
 
   setStatus($status, "Rolled. Build it before the heat fades.", "ok");
@@ -338,8 +351,17 @@ $roll.addEventListener("click", () => roll());
 $remix.addEventListener("click", () => {
   const s = utcStamp();
   $seed.value = s;
+  $variant.value = "0";
   roll();
   setStatus($status, "Remixed seed: " + s, "ok");
+});
+
+$nextVariant.addEventListener("click", () => {
+  const v = clampInt($variant.value, 0, 99, 0);
+  const next = (v + 1) % 100;
+  $variant.value = String(next);
+  roll();
+  setStatus($status, "Variant: " + String(next), "ok");
 });
 
 $copy.addEventListener("click", async () => {
@@ -388,6 +410,7 @@ $clearHistory.addEventListener("click", () => {
   const q = readQuery();
   if (q.seed) $seed.value = q.seed;
   if (q.minutes) $minutes.value = String(clampInt(q.minutes, 10, 180, 45));
+  if (q.variant) $variant.value = String(clampInt(q.variant, 0, 99, 0));
   if (q.mode) $mode.value = normalizeMode(q.mode);
 
   renderHistory(loadHistory());
