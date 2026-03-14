@@ -151,6 +151,7 @@
             <button class="primary" id="btnGen">Generer</button>
             <button id="btnNow">Seed = maintenant (UTC)</button>
             <button id="btnCopy">Copier SVG</button>
+            <button id="btnLink">Copier lien</button>
             <button id="btnSvg">Telecharger SVG</button>
             <button id="btnPng">Telecharger PNG</button>
           </div>
@@ -168,6 +169,7 @@
             <ul>
               <li>Deterministe: meme seed = meme glyph.</li>
               <li>Le mode <span class="ok">Now</span> met a jour la seed toutes les secondes (timestamp UTC compact).</li>
+              <li>Nouveau: partage par URL (seed/size/mode) via <span class="ok">Copier lien</span>.</li>
               <li>Export PNG = rasterisation locale via canvas.</li>
             </ul>
           </div>
@@ -194,6 +196,7 @@
     const btnGen = document.querySelector("#btnGen");
     const btnNow = document.querySelector("#btnNow");
     const btnCopy = document.querySelector("#btnCopy");
+    const btnLink = document.querySelector("#btnLink");
     const btnSvg = document.querySelector("#btnSvg");
     const btnPng = document.querySelector("#btnPng");
 
@@ -212,7 +215,37 @@
       return utcTimestampCompact(d);
     }
 
-    function render() {
+    function buildShareUrl(opts) {
+      const o = opts || {};
+      const seed = (o.seed || elSeed.value || "").trim();
+      const size = String(o.size || elSize.value || "720");
+      const mode = String(o.mode || elMode.value || "manual");
+
+      const url = new URL(window.location.href);
+      if (seed) url.searchParams.set("seed", seed);
+      url.searchParams.set("size", size);
+      url.searchParams.set("mode", mode);
+      return url.toString();
+    }
+
+    function hydrateFromUrl() {
+      const url = new URL(window.location.href);
+      const seed = (url.searchParams.get("seed") || "").trim();
+      const size = (url.searchParams.get("size") || "").trim();
+      const mode = (url.searchParams.get("mode") || "").trim();
+
+      if (size && ["360", "540", "720", "960"].includes(size)) elSize.value = size;
+      if (mode && ["now", "manual"].includes(mode)) elMode.value = mode;
+
+      if (seed) {
+        elSeed.value = seed;
+      } else {
+        elSeed.value = currentSeed();
+      }
+    }
+
+    function render(opts) {
+      const o = opts || {};
       const seed = elSeed.value.trim();
       if (!seed) {
         setStatus("Seed vide.", "err");
@@ -224,6 +257,15 @@
 
       elArt.innerHTML = svg;
       elSvgText.value = svg;
+
+      if (o.updateUrl) {
+        try {
+          history.replaceState(null, "", buildShareUrl());
+        } catch {
+          // ignore
+        }
+      }
+
       setStatus("OK - glyph genere.", "ok");
     }
 
@@ -245,6 +287,24 @@
         setStatus("SVG copie dans le presse-papiers.", "ok");
       } catch {
         setStatus("Impossible de copier (permission clipboard).", "err");
+      }
+    }
+
+    async function copyLink() {
+      const seed = (elSeed.value || "").trim();
+      if (!seed) {
+        setStatus("Seed vide.", "err");
+        return;
+      }
+
+      const mode = elMode.value === "now" ? "manual" : elMode.value;
+      const url = buildShareUrl({ mode });
+
+      try {
+        await navigator.clipboard.writeText(url);
+        setStatus("Lien copie (seed/size/mode).", "ok");
+      } catch {
+        setStatus("Impossible de copier le lien (permission clipboard).", "err");
       }
     }
 
@@ -299,23 +359,24 @@
 
       if (elMode.value === "now") {
         elSeed.value = currentSeed();
-        render();
+        render({ updateUrl: false });
         modeTimer = setInterval(() => {
           tickClock();
           elSeed.value = currentSeed();
-          render();
+          render({ updateUrl: false });
         }, 1000);
       } else {
         tickClock();
       }
     }
 
-    btnGen.addEventListener("click", () => render());
+    btnGen.addEventListener("click", () => render({ updateUrl: true }));
     btnNow.addEventListener("click", () => {
       elSeed.value = currentSeed();
-      render();
+      render({ updateUrl: true });
     });
     btnCopy.addEventListener("click", () => copySvg());
+    btnLink.addEventListener("click", () => copyLink());
     btnSvg.addEventListener("click", () => {
       const seed = elSeed.value.trim() || "utc-glyph";
       downloadText(`${seed}.svg`, elSvgText.value);
@@ -325,12 +386,24 @@
       downloadPng().catch(() => setStatus("PNG export failed.", "err"));
     });
 
-    elMode.addEventListener("change", () => applyMode());
-    elSize.addEventListener("change", () => render());
+    elMode.addEventListener("change", () => {
+      applyMode();
+      render({ updateUrl: true });
+    });
+    elSize.addEventListener("change", () => render({ updateUrl: true }));
 
-    elSeed.value = currentSeed();
+    elSeed.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        if (elMode.value === "now") elMode.value = "manual";
+        applyMode();
+        render({ updateUrl: true });
+      }
+    });
+
+    hydrateFromUrl();
     tickClock();
     applyMode();
+    render({ updateUrl: true });
   </script>
 </body>
 </html>
