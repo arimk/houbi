@@ -79,6 +79,7 @@
             <input id="b2" type="number" value="80" min="0" max="100" />
             <button id="flip">Flip</button>
             <button id="copy">Copy</button>
+            <button id="share">Share</button>
           </div>
 
           <div class="cap">Astuce: tu peux aussi faire “Flip” pour juste inverser Après = Avant inversé.</div>
@@ -104,78 +105,148 @@
 
 <script>
   const $ = (id) => document.getElementById(id);
-  const clamp = (n) => Math.max(0, Math.min(100, Number.isFinite(n) ? n : 0));
-  const sum = (x,y) => clamp(x)+clamp(y);
+  const NL = "\n";
 
-  function fmtPair(x,y){ return `${clamp(x)}/${clamp(y)}`; }
-
-  function validatePair(x,y){
-    const s = sum(x,y);
-    if (s === 100) return { ok:true, note:"" };
-    if (s === 0) return { ok:false, note:"(⚠️ somme = 0)" };
-    return { ok:false, note:`(⚠️ somme = ${s}, normalise?)` };
+  function clamp(n){
+    const v = Number(n);
+    if (!Number.isFinite(v)) return 0;
+    return Math.max(0, Math.min(100, v));
   }
 
-  function normalize(x,y){
-    const s = sum(x,y);
-    if (s === 0) return [0,0];
-    const nx = Math.round((clamp(x)/s)*100);
+  function sum(x, y){ return clamp(x) + clamp(y); }
+
+  function fmtPair(x, y){ return `${clamp(x)}/${clamp(y)}`; }
+
+  function validatePair(x, y){
+    const s = sum(x, y);
+    if (s === 100) return { ok: true, note: "" };
+    if (s === 0) return { ok: false, note: "(! sum=0)" };
+    return { ok: false, note: `(! sum=${s}, normalized)` };
+  }
+
+  function normalize(x, y){
+    const s = sum(x, y);
+    if (s === 0) return [0, 0];
+    const nx = Math.round((clamp(x) / s) * 100);
     const ny = 100 - nx;
-    return [nx,ny];
+    return [nx, ny];
   }
 
-  function setBar(el, x, y){
-    // simple stacked gradient using background-size trick
-    const top = clamp(x);
-    const bot = clamp(y);
+  function setBar(el, topPct){
+    const top = clamp(topPct);
     el.style.background = `linear-gradient(180deg, rgba(165,139,255,.65) ${top}%, rgba(0,220,255,.22) ${top}%)`;
   }
 
-  function render(){
-    let a1 = Number($(a1).value), a2 = Number($(a2).value);
-    let b1 = Number($(b1).value), b2 = Number($(b2).value);
-
-    const va = validatePair(a1,a2);
-    const vb = validatePair(b1,b2);
-
-    if (!va.ok) [a1,a2] = normalize(a1,a2);
-    if (!vb.ok) [b1,b2] = normalize(b1,b2);
-
-    $(a1).value = a1; $(a2).value = a2;
-    $(b1).value = b1; $(b2).value = b2;
-
-    const out = [];
-    out.push(`Avant: ${fmtPair(a1,a2)}  ${va.note}`.trim());
-    out.push(`Après: ${fmtPair(b1,b2)}  ${vb.note}`.trim());
-    out.push();
-    out.push(`Phrase:`);
-    out.push(`Avant, ~${a1}% du temps part en mécanique et ~${a2}% en jugement. Après automatisation, ça peut devenir ~${b1}% mécanique / ~${b2}% jugement.`);
-    out.push();
-    out.push(`Copy/paste:`);
-    out.push(`Avant ${a1}/${a2} → Après ${b1}/${b2}`);
-
-    $(out).textContent = out.join(n);
-
-    setBar($(barA), a1, a2);
-    setBar($(barB), b1, b2);
-    $(capA).textContent = `Avant ${a1}/${a2}`;
-    $(capB).textContent = `Après ${b1}/${b2}`;
-
-    return out.join(n);
+  function readState(){
+    return {
+      a1: clamp($("a1").value),
+      a2: clamp($("a2").value),
+      b1: clamp($("b1").value),
+      b2: clamp($("b2").value)
+    };
   }
 
-  $(flip).addEventListener(click, () => {
-    const a1 = Number($(a1).value), a2 = Number($(a2).value);
-    $(b1).value = clamp(a2);
-    $(b2).value = clamp(a1);
+  function writeState(st){
+    $("a1").value = st.a1;
+    $("a2").value = st.a2;
+    $("b1").value = st.b1;
+    $("b2").value = st.b2;
+  }
+
+  function render(){
+    let { a1, a2, b1, b2 } = readState();
+
+    const va0 = validatePair(a1, a2);
+    const vb0 = validatePair(b1, b2);
+
+    if (!va0.ok) [a1, a2] = normalize(a1, a2);
+    if (!vb0.ok) [b1, b2] = normalize(b1, b2);
+
+    writeState({ a1, a2, b1, b2 });
+
+    const va = validatePair(a1, a2);
+    const vb = validatePair(b1, b2);
+
+    const out = [];
+    out.push(`Avant: ${fmtPair(a1, a2)}  ${va.note}`.trim());
+    out.push(`Apres: ${fmtPair(b1, b2)}  ${vb.note}`.trim());
+    out.push("");
+    out.push("Phrase:");
+    out.push(`Avant, ~${a1}% du temps part en mecanique et ~${a2}% en jugement. Apres automatisation, ca peut devenir ~${b1}% mecanique / ~${b2}% jugement.`);
+    out.push("");
+    out.push("Copy/paste:");
+    out.push(`Avant ${a1}/${a2} -> Apres ${b1}/${b2}`);
+
+    $("out").textContent = out.join(NL);
+
+    setBar($("barA"), a1);
+    setBar($("barB"), b1);
+    $("capA").textContent = `Avant ${a1}/${a2}`;
+    $("capB").textContent = `Apres ${b1}/${b2}`;
+
+    return out.join(NL);
+  }
+
+  function setUrlFromState(st){
+    const params = new URLSearchParams();
+    params.set("a1", String(st.a1));
+    params.set("a2", String(st.a2));
+    params.set("b1", String(st.b1));
+    params.set("b2", String(st.b2));
+    const url = `${location.pathname}?${params.toString()}`;
+    history.replaceState(null, "", url);
+    return location.href;
+  }
+
+  function loadFromUrl(){
+    const p = new URLSearchParams(location.search);
+    const a1 = clamp(p.get("a1"));
+    const a2 = clamp(p.get("a2"));
+    const b1 = p.has("b1") ? clamp(p.get("b1")) : clamp(a2);
+    const b2 = p.has("b2") ? clamp(p.get("b2")) : clamp(a1);
+    writeState({ a1, a2, b1, b2 });
+  }
+
+  function onInput(){
+    render();
+  }
+
+  $("flip").addEventListener("click", () => {
+    const st = readState();
+    $("b1").value = clamp(st.a2);
+    $("b2").value = clamp(st.a1);
     render();
   });
 
-  $(copy).addEventListener(click, async () => {
+  $("copy").addEventListener("click", async () => {
     const txt = render();
-    try { await navigator.clipboard.writeText(txt); $(copy).textContent = Copied; setTimeout(()=>$(copy).textContent=Copy, 900);} catch(e) {}
+    try {
+      await navigator.clipboard.writeText(txt);
+      const btn = $("copy");
+      const old = btn.textContent;
+      btn.textContent = "Copied";
+      setTimeout(() => { btn.textContent = old; }, 900);
+    } catch (e) {}
   });
 
+  $("share").addEventListener("click", async () => {
+    render();
+    const href = setUrlFromState(readState());
+    try {
+      await navigator.clipboard.writeText(href);
+      const btn = $("share");
+      const old = btn.textContent;
+      btn.textContent = "Link copied";
+      setTimeout(() => { btn.textContent = old; }, 900);
+    } catch (e) {}
+  });
+
+  ["a1","a2","b1","b2"].forEach((id) => {
+    $(id).addEventListener("input", onInput);
+    $(id).addEventListener("change", onInput);
+  });
+
+  loadFromUrl();
   render();
 </script>
 </body>
