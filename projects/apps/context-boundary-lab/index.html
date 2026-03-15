@@ -43,6 +43,7 @@
       box-shadow:0 14px 40px rgba(0,0,0,.35);
     }
     h2{margin:0 0 10px;font-size:16px;letter-spacing:-.01em}
+    h3{margin:14px 0 8px;font-size:13px;letter-spacing:.02em;text-transform:uppercase;color:#cfe0ff}
 
     label{display:block;margin:10px 0 6px;color:#d7e5ff;font-size:13px}
     .row{display:grid;grid-template-columns:1fr;gap:10px}
@@ -178,6 +179,10 @@
           <div id="badge" class="badge">—</div>
         </div>
         <ul class="list" id="bullets"></ul>
+
+        <h3>Levers (reduire la friction)</h3>
+        <ul class="list" id="levers"></ul>
+
         <div class="footer">
           <div class="muted">Raccourci: <span class="kbd">Ctrl</span> + <span class="kbd">C</span> ne copie que si tu as sélectionné; utilise “Copier le diagnostic”.</div>
         </div>
@@ -202,6 +207,7 @@
     const scoreEl = el('score');
     const badgeEl = el('badge');
     const bulletsEl = el('bullets');
+    const leversEl = el('levers');
 
     function clampText(x, maxLen){
       const s = String(x || '');
@@ -307,6 +313,106 @@
       return s;
     }
 
+    function scoreBreakdown(){
+      const parts = [];
+
+      // Context
+      if (context.value === 'private') parts.push({ key: 'context', label: 'Contexte: prive', points: 10 });
+      if (context.value === 'work') parts.push({ key: 'context', label: 'Contexte: travail', points: 18 });
+      if (context.value === 'public') parts.push({ key: 'context', label: 'Contexte: public', points: 8 });
+
+      // Data
+      if (datatype.value === 'low') parts.push({ key: 'datatype', label: 'Donnee: banal', points: 8 });
+      if (datatype.value === 'med') parts.push({ key: 'datatype', label: 'Donnee: personnel', points: 26 });
+      if (datatype.value === 'high') parts.push({ key: 'datatype', label: 'Donnee: ultra-sensible', points: 44 });
+
+      // Recipient
+      if (recipient.value === 'self') parts.push({ key: 'recipient', label: 'Destinataire: moi-meme', points: 2 });
+      if (recipient.value === 'trusted') parts.push({ key: 'recipient', label: 'Destinataire: confiance', points: 10 });
+      if (recipient.value === 'platform') parts.push({ key: 'recipient', label: 'Destinataire: plateforme', points: 28 });
+      if (recipient.value === 'unknown') parts.push({ key: 'recipient', label: 'Destinataire: tiers probable', points: 46 });
+
+      // Purpose
+      if (purpose.value === 'help') parts.push({ key: 'purpose', label: 'But: aide directe', points: 6 });
+      if (purpose.value === 'improve') parts.push({ key: 'purpose', label: 'But: amelioration', points: 18 });
+      if (purpose.value === 'ads') parts.push({ key: 'purpose', label: 'But: pub/profilage', points: 42 });
+
+      // Retention
+      const days = Number(retention.value);
+      const retentionPts = Math.min(22, Math.round(Math.log10(days + 1) * 16));
+      parts.push({ key: 'retention', label: `Retention: ${days} jour(s)`, points: retentionPts });
+
+      // Consent
+      if (consent.value === 'yes') parts.push({ key: 'consent', label: 'Consentement: oui', points: -10 });
+      if (consent.value === 'maybe') parts.push({ key: 'consent', label: 'Consentement: flou', points: 10 });
+      if (consent.value === 'no') parts.push({ key: 'consent', label: 'Consentement: non', points: 26 });
+
+      return parts;
+    }
+
+    function suggestLevers(){
+      const base = frictionScore();
+      const levers = [];
+
+      // Candidate toggles -> estimate deltas by temporarily changing values.
+      function estimate(label, applyFn){
+        const snapshot = currentState();
+        applyFn();
+        const next = frictionScore();
+        applyState(snapshot);
+        const delta = next - base;
+        return { label, delta };
+      }
+
+      // Recipient levers
+      if (recipient.value !== 'self'){
+        levers.push(estimate('Changer le destinataire vers: moi-meme (stockage local)', () => { recipient.value = 'self'; }));
+      }
+      if (recipient.value !== 'trusted'){
+        levers.push(estimate('Changer le destinataire vers: personne/outil de confiance', () => { recipient.value = 'trusted'; }));
+      }
+
+      // Purpose levers
+      if (purpose.value !== 'help'){
+        levers.push(estimate("Remplacer le but par: aide directe (pas d'analytics)", () => { purpose.value = 'help'; }));
+      }
+
+      // Retention levers
+      if (Number(retention.value) > 7){
+        levers.push(estimate('Reduire la retention a 7 jours', () => { retention.value = '7'; }));
+      }
+      if (Number(retention.value) > 0){
+        levers.push(estimate('Reduire la retention a 0 (ephemere)', () => { retention.value = '0'; }));
+      }
+
+      // Consent lever
+      if (consent.value !== 'yes'){
+        levers.push(estimate('Obtenir un consentement explicite (oui)', () => { consent.value = 'yes'; }));
+      }
+
+      // Sort: best reductions first (most negative delta)
+      levers.sort((a,b) => a.delta - b.delta);
+
+      const uniq = [];
+      const seen = new Set();
+      for (const x of levers){
+        if (seen.has(x.label)) continue;
+        seen.add(x.label);
+        uniq.push(x);
+      }
+
+      // Keep top 3 that actually reduce friction
+      const top = uniq.filter(x => x.delta < 0).slice(0, 3);
+      if (!top.length){
+        return ['Rien de simple a optimiser: tu es deja dans une zone a faible surprise.'];
+      }
+
+      return top.map(x => {
+        const pts = Math.abs(x.delta);
+        return `${x.label} (approx -${pts} pts)`;
+      });
+    }
+
     function badge(score){
       if (score <= 28) return { cls: 'good', text: 'Faible surprise' };
       if (score <= 62) return { cls: 'warn', text: 'Zone grise' };
@@ -360,6 +466,9 @@
 
       const bs = bullets(s);
       bulletsEl.innerHTML = bs.map(x => `<li>${x}</li>`).join('');
+
+      const ls = suggestLevers();
+      leversEl.innerHTML = ls.map(x => `<li>${x}</li>`).join('');
     }
 
     function diagnosticText(){
