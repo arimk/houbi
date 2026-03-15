@@ -42,21 +42,29 @@ function normalizeMode(mode){
   return ok.includes(m) ? m : "mixed";
 }
 
+function normalizeDifficulty(diff){
+  const d = String(diff || "").trim();
+  const ok = ["easy", "standard", "hard"];
+  return ok.includes(d) ? d : "standard";
+}
+
 function readQuery(){
   const sp = new URLSearchParams(window.location.search || "");
   const seed = (sp.get("seed") || "").trim();
   const minutes = (sp.get("minutes") || "").trim();
   const variant = (sp.get("v") || "").trim();
   const mode = (sp.get("mode") || "").trim();
-  return { seed, minutes, variant, mode };
+  const difficulty = (sp.get("d") || "").trim();
+  return { seed, minutes, variant, mode, difficulty };
 }
 
-function setQuery({ seed, minutes, variant, mode }){
+function setQuery({ seed, minutes, variant, mode, difficulty }){
   const sp = new URLSearchParams(window.location.search || "");
   if (seed) sp.set("seed", seed); else sp.delete("seed");
   if (minutes !== "") sp.set("minutes", String(minutes)); else sp.delete("minutes");
   if (variant !== "") sp.set("v", String(variant)); else sp.delete("v");
   if (mode) sp.set("mode", mode); else sp.delete("mode");
+  if (difficulty) sp.set("d", difficulty); else sp.delete("d");
   const qs = sp.toString();
   const url = window.location.pathname + (qs ? ("?" + qs) : "") + window.location.hash;
   window.history.replaceState(null, "", url);
@@ -90,9 +98,9 @@ function saveHistory(items){
 
 function upsertHistory(entry){
   const items = loadHistory();
-  const id = String(entry.seed || "") + "|" + String(entry.minutes || "") + "|" + String(entry.variant || "") + "|" + String(entry.mode || "");
+  const id = String(entry.seed || "") + "|" + String(entry.minutes || "") + "|" + String(entry.variant || "") + "|" + String(entry.difficulty || "") + "|" + String(entry.mode || "");
   const deduped = items.filter((it) => {
-    const itId = String(it.seed || "") + "|" + String(it.minutes || "") + "|" + String(it.variant || "") + "|" + String(it.mode || "");
+    const itId = String(it.seed || "") + "|" + String(it.minutes || "") + "|" + String(it.variant || "") + "|" + String(it.difficulty || "") + "|" + String(it.mode || "");
     return itId !== id;
   });
   const next = [entry].concat(deduped).slice(0, 12);
@@ -131,6 +139,19 @@ const BANK = {
     "ship a README-like header",
     "must include at least 3 examples"
   ],
+  constraints_easy: [
+    "ship the smallest useful version",
+    "use plain language labels",
+    "one input, one output",
+    "keep it on one screen"
+  ],
+  constraints_hard: [
+    "must include an 'Undo' or 'Reset' path",
+    "must include keyboard shortcuts",
+    "must include one accessibility detail",
+    "must include an offline export",
+    "must include at least 6 examples"
+  ],
   twists: [
     "include a 'failure mode' section",
     "include a tiny glossary",
@@ -161,32 +182,48 @@ const BANK = {
   ]
 };
 
-function buildBrief({ seed, variant, minutes, mode }){
+function buildBrief({ seed, variant, minutes, mode, difficulty }){
   const v = clampInt(variant, 0, 99, 0);
-  const combinedSeed = String(seed) + "::v" + String(v);
+  const diff = normalizeDifficulty(difficulty);
+  const combinedSeed = String(seed) + "::v" + String(v) + "::d" + diff;
   const rng = mulberry32(hashStringToUint32(combinedSeed));
 
   const medium = pick(rng, BANK.mediums[mode] || BANK.mediums.mixed);
   const topic = pick(rng, BANK.topics);
   const lens = pick(rng, BANK.lenses);
-
-  const c1 = pick(rng, BANK.constraints);
-  const c2 = pick(rng, BANK.constraints);
-  const c3 = pick(rng, BANK.constraints);
-  const twist = pick(rng, BANK.twists);
   const deliverable = pick(rng, BANK.deliverables[mode] || BANK.deliverables.mixed);
+
+  const baseConstraints = BANK.constraints.slice();
+  if (diff === "easy") baseConstraints.push.apply(baseConstraints, BANK.constraints_easy);
+  if (diff === "hard") baseConstraints.push.apply(baseConstraints, BANK.constraints_hard);
+
+  const constraintCount = (diff === "easy") ? 2 : (diff === "hard") ? 4 : 3;
+  const twistCount = (diff === "easy") ? 0 : (diff === "hard") ? 2 : 1;
+
+  const constraints = [];
+  while (constraints.length < constraintCount){
+    const c = pick(rng, baseConstraints);
+    if (!constraints.includes(c)) constraints.push(c);
+  }
+
+  const twists = [];
+  while (twists.length < twistCount){
+    const t = pick(rng, BANK.twists);
+    if (!twists.includes(t)) twists.push(t);
+  }
 
   const steps = [
     "Define the input/output in 2 sentences.",
     "Build the smallest version that works.",
     "Add one 'delight' detail.",
-    "Write 3 examples.",
+    "Write examples.",
     "Export / save the artifact."
   ];
 
   const picks = {
     seed,
     variant: v,
+    difficulty: diff,
     combinedSeed,
     minutes,
     mode,
@@ -194,19 +231,20 @@ function buildBrief({ seed, variant, minutes, mode }){
     topic,
     lens,
     deliverable,
-    constraints: [c1, c2, c3],
-    twist
+    constraints,
+    twists
   };
 
-  const md = [
+  const mdLines = [
     "# Constraint Dice Brief",
     "",
     "- Seed: `" + seed + "`",
     "- Variant: **" + String(v) + "**",
+    "- Difficulty: **" + diff + "**",
     "- Hash seed: `" + combinedSeed + "`",
     "- Mode: **" + mode + "**",
     "- Timebox: **" + minutes + " min**",
-    "- Timestamp (UTC): `" + new Date().toISOString() + "`", 
+    "- Timestamp (UTC): `" + new Date().toISOString() + "`",
     "",
     "## What to make",
     "Build a **" + medium + "** about **" + topic + "**.",
@@ -214,11 +252,19 @@ function buildBrief({ seed, variant, minutes, mode }){
     "## Lens",
     "- " + lens,
     "",
-    "## Constraints (roll)",
-    "- " + picks.constraints[0],
-    "- " + picks.constraints[1],
-    "- " + picks.constraints[2],
-    "- Twist: " + twist,
+    "## Constraints (roll)"
+  ];
+
+  for (let i = 0; i < constraints.length; i++){
+    mdLines.push("- " + constraints[i]);
+  }
+
+  if (twists.length){
+    mdLines.push("- Twists:");
+    for (let i = 0; i < twists.length; i++) mdLines.push("  - " + twists[i]);
+  }
+
+  mdLines.push(
     "",
     "## Deliverable",
     "- Ship: " + deliverable,
@@ -238,9 +284,9 @@ function buildBrief({ seed, variant, minutes, mode }){
     "2)",
     "3)",
     ""
-  ].join("\n");
+  );
 
-  return { picks, md };
+  return { picks, md: mdLines.join("\n") };
 }
 
 function setStatus(el, msg, kind){
@@ -275,6 +321,7 @@ function downloadText(filename, text){
 const $seed = document.getElementById("seed");
 const $minutes = document.getElementById("minutes");
 const $variant = document.getElementById("variant");
+const $difficulty = document.getElementById("difficulty");
 const $mode = document.getElementById("mode");
 const $out = document.getElementById("out");
 const $kpi = document.getElementById("kpi");
@@ -294,6 +341,7 @@ function setKpi(p){
   const items = [
     { k: "Medium", v: p.medium },
     { k: "Topic", v: p.topic },
+    { k: "Difficulty", v: p.difficulty },
     { k: "Deliver", v: p.deliverable }
   ];
   $kpi.innerHTML = items.map((it) => "<div class=\"pill\"><strong>" + it.k + ":</strong> " + it.v + "</div>").join("");
@@ -318,9 +366,10 @@ function renderHistory(items){
     const seed = String(it.seed || "");
     const minutes = String(it.minutes || "");
     const variant = String(it.variant || "0");
+    const difficulty = normalizeDifficulty(it.difficulty);
     const mode = normalizeMode(it.mode);
-    const label = seed + "  (" + minutes + "m, v" + variant + ", " + mode + ")";
-    const qs = new URLSearchParams({ seed, minutes, v: variant, mode }).toString();
+    const label = seed + "  (" + minutes + "m, v" + variant + ", " + difficulty + ", " + mode + ")";
+    const qs = new URLSearchParams({ seed, minutes, v: variant, d: difficulty, mode }).toString();
     return "<li><a href=\"?" + qs + "\">" + label + "</a></li>";
   }).join("");
 }
@@ -331,16 +380,18 @@ function roll(){
   $minutes.value = String(minutes);
   const variant = clampInt($variant.value, 0, 99, 0);
   $variant.value = String(variant);
+  const difficulty = normalizeDifficulty($difficulty.value || "standard");
+  $difficulty.value = difficulty;
   const mode = normalizeMode($mode.value || "mixed");
   $mode.value = mode;
 
-  setQuery({ seed, minutes, variant, mode });
+  setQuery({ seed, minutes, variant, difficulty, mode });
 
-  const { picks, md } = buildBrief({ seed, variant, minutes, mode });
+  const { picks, md } = buildBrief({ seed, variant, minutes, difficulty, mode });
   $out.value = md;
   setKpi(picks);
 
-  const items = upsertHistory({ seed, minutes, variant, mode, ts: Date.now() });
+  const items = upsertHistory({ seed, minutes, variant, difficulty, mode, ts: Date.now() });
   renderHistory(items);
 
   setStatus($status, "Rolled. Build it before the heat fades.", "ok");
@@ -411,6 +462,7 @@ $clearHistory.addEventListener("click", () => {
   if (q.seed) $seed.value = q.seed;
   if (q.minutes) $minutes.value = String(clampInt(q.minutes, 10, 180, 45));
   if (q.variant) $variant.value = String(clampInt(q.variant, 0, 99, 0));
+  if (q.difficulty) $difficulty.value = normalizeDifficulty(q.difficulty);
   if (q.mode) $mode.value = normalizeMode(q.mode);
 
   renderHistory(loadHistory());
