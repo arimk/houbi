@@ -115,6 +115,14 @@
     button:hover { border-color: var(--line); box-shadow: 0 0 0 3px rgba(109, 240, 255, 0.10); }
     button.primary { border-color: rgba(109, 240, 255, 0.30); }
 
+    .permalink {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+    .hint { margin-top: 4px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
     .grid {
       margin-top: 14px;
       display: grid;
@@ -148,7 +156,7 @@
       margin-top: 18px;
       color: var(--muted);
       font-size: 12px;
-      line-height: 1.6;
+      line-height:  1.6;
     }
     code { color: #d9e5ff; }
   </style>
@@ -158,7 +166,7 @@
     <header>
       <span class="badge">Houbi app - creative sprint</span>
       <h1>Prompt Forge</h1>
-      <p class="sub">Forge des idees actionnables en 20-60 minutes. Deterministe via seed. Copie une idee en Markdown, ou telecharge tout le set.</p>
+      <p class="sub">Forge des idees actionnables en 20-60 minutes. Deterministe via seed. Copie une idee en Markdown, telecharge tout le set, ou partage un permalink.</p>
     </header>
 
     <section class="panel">
@@ -184,6 +192,17 @@
           <button id="downloadMd" type="button">Telecharger Markdown</button>
         </div>
 
+        <div class="permalink">
+          <div>
+            <label for="permalink">Permalink (seed + options)</label>
+            <input id="permalink" type="text" readonly />
+            <div class="hint">Astuce: colle ce lien dans une note, un ticket, ou un message pour retrouver exactement la meme page.</div>
+          </div>
+          <div class="btns">
+            <button id="copyLink" type="button">Copier lien</button>
+          </div>
+        </div>
+
         <div>
           <label for="markdown">Export Markdown (fallback si clipboard bloque)</label>
           <textarea id="markdown"></textarea>
@@ -198,6 +217,7 @@
         Notes: offline, zero dependance. Suggestion: choisis une idee, puis reduis-la a <code>1 entree + 1 bouton + 1 export</code>.
       </footer>
     </section>
+</section>
   </main>
 
   <script type="module" src="./prompt-forge.js"></script>

@@ -183,23 +183,71 @@ function setText(el, value){
   el.textContent = value;
 }
 
+function safeInt(value, fallback){
+  const n = parseInt(value, 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function buildPermalink(seed, n, more){
+  const url = new URL(window.location.href);
+  url.searchParams.set("seed", seed);
+  url.searchParams.set("count", String(n));
+  if (more) url.searchParams.set("more", "1");
+  else url.searchParams.delete("more");
+  return url.toString();
+}
+
+function applyUrlState(seedEl, countEl, moreEl){
+  const url = new URL(window.location.href);
+  const seed = (url.searchParams.get("seed") || "").trim();
+  const count = safeInt(url.searchParams.get("count"), 10);
+  const more = url.searchParams.get("more") === "1";
+
+  if (seed) seedEl.value = seed;
+  if (count) countEl.value = String(Math.max(1, Math.min(50, count)));
+  moreEl.checked = !!more;
+}
+
 function main(){
   const seedEl = document.querySelector("#seed");
   const countEl = document.querySelector("#count");
   const moreEl = document.querySelector("#moreConstraints");
   const listEl = document.querySelector("#ideas");
   const mdEl = document.querySelector("#markdown");
+  const linkEl = document.querySelector("#permalink");
+  const copyLinkEl = document.querySelector("#copyLink");
+
+  applyUrlState(seedEl, countEl, moreEl);
 
   function currentSeed(){
     const s = seedEl.value.trim();
     return s ? s : "prompt-forge";
   }
 
+  function currentCount(){
+    return Math.max(1, Math.min(50, safeInt(countEl.value, 10)));
+  }
+
+  function updatePermalink(seed, n, more){
+    const url = buildPermalink(seed, n, more);
+    linkEl.value = url;
+    try {
+      window.history.replaceState(null, "", url);
+    } catch {
+      // ignore
+    }
+  }
+
   function generate(){
-    const n = Math.max(1, Math.min(50, parseInt(countEl.value, 10) || 10));
-    const rng = makeRng(currentSeed());
+    const n = currentCount();
+    const seed = currentSeed();
+    const more = !!moreEl.checked;
+
+    updatePermalink(seed, n, more);
+
+    const rng = makeRng(seed);
     const ideas = [];
-    for (let i = 0; i < n; i++) ideas.push(buildIdea(rng, { moreConstraints: !!moreEl.checked }));
+    for (let i = 0; i < n; i++) ideas.push(buildIdea(rng, { moreConstraints: more }));
 
     listEl.innerHTML = "";
     for (const idea of ideas){
@@ -251,7 +299,7 @@ function main(){
     }
 
     const md = ideas.map(ideaToMarkdown).join("\n\n---\n\n");
-    mdEl.value = `# Prompt Forge (${new Date().toISOString()})\n\nSeed: ${currentSeed()}\n\n${md}\n`;
+    mdEl.value = `# Prompt Forge (${new Date().toISOString()})\n\nSeed: ${seed}\n\n${md}\n`;
   }
 
   function remixSeed(){
@@ -271,6 +319,24 @@ function main(){
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 500);
   });
+
+  copyLinkEl.addEventListener("click", async () => {
+    const url = linkEl.value.trim();
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      copyLinkEl.textContent = "Copie!";
+      setTimeout(() => (copyLinkEl.textContent = "Copier lien"), 900);
+    } catch {
+      linkEl.focus();
+      linkEl.select();
+    }
+  });
+
+  // Regenerate on key changes to keep the permalink accurate.
+  seedEl.addEventListener("change", generate);
+  countEl.addEventListener("change", generate);
+  moreEl.addEventListener("change", generate);
 
   generate();
 }
