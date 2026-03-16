@@ -244,7 +244,45 @@ function nowSeed(){
   return d.toISOString().replace("T", " ").replace("Z", " UTC");
 }
 
+function readQueryState(){
+  const p = new URLSearchParams(window.location.search || "");
+  const seed = p.get("seed");
+  const palette = p.get("palette");
+  const bars = p.get("bars");
+  const w = p.get("w");
+  const h = p.get("h");
+  return {
+    seed: seed == null ? null : seed,
+    palette: palette == null ? null : palette,
+    bars: bars == null ? null : bars,
+    w: w == null ? null : w,
+    h: h == null ? null : h
+  };
+}
+
+function buildShareUrl(state){
+  const u = new URL(window.location.href);
+  u.search = "";
+  const p = u.searchParams;
+  if (state.seed != null && state.seed !== "") p.set("seed", state.seed);
+  if (state.palette) p.set("palette", state.palette);
+  if (state.bars) p.set("bars", String(state.bars));
+  if (state.w) p.set("w", String(state.w));
+  if (state.h) p.set("h", String(state.h));
+  return u.toString();
+}
+
+function updateUrl(state){
+  try {
+    const url = buildShareUrl(state);
+    window.history.replaceState(null, "", url);
+  } catch {
+    // ignore
+  }
+}
+
 function getInt(id, def){
+
   const v = Number(document.getElementById(id).value);
   return Number.isFinite(v) ? v : def;
 }
@@ -256,7 +294,10 @@ function main(){
   const svgMount = document.getElementById("svgMount");
   const outHash = document.getElementById("outHash");
 
-  function render(){
+  let debounceTimer = null;
+
+  function render(opts){
+    const o = opts || {};
     const seedText = elSeed.value || "";
     const paletteKey = elPalette.value;
     const bars = Number(elBars.value) || 64;
@@ -266,18 +307,36 @@ function main(){
     const { svg, hashHex } = buildBarcodeSvg({ seedText, paletteKey, bars, width, height });
     svgMount.innerHTML = svg;
     outHash.textContent = `hash: ${hashHex}`;
-    return { svg, hashHex, width, height, paletteKey, bars };
+
+    if (o.updateUrl){
+      updateUrl({ seed: seedText, palette: paletteKey, bars, w: width, h: height });
+    }
+
+    return { svg, hashHex, width, height, paletteKey, bars, seedText };
   }
 
-  document.getElementById("btnGen").addEventListener("click", () => { render(); });
+  function renderSoon(){
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => { render({ updateUrl: true }); }, 120);
+  }
+
+  // Load state from URL.
+  const q = readQueryState();
+  if (q.seed != null) elSeed.value = q.seed;
+  if (q.palette && PALETTES[q.palette]) elPalette.value = q.palette;
+  if (q.bars != null && q.bars !== "") elBars.value = String(q.bars);
+  if (q.w != null && q.w !== "") document.getElementById("w").value = String(q.w);
+  if (q.h != null && q.h !== "") document.getElementById("h").value = String(q.h);
+
+  document.getElementById("btnGen").addEventListener("click", () => { render({ updateUrl: true }); });
 
   document.getElementById("btnShuffle").addEventListener("click", () => {
     elSeed.value = nowSeed();
-    render();
+    render({ updateUrl: true });
   });
 
   document.getElementById("btnCopy").addEventListener("click", async () => {
-    const { svg } = render();
+    const { svg } = render({ updateUrl: true });
     try {
       await copyToClipboard(svg);
     } catch {
@@ -286,13 +345,23 @@ function main(){
     }
   });
 
+  document.getElementById("btnLink").addEventListener("click", async () => {
+    const st = render({ updateUrl: true });
+    const url = buildShareUrl({ seed: st.seedText, palette: st.paletteKey, bars: st.bars, w: st.width, h: st.height });
+    try {
+      await copyToClipboard(url);
+    } catch {
+      alert(url);
+    }
+  });
+
   document.getElementById("btnSvg").addEventListener("click", () => {
-    const { svg, hashHex } = render();
+    const { svg, hashHex } = render({ updateUrl: true });
     downloadText(`mood-barcode-${hashHex}.svg`, svg, "image/svg+xml");
   });
 
   document.getElementById("btnPng").addEventListener("click", async () => {
-    const { svg, hashHex, width, height } = render();
+    const { svg, hashHex, width, height } = render({ updateUrl: true });
     try {
       const dataUrl = await svgToPngDataUrl(svg, width, height);
       downloadDataUrl(`mood-barcode-${hashHex}.png`, dataUrl);
@@ -301,8 +370,15 @@ function main(){
     }
   });
 
+  // Update on control changes.
+  elSeed.addEventListener("input", renderSoon);
+  elPalette.addEventListener("change", renderSoon);
+  elBars.addEventListener("change", renderSoon);
+  document.getElementById("w").addEventListener("input", renderSoon);
+  document.getElementById("h").addEventListener("input", renderSoon);
+
   // Auto-render on load.
-  render();
+  render({ updateUrl: true });
 }
 
 main();
