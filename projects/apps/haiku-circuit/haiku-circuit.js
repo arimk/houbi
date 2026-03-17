@@ -28,6 +28,31 @@ function clamp(x, a, b) {
   return Math.max(a, Math.min(b, x));
 }
 
+function readQuery() {
+  const sp = new URLSearchParams(window.location.search || "");
+  return {
+    seed: (sp.get("seed") || "").trim(),
+    mood: (sp.get("mood") || "").trim(),
+    density: (sp.get("density") || "").trim(),
+    size: (sp.get("size") || "").trim()
+  };
+}
+
+function setQuery({ seed, mood, density, size }) {
+  const sp = new URLSearchParams(window.location.search || "");
+  if (seed) sp.set("seed", seed); else sp.delete("seed");
+  if (mood) sp.set("mood", mood); else sp.delete("mood");
+  if (density !== "") sp.set("density", String(density)); else sp.delete("density");
+  if (size) sp.set("size", size); else sp.delete("size");
+  const qs = sp.toString();
+  const url = window.location.pathname + (qs ? ("?" + qs) : "") + window.location.hash;
+  window.history.replaceState(null, "", url);
+}
+
+function currentLink() {
+  return window.location.origin + window.location.pathname + window.location.search;
+}
+
 const MOODS = {
   nocturne: {
     bg: "#070914",
@@ -330,6 +355,19 @@ function main() {
   const elMetaSeed = $("#metaSeed");
   const elMetaHash = $("#metaHash");
 
+  // Init from permalink (if present)
+  const q = readQuery();
+  if (q.seed) elSeed.value = q.seed;
+  if (q.mood && Object.prototype.hasOwnProperty.call(MOODS, q.mood)) elMood.value = q.mood;
+  if (q.density) {
+    const d = clamp(parseInt(q.density, 10) || 9, 3, 14);
+    elDensity.value = String(d);
+  }
+  if (q.size) {
+    const ok = ["1080", "1350", "1600"];
+    if (ok.includes(q.size)) elSize.value = q.size;
+  }
+
   function ensureSeed() {
     if (elSeed.value.trim()) return elSeed.value.trim();
     const now = new Date();
@@ -354,9 +392,24 @@ function main() {
 
     elMetaSeed.textContent = `seed: ${seedText}`;
     elMetaHash.textContent = `hash: ${hashHex}`;
+
+    setQuery({ seed: seedText, mood, density, size: elSize.value });
   }
 
   $("#btnGenerate").addEventListener("click", regenerate);
+  $("#btnNow").addEventListener("click", () => {
+    const now = new Date();
+    const stamp = now.toISOString().slice(0, 16).replace(/[:T]/g, "-");
+    elSeed.value = `utc-${stamp}`;
+    regenerate();
+  });
+  $("#btnLink").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(currentLink());
+    } catch (e) {
+      // ignore
+    }
+  });
   $("#btnCopy").addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(elHaiku.value);
