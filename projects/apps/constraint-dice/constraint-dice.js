@@ -329,6 +329,7 @@ const $status = document.getElementById("status");
 
 const $roll = document.getElementById("roll");
 const $remix = document.getElementById("remix");
+const $daily = document.getElementById("daily");
 const $nextVariant = document.getElementById("nextVariant");
 const $copy = document.getElementById("copy");
 const $copyLink = document.getElementById("copyLink");
@@ -407,6 +408,14 @@ $remix.addEventListener("click", () => {
   setStatus($status, "Remixed seed: " + s, "ok");
 });
 
+$daily.addEventListener("click", () => {
+  const s = new Date().toISOString().slice(0, 10);
+  $seed.value = s;
+  $variant.value = "0";
+  roll();
+  setStatus($status, "Daily seed: " + s, "ok");
+});
+
 $nextVariant.addEventListener("click", () => {
   const v = clampInt($variant.value, 0, 99, 0);
   const next = (v + 1) % 100;
@@ -454,6 +463,26 @@ $clearHistory.addEventListener("click", () => {
   saveHistory([]);
   renderHistory([]);
   setStatus($status, "Cleared history.", "ok");
+});
+
+function isTypingTarget(el){
+  const tag = (el && el.tagName) ? String(el.tagName).toLowerCase() : "";
+  if (tag === "input" || tag === "textarea" || tag === "select") return true;
+  if (el && el.isContentEditable) return true;
+  return false;
+}
+
+window.addEventListener("keydown", (e) => {
+  if (!e || e.defaultPrevented) return;
+  if (isTypingTarget(e.target)) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+  const k = String(e.key || "").toLowerCase();
+  if (k === "r"){ e.preventDefault(); roll(); return; }
+  if (k === "n"){ e.preventDefault(); $nextVariant.click(); return; }
+  if (k === "c"){ e.preventDefault(); $copy.click(); return; }
+  if (k === "l"){ e.preventDefault(); $copyLink.click(); return; }
+  if (k === "d"){ e.preventDefault(); $download.click(); return; }
 });
 
 // initial (hydrate from query)
