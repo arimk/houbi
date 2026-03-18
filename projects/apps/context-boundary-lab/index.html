@@ -85,6 +85,14 @@
     button:hover{border-color:var(--line)}
     .footer{margin-top:16px;color:var(--muted);font-size:13px;line-height:1.6}
     .kbd{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);padding:2px 6px;border-radius:7px;background:rgba(7,10,18,.55)}
+
+    .breakdown{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+    .bd-item{border:1px solid var(--line2);border-radius:14px;background:rgba(7,10,18,.45);padding:10px 10px}
+    .bd-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+    .bd-label{font-size:13px;color:#d9e5ff}
+    .bd-points{font-family:var(--mono);font-size:12px;color:var(--muted)}
+    .bd-bar{height:8px;border-radius:999px;background:rgba(118,165,255,.12);overflow:hidden;margin-top:8px}
+    .bd-fill{height:100%;background:linear-gradient(90deg, rgba(109,240,255,.65), rgba(165,139,255,.65))}
   </style>
 </head>
 <body>
@@ -178,6 +186,11 @@
           <div class="score">Friction: <span id="score">—</span>/100</div>
           <div id="badge" class="badge">—</div>
         </div>
+
+        <h3>Breakdown (points)</h3>
+        <div class="breakdown" id="breakdown"></div>
+
+        <h3>Questions</h3>
         <ul class="list" id="bullets"></ul>
 
         <h3>Levers (reduire la friction)</h3>
@@ -208,6 +221,7 @@
     const badgeEl = el('badge');
     const bulletsEl = el('bullets');
     const leversEl = el('levers');
+    const breakdownEl = el('breakdown');
 
     function clampText(x, maxLen){
       const s = String(x || '');
@@ -350,6 +364,27 @@
       return parts;
     }
 
+    function renderBreakdown(){
+      if (!breakdownEl) return;
+      const parts = scoreBreakdown();
+      const maxPts = parts.reduce((m, x) => Math.max(m, Math.abs(x.points)), 0) || 1;
+
+      breakdownEl.innerHTML = parts.map((x) => {
+        const w = Math.round((Math.abs(x.points) / maxPts) * 100);
+        const sign = (x.points >= 0) ? "+" : "-";
+        const pts = `${sign}${Math.abs(x.points)}`;
+        return `
+          <div class="bd-item">
+            <div class="bd-top">
+              <div class="bd-label">${x.label}</div>
+              <div class="bd-points">${pts} pts</div>
+            </div>
+            <div class="bd-bar"><div class="bd-fill" style="width:${w}%"></div></div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function suggestLevers(){
       const base = frictionScore();
       const levers = [];
@@ -463,6 +498,8 @@
       const bb = badge(s);
       badgeEl.className = `badge ${bb.cls}`;
       badgeEl.textContent = bb.text;
+
+      renderBreakdown();
 
       const bs = bullets(s);
       bulletsEl.innerHTML = bs.map(x => `<li>${x}</li>`).join('');
