@@ -1,5 +1,5 @@
 // Prompt Forge - static offline idea generator
-// No deps. Plain ASCII only.
+// No deps.
 
 function xmur3(str){
   // Simple hash to seed PRNG
@@ -208,6 +208,66 @@ function applyUrlState(seedEl, countEl, moreEl){
   moreEl.checked = !!more;
 }
 
+const FAV_KEY = "houbi_prompt_forge_favs_v1";
+
+function loadFavs(){
+  try {
+    const raw = window.localStorage.getItem(FAV_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((x) => x && typeof x === "object" && typeof x.key === "string");
+  } catch {
+    return [];
+  }
+}
+
+function saveFavs(items){
+  try {
+    window.localStorage.setItem(FAV_KEY, JSON.stringify(items));
+  } catch {
+    // ignore
+  }
+}
+
+function favKey(seed, index, more){
+  return `${seed}|${more ? "1" : "0"}|${String(index)}`;
+}
+
+function favExportMarkdown(items){
+  const lines = [];
+  lines.push(`# Prompt Forge - Favoris (${new Date().toISOString()})`);
+  lines.push("");
+  if (!items.length){
+    lines.push("(Aucun favori pour le moment.)");
+    return lines.join("\n");
+  }
+
+  lines.push(`Total: ${items.length}`);
+  lines.push("");
+  for (const it of items){
+    lines.push(`## ${it.title || "Idee"}`);
+    lines.push("");
+    if (it.md) lines.push(it.md);
+    else lines.push("(Markdown manquant)");
+    lines.push("");
+    lines.push(`Meta: seed=${it.seed || ""} key=${it.key}`);
+    lines.push("\n---\n");
+  }
+  return lines.join("\n");
+}
+
+function downloadText(filename, text, mimeType){
+  const blob = new Blob([text], { type: mimeType || "text/plain;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+}
+
 function main(){
   const seedEl = document.querySelector("#seed");
   const countEl = document.querySelector("#count");
@@ -216,6 +276,12 @@ function main(){
   const mdEl = document.querySelector("#markdown");
   const linkEl = document.querySelector("#permalink");
   const copyLinkEl = document.querySelector("#copyLink");
+
+  const favCountEl = document.querySelector("#favCount");
+  const favListEl = document.querySelector("#favList");
+  const copyFavsEl = document.querySelector("#copyFavs");
+  const downloadFavsEl = document.querySelector("#downloadFavs");
+  const clearFavsEl = document.querySelector("#clearFavs");
 
   applyUrlState(seedEl, countEl, moreEl);
 
@@ -238,6 +304,77 @@ function main(){
     }
   }
 
+  function renderFavs(){
+    const favs = loadFavs();
+    favCountEl.textContent = String(favs.length);
+
+    favListEl.innerHTML = "";
+    if (!favs.length){
+      const empty = document.createElement("div");
+      empty.className = "hint";
+      empty.textContent = "Aucun favori. Clique 'Favori' sur une idee pour la garder.";
+      favListEl.appendChild(empty);
+      return;
+    }
+
+    for (const it of favs.slice(0, 20)){
+      const row = document.createElement("div");
+      row.className = "favItem";
+
+      const title = document.createElement("div");
+      title.className = "favItemTitle";
+      title.textContent = it.title || "Idee";
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = "Copier";
+      btn.addEventListener("click", async () => {
+        const text = it.md || "";
+        try {
+          await navigator.clipboard.writeText(text);
+          btn.textContent = "Copie!";
+          setTimeout(() => (btn.textContent = "Copier"), 900);
+        } catch {
+          mdEl.value = text;
+          mdEl.focus();
+          mdEl.select();
+        }
+      });
+
+      row.appendChild(title);
+      row.appendChild(btn);
+      favListEl.appendChild(row);
+    }
+  }
+
+  function isFav(key){
+    const favs = loadFavs();
+    return favs.some((x) => x.key === key);
+  }
+
+  function toggleFav(key, idea, seed){
+    const favs = loadFavs();
+    const exists = favs.find((x) => x.key === key);
+    if (exists){
+      const next = favs.filter((x) => x.key !== key);
+      saveFavs(next);
+      return false;
+    }
+
+    const md = ideaToMarkdown(idea);
+    const entry = {
+      key,
+      seed,
+      title: idea.title,
+      md,
+      createdAt: new Date().toISOString()
+    };
+
+    const next = [entry].concat(favs).slice(0, 50);
+    saveFavs(next);
+    return true;
+  }
+
   function generate(){
     const n = currentCount();
     const seed = currentSeed();
@@ -250,12 +387,30 @@ function main(){
     for (let i = 0; i < n; i++) ideas.push(buildIdea(rng, { moreConstraints: more }));
 
     listEl.innerHTML = "";
-    for (const idea of ideas){
+    for (let i = 0; i < ideas.length; i++){
+      const idea = ideas[i];
+      const key = favKey(seed, i, more);
+
       const item = document.createElement("article");
       item.className = "idea";
 
+      const top = document.createElement("div");
+      top.className = "ideaTop";
+
       const h = document.createElement("h3");
       setText(h, idea.title);
+
+      const favBtn = document.createElement("button");
+      favBtn.type = "button";
+      favBtn.textContent = isFav(key) ? "Retirer" : "Favori";
+      favBtn.addEventListener("click", () => {
+        const nowFav = toggleFav(key, idea, seed);
+        favBtn.textContent = nowFav ? "Retirer" : "Favori";
+        renderFavs();
+      });
+
+      top.appendChild(h);
+      top.appendChild(favBtn);
 
       const p = document.createElement("p");
       setText(p, idea.pitch);
@@ -290,7 +445,7 @@ function main(){
         }
       });
 
-      item.appendChild(h);
+      item.appendChild(top);
       item.appendChild(p);
       item.appendChild(ul);
       item.appendChild(del);
@@ -300,6 +455,8 @@ function main(){
 
     const md = ideas.map(ideaToMarkdown).join("\n\n---\n\n");
     mdEl.value = `# Prompt Forge (${new Date().toISOString()})\n\nSeed: ${seed}\n\n${md}\n`;
+
+    renderFavs();
   }
 
   function remixSeed(){
@@ -310,14 +467,11 @@ function main(){
   document.querySelector("#generate").addEventListener("click", generate);
   document.querySelector("#remixSeed").addEventListener("click", remixSeed);
   document.querySelector("#downloadMd").addEventListener("click", () => {
-    const blob = new Blob([mdEl.value], { type: "text/markdown;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `prompt-forge-${currentSeed().replace(/[^a-zA-Z0-9_-]/g, "-")}.md`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 500);
+    downloadText(
+      `prompt-forge-${currentSeed().replace(/[^a-zA-Z0-9_-]/g, "-")}.md`,
+      mdEl.value,
+      "text/markdown;charset=utf-8"
+    );
   });
 
   copyLinkEl.addEventListener("click", async () => {
@@ -330,6 +484,35 @@ function main(){
     } catch {
       linkEl.focus();
       linkEl.select();
+    }
+  });
+
+  copyFavsEl.addEventListener("click", async () => {
+    const favs = loadFavs();
+    const text = favExportMarkdown(favs);
+    try {
+      await navigator.clipboard.writeText(text);
+      copyFavsEl.textContent = "Copie!";
+      setTimeout(() => (copyFavsEl.textContent = "Copier favoris"), 900);
+    } catch {
+      mdEl.value = text;
+      mdEl.focus();
+      mdEl.select();
+    }
+  });
+
+  downloadFavsEl.addEventListener("click", () => {
+    const favs = loadFavs();
+    const text = favExportMarkdown(favs);
+    downloadText("prompt-forge-favoris.md", text, "text/markdown;charset=utf-8");
+  });
+
+  clearFavsEl.addEventListener("click", () => {
+    saveFavs([]);
+    renderFavs();
+    const buttons = listEl.querySelectorAll("button");
+    for (const b of buttons){
+      if (b.textContent === "Retirer") b.textContent = "Favori";
     }
   });
 

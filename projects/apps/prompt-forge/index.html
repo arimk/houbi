@@ -152,6 +152,41 @@
 
     .copy { margin-top: 10px; }
 
+    .ideaTop {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .favPanel {
+      border: 1px solid var(--lineSoft);
+      background: rgba(6, 10, 21, 0.46);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .favHead {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .favTitle { margin: 0; font-size: 13px; color: #dbe7ff; letter-spacing: -0.01em; }
+    .favMeta { color: var(--muted); font-size: 12px; }
+    .favList { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .favItem {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid rgba(118, 165, 255, 0.12);
+      border-radius: 12px;
+      padding: 8px 10px;
+      background: rgba(4, 7, 14, 0.45);
+    }
+    .favItemTitle { color: #d9e5ff; font-size: 12px; }
+
     footer {
       margin-top: 18px;
       color: var(--muted);
@@ -201,6 +236,20 @@
           <div class="btns">
             <button id="copyLink" type="button">Copier lien</button>
           </div>
+        </div>
+
+        <div class="favPanel">
+          <div class="favHead">
+            <h2 class="favTitle">Favoris</h2>
+            <div class="favMeta"><span id="favCount">0</span> item(s)</div>
+          </div>
+          <div class="btns">
+            <button id="copyFavs" type="button">Copier favoris</button>
+            <button id="downloadFavs" type="button">Telecharger favoris</button>
+            <button id="clearFavs" type="button">Effacer</button>
+          </div>
+          <div class="favList" id="favList"></div>
+          <div class="hint">Astuce: marque 2-3 idees, puis exporte une shortlist pour ton backlog.</div>
         </div>
 
         <div>
