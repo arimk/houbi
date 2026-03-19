@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seeded Sprint Studio - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Seeded Sprint Studio</h1>
+        <p class="sub">A tiny offline tool that turns a UTC seed into a deterministic 30-45 minute creative sprint. Shareable links, copyable Markdown.</p>
+      </div>
+      <div class="badge">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Inputs</h2>
+
+        <label for="seed">Seed (UTC)</label>
+        <input id="seed" type="text" inputmode="latin" spellcheck="false" placeholder="YYYYMMDDTHHMMZ (e.g. 20260319T0423Z)" />
+
+        <div class="row">
+          <div>
+            <label for="minutes">Timebox</label>
+            <select id="minutes">
+              <option value="20">20 min</option>
+              <option value="30" selected>30 min</option>
+              <option value="45">45 min</option>
+              <option value="60">60 min</option>
+            </select>
+          </div>
+          <div>
+            <label for="v">Variant</label>
+            <input id="v" type="number" min="0" max="99" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="generate" class="primary" type="button">Generate sprint</button>
+          <button id="now" type="button">Use current UTC</button>
+          <button id="next" type="button">Next variant</button>
+          <button id="copy" type="button">Copy Markdown</button>
+          <button id="copyLink" type="button">Copy link</button>
+          <button id="save" type="button">Save to history</button>
+          <button id="clear" type="button">Clear history</button>
+        </div>
+
+        <div id="status" class="status">Ready.</div>
+
+        <div class="hint">
+          Tips: seeds are deterministic. If you like the sprint, keep seed fixed and only bump the variant.
+          Shortcuts (when not typing): G generate, N next, C copy, L link, S save.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Output</h2>
+        <div class="kpi" id="kpi"></div>
+        <textarea id="out" spellcheck="false"></textarea>
+        <div class="footer">Hub path: <code>/projects/apps/seeded-sprint-studio/</code></div>
+      </div>
+
+      <div class="card">
+        <h2>History</h2>
+        <ul id="history"></ul>
+        <div class="hint">Stored locally in your browser.</div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
