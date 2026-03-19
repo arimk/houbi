@@ -126,6 +126,14 @@
     }
     .history a:hover{ border-color: var(--line); }
     .history .meta{ color: var(--muted); }
+
+    #batchList li{ list-style:none; }
+    #batchList .batchItem{ border:1px solid var(--line2); border-radius: 14px; background: rgba(6,10,21,.45); padding: 10px; }
+    #batchList textarea{ min-height: 130px; }
+    #batchList .batchTop{ display:flex; align-items:baseline; justify-content:space-between; gap: 10px; }
+    #batchList .batchTop .meta{ color: var(--muted); font-size: 12px; }
+    #batchList .rowbtn{ display:flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    #batchList button{ padding: 7px 10px; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -177,6 +185,7 @@
 
         <div class="btns">
           <button id="roll" class="primary">Roll brief</button>
+          <button id="roll3">Roll x3</button>
           <button id="remix">Remix seed</button>
           <button id="daily">Daily seed</button>
           <button id="nextVariant">Next variant</button>
@@ -202,6 +211,15 @@
         <h2>Brief (Markdown)</h2>
         <div class="kpi" id="kpi"></div>
         <textarea id="out" spellcheck="false"></textarea>
+
+        <div class="history" id="batch" style="margin-top:12px">
+          <div class="history-head">
+            <h3>Batch (3 variants)</h3>
+            <div class="hint" style="margin:0">Quickly compare 3 adjacent variants for the same seed.</div>
+          </div>
+          <ul id="batchList"></ul>
+        </div>
+
         <div class="footer">Hub path: <code>/apps/constraint-dice/</code>. Source: <code>/projects/apps/constraint-dice/</code>.</div>
       </div>
     </section>

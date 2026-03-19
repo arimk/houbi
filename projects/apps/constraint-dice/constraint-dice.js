@@ -328,6 +328,7 @@ const $kpi = document.getElementById("kpi");
 const $status = document.getElementById("status");
 
 const $roll = document.getElementById("roll");
+const $roll3 = document.getElementById("roll3");
 const $remix = document.getElementById("remix");
 const $daily = document.getElementById("daily");
 const $nextVariant = document.getElementById("nextVariant");
@@ -337,6 +338,8 @@ const $download = document.getElementById("download");
 
 const $historyList = document.getElementById("historyList");
 const $clearHistory = document.getElementById("clearHistory");
+
+const $batchList = document.getElementById("batchList");
 
 function setKpi(p){
   const items = [
@@ -375,6 +378,96 @@ function renderHistory(items){
   }).join("");
 }
 
+function renderBatch(){
+  if (!$batchList) return;
+
+  const seed = ensureSeed();
+  const minutes = clampInt($minutes.value, 10, 180, 45);
+  const baseVariant = clampInt($variant.value, 0, 99, 0);
+  const difficulty = normalizeDifficulty($difficulty.value || "standard");
+  const mode = normalizeMode($mode.value || "mixed");
+
+  const variants = [baseVariant, (baseVariant + 1) % 100, (baseVariant + 2) % 100];
+
+  $batchList.innerHTML = "";
+  for (let i = 0; i < variants.length; i++){
+    const v = variants[i];
+    const { picks, md } = buildBrief({ seed, variant: v, minutes, difficulty, mode });
+
+    const li = document.createElement("li");
+
+    const box = document.createElement("div");
+    box.className = "batchItem";
+
+    const top = document.createElement("div");
+    top.className = "batchTop";
+
+    const title = document.createElement("div");
+    title.textContent = "Variant v" + String(v) + ": " + String(picks.medium) + " / " + String(picks.topic);
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = String(minutes) + "m, " + String(difficulty) + ", " + String(mode);
+
+    top.appendChild(title);
+    top.appendChild(meta);
+
+    const ta = document.createElement("textarea");
+    ta.value = md;
+    ta.spellcheck = false;
+    ta.readOnly = true;
+
+    const row = document.createElement("div");
+    row.className = "rowbtn";
+
+    const btnLoad = document.createElement("button");
+    btnLoad.type = "button";
+    btnLoad.textContent = "Load";
+    btnLoad.addEventListener("click", () => {
+      $variant.value = String(v);
+      roll();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    const btnCopy = document.createElement("button");
+    btnCopy.type = "button";
+    btnCopy.textContent = "Copy";
+    btnCopy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(md);
+        setStatus($status, "Copied batch variant v" + String(v) + ".", "ok");
+      } catch {
+        setStatus($status, "Clipboard blocked. Use manual copy.", "warn");
+      }
+    });
+
+    const btnLink = document.createElement("button");
+    btnLink.type = "button";
+    btnLink.textContent = "Copy link";
+    btnLink.addEventListener("click", async () => {
+      const qs = new URLSearchParams({ seed, minutes: String(minutes), v: String(v), d: difficulty, mode }).toString();
+      const link = window.location.origin + window.location.pathname + "?" + qs;
+      try {
+        await navigator.clipboard.writeText(link);
+        setStatus($status, "Copied link for v" + String(v) + ".", "ok");
+      } catch {
+        setStatus($status, "Clipboard blocked. Copy from address bar.", "warn");
+      }
+    });
+
+    row.appendChild(btnLoad);
+    row.appendChild(btnCopy);
+    row.appendChild(btnLink);
+
+    box.appendChild(top);
+    box.appendChild(ta);
+    box.appendChild(row);
+
+    li.appendChild(box);
+    $batchList.appendChild(li);
+  }
+}
+
 function roll(){
   const seed = ensureSeed();
   const minutes = clampInt($minutes.value, 10, 180, 45);
@@ -395,10 +488,22 @@ function roll(){
   const items = upsertHistory({ seed, minutes, variant, difficulty, mode, ts: Date.now() });
   renderHistory(items);
 
+  renderBatch();
   setStatus($status, "Rolled. Build it before the heat fades.", "ok");
 }
 
 $roll.addEventListener("click", () => roll());
+
+if ($roll3){
+  $roll3.addEventListener("click", () => {
+    roll();
+    const el = document.getElementById("batch");
+    if (el){
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    setStatus($status, "Rolled batch: v" + String($variant.value) + "..v" + String((clampInt($variant.value, 0, 99, 0) + 2) % 100) + ".", "ok");
+  });
+}
 
 $remix.addEventListener("click", () => {
   const s = utcStamp();
