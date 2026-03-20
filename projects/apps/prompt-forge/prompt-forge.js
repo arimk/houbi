@@ -257,6 +257,64 @@ function favExportMarkdown(items){
   return lines.join("\n");
 }
 
+function favExportJson(items){
+  const payload = {
+    version: 1,
+    app: "prompt-forge",
+    exportedAt: new Date().toISOString(),
+    items: items
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+function normalizeImportedFavs(parsed){
+  const items = Array.isArray(parsed) ? parsed : (parsed && parsed.items);
+  if (!Array.isArray(items)) return [];
+
+  const out = [];
+  for (const it of items){
+    if (!it || typeof it !== "object") continue;
+    if (typeof it.key !== "string" || !it.key.trim()) continue;
+    out.push({
+      key: String(it.key),
+      seed: typeof it.seed === "string" ? it.seed : "",
+      title: typeof it.title === "string" ? it.title : "",
+      md: typeof it.md === "string" ? it.md : "",
+      createdAt: typeof it.createdAt === "string" ? it.createdAt : new Date().toISOString()
+    });
+    if (out.length >= 50) break;
+  }
+  return out;
+}
+
+function importFavsJsonText(text){
+  const trimmed = String(text || "").trim();
+  if (!trimmed) return { ok: false, reason: "empty" };
+
+  let parsed;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    return { ok: false, reason: "invalid_json" };
+  }
+
+  const incoming = normalizeImportedFavs(parsed);
+  if (!incoming.length) return { ok: false, reason: "no_items" };
+
+  const current = loadFavs();
+  const map = new Map();
+  for (const it of current){
+    if (it && typeof it.key === "string") map.set(it.key, it);
+  }
+  for (const it of incoming){
+    if (!map.has(it.key)) map.set(it.key, it);
+  }
+
+  const merged = Array.from(map.values()).slice(0, 50);
+  saveFavs(merged);
+  return { ok: true, added: Math.max(0, merged.length - current.length), total: merged.length };
+}
+
 function downloadText(filename, text, mimeType){
   const blob = new Blob([text], { type: mimeType || "text/plain;charset=utf-8" });
   const a = document.createElement("a");
@@ -281,6 +339,8 @@ function main(){
   const favListEl = document.querySelector("#favList");
   const copyFavsEl = document.querySelector("#copyFavs");
   const downloadFavsEl = document.querySelector("#downloadFavs");
+  const exportFavsJsonEl = document.querySelector("#exportFavsJson");
+  const importFavsJsonEl = document.querySelector("#importFavsJson");
   const clearFavsEl = document.querySelector("#clearFavs");
 
   applyUrlState(seedEl, countEl, moreEl);
@@ -506,6 +566,29 @@ function main(){
     const text = favExportMarkdown(favs);
     downloadText("prompt-forge-favoris.md", text, "text/markdown;charset=utf-8");
   });
+
+  if (exportFavsJsonEl){
+    exportFavsJsonEl.addEventListener("click", () => {
+      const favs = loadFavs();
+      const text = favExportJson(favs);
+      downloadText("prompt-forge-favoris.json", text, "application/json;charset=utf-8");
+    });
+  }
+
+  if (importFavsJsonEl){
+    importFavsJsonEl.addEventListener("click", () => {
+      const example = "{\n  \"version\": 1,\n  \"items\": []\n}";
+      const raw = window.prompt("Colle ici le JSON exporte (Exporter JSON).", example);
+      if (raw === null) return;
+      const res = importFavsJsonText(raw);
+      if (!res.ok){
+        window.alert("Import impossible: " + res.reason);
+        return;
+      }
+      renderFavs();
+      window.alert("Import ok. Total favoris: " + String(res.total));
+    });
+  }
 
   clearFavsEl.addEventListener("click", () => {
     saveFavs([]);
