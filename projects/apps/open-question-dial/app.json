@@ -1,0 +1,5 @@
+{
+  "title": "Open Question Dial",
+  "description": "Deterministic question generator for a topic + seed. Offline, shareable URLs, export Markdown.",
+  "tags": ["writing", "prompt", "deterministic", "offline"]
+}

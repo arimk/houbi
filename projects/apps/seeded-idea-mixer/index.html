@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Seeded Idea Mixer - Houbi</title>
+  <style>
+    :root{
+      color-scheme: dark;
+      --bg0:#05060a;--bg1:#0b0f1a;--card:rgba(15,24,43,.76);
+      --line:rgba(118,165,255,.22);--line2:rgba(118,165,255,.14);
+      --text:#ecf3ff;--muted:#9ab0d7;--cyan:#6df0ff;--violet:#a58bff;--ok:#4dffb5;--warn:#ffd56d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; min-height:100vh; font-family: var(--sans); color: var(--text);
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(80,111,255,.25), transparent 60%),
+        radial-gradient(900px 600px at -10% 110%, rgba(0,220,255,.18), transparent 60%),
+        linear-gradient(170deg, var(--bg0) 0%, var(--bg1) 70%);
+      padding: 24px 16px 42px;
+    }
+    a{ color:#8cb9ff; }
+    .wrap{ max-width: 980px; margin: 0 auto; }
+    header{ display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; flex-wrap:wrap; }
+    h1{ margin:0; font-size: clamp(26px, 4vw, 40px); letter-spacing:-.03em; line-height:1.05; }
+    .sub{ margin: 8px 0 0; color: var(--muted); line-height:1.65; max-width: 78ch; }
+    .nav{ display:flex; gap: 10px; align-items:center; flex-wrap:wrap; }
+    .pill{ border:1px solid rgba(133,164,255,.25); background: rgba(82,103,189,.18); padding: 6px 10px; border-radius: 999px; font-size: 12px; color: #d9e5ff; }
+
+    .grid{ margin-top: 18px; display:grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 920px){ .grid{ grid-template-columns: 420px 1fr; } }
+
+    .card{
+      border: 1px solid var(--line2);
+      background: linear-gradient(160deg, rgba(14,21,38,.84), var(--card));
+      border-radius: 18px;
+      box-shadow: 0 12px 38px rgba(0,0,0,.38);
+      padding: 14px;
+    }
+    .card h2{ margin: 0 0 10px; font-size: 16px; letter-spacing:-.01em; color: #dbe7ff; }
+
+    label{ display:block; margin: 10px 0 6px; color: #cfe0ff; font-size: 13px; }
+    input[type="text"], select, textarea{
+      width: 100%; border-radius: 12px; border: 1px solid var(--line2);
+      background: rgba(6,10,21,.72); color: var(--text);
+      padding: 10px 11px; outline: none;
+    }
+    textarea{ min-height: 120px; resize: vertical; font-family: var(--mono); font-size: 12px; line-height: 1.5; }
+
+    .row{ display:flex; gap: 10px; flex-wrap:wrap; }
+    .row > *{ flex: 1; min-width: 180px; }
+
+    .btns{ display:flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    button{
+      border: 1px solid var(--line2);
+      background: rgba(6,10,21,.72);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform .12s ease, border-color .12s ease;
+      font-weight: 600;
+    }
+    button:hover{ transform: translateY(-1px); border-color: var(--line); }
+    button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(109,240,255,.12) inset; }
+
+    .status{ margin-top: 10px; font-size: 12px; color: var(--muted); }
+    .status.ok{ color: var(--ok); }
+    .status.warn{ color: var(--warn); }
+
+    .idea{
+      font-size: 18px;
+      line-height: 1.45;
+      letter-spacing: -.01em;
+      border: 1px solid var(--line2);
+      border-radius: 16px;
+      background: rgba(6,10,21,.55);
+      padding: 12px 12px;
+      margin-top: 10px;
+    }
+    .idea strong{ color: var(--cyan); font-weight: 800; }
+
+    .meta{ margin-top: 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+    code{ color: #b7d6ff; }
+
+    .tiny{ font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.55; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1>Seeded Idea Mixer</h1>
+        <p class="sub">A deterministic prompt generator for when you want momentum, not randomness. Use a seed, roll a 3-part idea, and share the exact result via URL.</p>
+      </div>
+      <nav class="nav">
+        <span class="pill">/projects/apps/seeded-idea-mixer/</span>
+        <a class="pill" href="/">Hub</a>
+      </nav>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Controls</h2>
+
+        <label for="seed">Seed</label>
+        <input id="seed" type="text" placeholder="e.g. 20260320T2223Z" />
+
+        <div class="row">
+          <div>
+            <label for="mode">Mode</label>
+            <select id="mode">
+              <option value="mixed" selected>Mixed</option>
+              <option value="software">Software</option>
+              <option value="writing">Writing</option>
+              <option value="art">Art</option>
+              <option value="automation">Automation</option>
+            </select>
+          </div>
+          <div>
+            <label for="variant">Variant</label>
+            <select id="variant">
+              <option value="0" selected>0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="roll" class="primary">Roll idea</button>
+          <button id="remix">Remix seed</button>
+          <button id="useUtc">Use current UTC minute</button>
+          <button id="copy">Copy Markdown</button>
+          <button id="copyLink">Copy link</button>
+          <button id="reset">Reset</button>
+        </div>
+
+        <div class="status" id="status">Ready.</div>
+        <div class="tiny">Shortcut: press <code>R</code> to roll (when not typing). The seed is part of the output: if you like something, keep the seed.</div>
+      </div>
+
+      <div class="card">
+        <h2>Output</h2>
+        <div class="idea" id="idea">Roll to generate an idea.</div>
+        <div class="meta" id="meta"></div>
+
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" placeholder="Add a one-line plan: scope, next step, what to try..."></textarea>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    const seedEl = el('seed');
+    const modeEl = el('mode');
+    const variantEl = el('variant');
+    const notesEl = el('notes');
+
+    const rollBtn = el('roll');
+    const remixBtn = el('remix');
+    const utcBtn = el('useUtc');
+    const copyBtn = el('copy');
+    const linkBtn = el('copyLink');
+    const resetBtn = el('reset');
+
+    const ideaEl = el('idea');
+    const metaEl = el('meta');
+    const statusEl = el('status');
+
+    function setStatus(msg, kind){
+      statusEl.textContent = msg;
+      statusEl.className = 'status' + (kind ? (' ' + kind) : '');
+    }
+
+    function pad2(n){ return String(n).padStart(2, '0'); }
+    function currentUtcMinuteTs(){
+      const d = new Date();
+      const y = d.getUTCFullYear();
+      const mo = pad2(d.getUTCMonth() + 1);
+      const da = pad2(d.getUTCDate());
+      const hh = pad2(d.getUTCHours());
+      const mm = pad2(d.getUTCMinutes());
+      return '' + y + mo + da + 'T' + hh + mm + 'Z';
+    }
+
+    // xmur3 + sfc32 for deterministic PRNG from string seed.
+    function xmur3(str){
+      let h = 1779033703 ^ str.length;
+      for (let i = 0; i < str.length; i++){
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+      }
+      return function(){
+        h = Math.imul(h ^ (h >>> 16), 2246822507);
+        h = Math.imul(h ^ (h >>> 13), 3266489909);
+        h ^= (h >>> 16);
+        return h >>> 0;
+      };
+    }
+    function sfc32(a, b, c, d){
+      return function(){
+        a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0;
+        let t = (a + b) | 0;
+        a = b ^ (b >>> 9);
+        b = (c + (c << 3)) | 0;
+        c = (c << 21) | (c >>> 11);
+        d = (d + 1) | 0;
+        t = (t + d) | 0;
+        c = (c + t) | 0;
+        return (t >>> 0) / 4294967296;
+      };
+    }
+
+    function makeRng(seedStr){
+      const h = xmur3(seedStr);
+      return sfc32(h(), h(), h(), h());
+    }
+
+    function pick(rng, arr){
+      const idx = Math.floor(rng() * arr.length);
+      return arr[Math.max(0, Math.min(arr.length - 1, idx))];
+    }
+
+    const BANKS = {
+      verbs: [
+        'Design', 'Build', 'Prototype', 'Refactor', 'Write', 'Map', 'Visualize', 'Explain', 'Compress', 'Remix',
+        'Translate', 'Simulate', 'Benchmark', 'Archive', 'Curate', 'Measure', 'Sketch', 'Invent', 'Debug', 'Reframe'
+      ],
+      objects: {
+        mixed: [
+          'a small tool', 'a checklist', 'a browser toy', 'a one-page guide', 'a tiny dataset', 'a prompt', 'a timeline',
+          'a postcard', 'a micro game', 'a mini dashboard', 'a note template', 'an FAQ', 'a habit tracker'
+        ],
+        software: [
+          'a static web app', 'a CLI sketch (spec only)', 'a UI component', 'a deterministic generator', 'a tiny debug panel',
+          'a single-page calculator', 'a test harness', 'a local-first widget'
+        ],
+        writing: [
+          'a micro essay', 'a dialogue', 'a field note', 'a manifesto fragment', 'a fake manual page', 'a letter to future-you',
+          'a set of aphorisms'
+        ],
+        art: [
+          'an SVG glyph', 'a color system', 'a poster layout', 'a typographic grid', 'a minimal icon set', 'a texture recipe'
+        ],
+        automation: [
+          'a recurring reminder spec', 'a tiny scheduler plan', 'a data pipeline sketch', 'a webhook mock', 'an export format',
+          'a "do less" automation'
+        ]
+      },
+      constraints: {
+        mixed: [
+          'in 45 minutes', 'with no backend', 'offline-first', 'as a single HTML file', 'with a shareable URL',
+          'with one surprising delight', 'with a brutal scope cut', 'with a clear next step', 'with 3 examples'
+        ],
+        software: [
+          'in one file', 'no dependencies', 'URL encodes state', 'mobile-first', 'keyboard shortcuts', 'localStorage only',
+          'export to Markdown', 'accessible labels'
+        ],
+        writing: [
+          '200-450 words', 'end with a question', 'use concrete verbs', 'no metaphors (for once)', 'include one counterexample',
+          'make it skimmable'
+        ],
+        art: [
+          '2 colors only', 'one geometric rule', 'seeded by UTC', 'grid-based', 'print-friendly', 'monochrome first'
+        ],
+        automation: [
+          'idempotent steps', 'human override', 'log everything', 'failure-safe defaults', 'no silent actions'
+        ]
+      },
+      twists: [
+        'for someone tired', 'for someone curious', 'for a future archive', 'for a team handoff', 'for a solo sprint',
+        'as if it was a museum label', 'as if it must survive 10 years', 'as if it will be copied by strangers'
+      ]
+    };
+
+    function normalizeSeed(s){
+      const x = String(s || '').trim();
+      if (!x) return '';
+      return x;
+    }
+
+    function stateFromUrl(){
+      const sp = new URLSearchParams(window.location.search);
+      return {
+        seed: sp.get('seed') || '',
+        mode: sp.get('mode') || 'mixed',
+        variant: sp.get('v') || '0',
+        notes: sp.get('notes') || ''
+      };
+    }
+
+    function applyState(st){
+      if (typeof st.seed === 'string') seedEl.value = st.seed;
+      if (typeof st.mode === 'string') modeEl.value = st.mode;
+      if (typeof st.variant === 'string') variantEl.value = st.variant;
+      if (typeof st.notes === 'string') notesEl.value = st.notes;
+    }
+
+    function currentState(){
+      return {
+        seed: normalizeSeed(seedEl.value),
+        mode: modeEl.value,
+        variant: variantEl.value,
+        notes: String(notesEl.value || '').slice(0, 800)
+      };
+    }
+
+    function urlForState(st){
+      const sp = new URLSearchParams();
+      if (st.seed) sp.set('seed', st.seed);
+      if (st.mode && st.mode !== 'mixed') sp.set('mode', st.mode);
+      if (st.variant && st.variant !== '0') sp.set('v', st.variant);
+      if (st.notes) sp.set('notes', st.notes);
+      const qs = sp.toString();
+      return qs ? (window.location.pathname + '?' + qs) : window.location.pathname;
+    }
+
+    let urlSyncTimer = null;
+    function scheduleUrlSync(){
+      if (urlSyncTimer) window.clearTimeout(urlSyncTimer);
+      urlSyncTimer = window.setTimeout(() => {
+        const u = urlForState(currentState());
+        window.history.replaceState(null, '', u);
+      }, 120);
+    }
+
+    function buildIdea(st){
+      const seedStr = (st.seed || 'seed') + '|' + st.mode + '|v' + st.variant;
+      const rng = makeRng(seedStr);
+      const verb = pick(rng, BANKS.verbs);
+      const objs = BANKS.objects[st.mode] || BANKS.objects.mixed;
+      const cons = BANKS.constraints[st.mode] || BANKS.constraints.mixed;
+      const obj = pick(rng, objs);
+      const constraintA = pick(rng, cons);
+      const constraintB = pick(rng, cons);
+      const twist = pick(rng, BANKS.twists);
+
+      // Avoid duplicates if possible.
+      let c2 = constraintB;
+      if (cons.length > 1){
+        for (let i = 0; i < 5 && c2 === constraintA; i++) c2 = pick(rng, cons);
+      }
+
+      const headline = verb + ' ' + obj;
+      const details = [constraintA, c2, twist];
+      return { seedStr, headline, details, verb, obj, c1: constraintA, c2, twist };
+    }
+
+    function render(){
+      const st = currentState();
+      if (!st.seed){
+        ideaEl.innerHTML = 'Enter a seed, then roll.';
+        metaEl.textContent = '';
+        setStatus('Tip: click "Use current UTC minute" for a quick seed.', '');
+        scheduleUrlSync();
+        return;
+      }
+
+      const idea = buildIdea(st);
+      const html = '<strong>' + escapeHtml(idea.headline) + '</strong>' +
+        '<div style="margin-top:8px;color:#d6e3ff;font-size:14px;line-height:1.55">' +
+        '<ul style="margin:0;padding-left:18px">' +
+        '<li>' + escapeHtml(idea.details[0]) + '</li>' +
+        '<li>' + escapeHtml(idea.details[1]) + '</li>' +
+        '<li>' + escapeHtml(idea.details[2]) + '</li>' +
+        '</ul>' +
+        '</div>';
+      ideaEl.innerHTML = html;
+      metaEl.innerHTML = 'Seed key: <code>' + escapeHtml(idea.seedStr) + '</code><br/>Shareable URL state is kept in the address bar.';
+      scheduleUrlSync();
+      setStatus('Rolled. Copy Markdown if you want to move fast.', 'ok');
+    }
+
+    function escapeHtml(s){
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/\'/g, '&#39;');
+    }
+
+    function makeMarkdown(){
+      const st = currentState();
+      const idea = buildIdea(st);
+      const note = String(st.notes || '').trim();
+      const lines = [];
+      lines.push('# ' + idea.headline);
+      lines.push('');
+      lines.push('- Seed: ' + st.seed);
+      lines.push('- Mode: ' + st.mode);
+      lines.push('- Variant: ' + st.variant);
+      lines.push('');
+      lines.push('## Constraints');
+      lines.push('- ' + idea.details[0]);
+      lines.push('- ' + idea.details[1]);
+      lines.push('- ' + idea.details[2]);
+      if (note){
+        lines.push('');
+        lines.push('## Notes');
+        lines.push(note);
+      }
+      lines.push('');
+      return lines.join('\n');
+    }
+
+    async function copyText(txt){
+      await navigator.clipboard.writeText(txt);
+    }
+
+    rollBtn.addEventListener('click', () => render());
+
+    remixBtn.addEventListener('click', () => {
+      const base = normalizeSeed(seedEl.value) || 'seed';
+      seedEl.value = base + '-' + Math.random().toString(16).slice(2, 6);
+      render();
+    });
+
+    utcBtn.addEventListener('click', () => {
+      seedEl.value = currentUtcMinuteTs();
+      render();
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      try{
+        const st = currentState();
+        if (!st.seed){ setStatus('Set a seed first.', 'warn'); return; }
+        await copyText(makeMarkdown());
+        setStatus('Copied Markdown to clipboard.', 'ok');
+      }catch(e){
+        setStatus('Copy failed (clipboard permission).', 'warn');
+      }
+    });
+
+    linkBtn.addEventListener('click', async () => {
+      try{
+        const u = window.location.origin + urlForState(currentState());
+        await copyText(u);
+        setStatus('Copied link.', 'ok');
+      }catch(e){
+        setStatus('Copy link failed.', 'warn');
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      seedEl.value = '';
+      modeEl.value = 'mixed';
+      variantEl.value = '0';
+      notesEl.value = '';
+      render();
+    });
+
+    function isTypingTarget(ev){
+      const t = ev.target;
+      if (!t) return false;
+      const tag = String(t.tagName || '').toLowerCase();
+      return tag === 'input' || tag === 'textarea' || tag === 'select';
+    }
+
+    document.addEventListener('keydown', (ev) => {
+      if (isTypingTarget(ev)) return;
+      if (ev.key === 'r' || ev.key === 'R'){ render(); }
+    });
+
+    ;(function init(){
+      const st = stateFromUrl();
+      applyState(st);
+      if (!normalizeSeed(seedEl.value)){
+        seedEl.value = currentUtcMinuteTs();
+      }
+      render();
+      ['input','change'].forEach((evt) => {
+        seedEl.addEventListener(evt, scheduleUrlSync);
+        modeEl.addEventListener(evt, scheduleUrlSync);
+        variantEl.addEventListener(evt, scheduleUrlSync);
+        notesEl.addEventListener(evt, scheduleUrlSync);
+      });
+    })();
+  </script>
+</body>
+</html>

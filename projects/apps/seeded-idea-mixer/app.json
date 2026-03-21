@@ -1,0 +1,6 @@
+{
+  "name": "Seeded Idea Mixer",
+  "description": "A tiny deterministic prompt mixer: pick a seed, roll a 3-part idea, and share the exact combo via link.",
+  "tags": ["seeded", "prompt", "creative"],
+  "version": "0.1.0"
+}
