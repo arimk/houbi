@@ -1,5 +1,6 @@
 // Open Question Dial
 // Deterministic open questions from (topic + seed + variant + tone).
+// Now supports pinning questions (stored in localStorage by hash).
 // ASCII only.
 
 function fnv1a32(str){
@@ -207,7 +208,37 @@ async function copyToClipboard(text){
   await navigator.clipboard.writeText(text);
 }
 
-function buildMarkdown({ topic, seed, variant, tone, hashHex, questions }){
+function pinsStorageKey(hashHex){
+  return "oqd:pins:" + String(hashHex || "");
+}
+
+function loadPins(hashHex){
+  try {
+    const raw = localStorage.getItem(pinsStorageKey(hashHex));
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return new Set();
+    const s = new Set();
+    for (const v of arr){
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0 && n < 256) s.add(n);
+    }
+    return s;
+  } catch {
+    return new Set();
+  }
+}
+
+function savePins(hashHex, pinSet){
+  try {
+    const arr = Array.from(pinSet.values()).sort((a,b) => a - b);
+    localStorage.setItem(pinsStorageKey(hashHex), JSON.stringify(arr));
+  } catch {
+    // ignore
+  }
+}
+
+function buildMarkdown({ topic, seed, variant, tone, hashHex, questions, pinnedIdx }){
   const title = (topic || "Open Question Dial").trim();
   const lines = [];
   lines.push(`# ${title}`);
@@ -222,10 +253,46 @@ function buildMarkdown({ topic, seed, variant, tone, hashHex, questions }){
   for (const q of questions){
     lines.push(`- ${q}`);
   }
+
+  const pins = Array.isArray(pinnedIdx) ? pinnedIdx : [];
+  if (pins.length){
+    lines.push("");
+    lines.push("## Pinned");
+    lines.push("");
+    for (const idx of pins){
+      const q = questions[idx];
+      if (q) lines.push(`- ${q}`);
+    }
+  }
+
   lines.push("");
   lines.push("## Notes");
   lines.push("");
   lines.push("Pick one question. Answer for 10 minutes. Then rewrite the question in your own words.");
+  lines.push("");
+  return lines.join("\n");
+}
+
+function buildPinnedMarkdown({ topic, seed, variant, tone, hashHex, questions, pinnedIdx }){
+  const pins = Array.isArray(pinnedIdx) ? pinnedIdx : [];
+  const title = (topic || "Open Question Dial").trim();
+  const lines = [];
+  lines.push(`# Pinned - ${title}`);
+  lines.push("");
+  lines.push(`- seed: ${seed || "(empty)"}`);
+  lines.push(`- variant: ${variant}`);
+  lines.push(`- tone: ${tone}`);
+  lines.push(`- hash: ${hashHex}`);
+  lines.push("");
+  if (!pins.length){
+    lines.push("(No pinned questions yet.)");
+    lines.push("");
+    return lines.join("\n");
+  }
+  for (const idx of pins){
+    const q = questions[idx];
+    if (q) lines.push(`- ${q}`);
+  }
   lines.push("");
   return lines.join("\n");
 }
@@ -242,6 +309,7 @@ function main(){
 
   const kSeed = document.getElementById("kSeed");
   const kHash = document.getElementById("kHash");
+  const kPinned = document.getElementById("kPinned");
 
   let debounceTimer = null;
 
@@ -256,24 +324,63 @@ function main(){
 
     const built = buildQuestions({ topic, seed, variant, tone, count });
 
+    // Load pins for this exact output hash.
+    const pinSet = loadPins(built.hashHex);
+
     elOutList.innerHTML = "";
-    for (const q of built.questions){
+    for (let i = 0; i < built.questions.length; i++){
+      const q = built.questions[i];
       const li = document.createElement("li");
-      li.textContent = q;
+
+      const row = document.createElement("div");
+      row.className = "qRow";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = pinSet.has(i);
+      cb.setAttribute("aria-label", "Pin question");
+
+      const txt = document.createElement("div");
+      txt.className = "qText" + (cb.checked ? " qPinned" : "");
+      txt.textContent = q;
+
+      cb.addEventListener("change", () => {
+        if (cb.checked) pinSet.add(i);
+        else pinSet.delete(i);
+        savePins(built.hashHex, pinSet);
+        // Update styling + markdown.
+        txt.className = "qText" + (cb.checked ? " qPinned" : "");
+        render({ updateUrl: true, keepPins: true });
+      });
+
+      row.appendChild(cb);
+      row.appendChild(txt);
+      li.appendChild(row);
       elOutList.appendChild(li);
     }
 
-    const md = buildMarkdown({ topic, seed, variant, tone, hashHex: built.hashHex, questions: built.questions });
+    const pinnedIdx = Array.from(pinSet.values()).sort((a,b) => a - b);
+
+    const md = buildMarkdown({
+      topic,
+      seed,
+      variant,
+      tone,
+      hashHex: built.hashHex,
+      questions: built.questions,
+      pinnedIdx
+    });
     elOutMd.value = md;
 
     kSeed.textContent = `seed: ${seed || "(empty)"}`;
     kHash.textContent = `hash: ${built.hashHex}`;
+    kPinned.textContent = `pinned: ${pinnedIdx.length}`;
 
     if (o.updateUrl){
       setQuery({ topic, seed, v: variant, tone, n: count });
     }
 
-    return { topic, seed, variant, tone, count, md, hashHex: built.hashHex };
+    return { topic, seed, variant, tone, count, md, hashHex: built.hashHex, questions: built.questions, pinnedIdx };
   }
 
   function renderSoon(){
@@ -308,6 +415,26 @@ function main(){
     } catch {
       alert("Clipboard unavailable. Use download.");
     }
+  });
+
+  document.getElementById("btnCopyPinned").addEventListener("click", async () => {
+    const st = render({ updateUrl: true });
+    const pm = buildPinnedMarkdown(st);
+    try {
+      await copyToClipboard(pm);
+    } catch {
+      alert("Clipboard unavailable. Use download.");
+    }
+  });
+
+  document.getElementById("btnClearPins").addEventListener("click", () => {
+    const st = render({ updateUrl: true });
+    try {
+      localStorage.removeItem(pinsStorageKey(st.hashHex));
+    } catch {
+      // ignore
+    }
+    render({ updateUrl: true });
   });
 
   document.getElementById("btnLink").addEventListener("click", async () => {
