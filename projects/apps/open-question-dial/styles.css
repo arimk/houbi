@@ -82,3 +82,44 @@ button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(
 .qText{ flex:1; }
 .qPinned{ color: #dffcff; }
 .outBox{ margin-top: 8px; }
+
+/* Focus modal */
+.modal{
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(0,0,0,.62);
+  backdrop-filter: blur(6px);
+}
+.modal.isOpen{ display: flex; }
+.modalInner{
+  width: min(920px, 100%);
+  border: 1px solid var(--line2);
+  background: linear-gradient(160deg, rgba(14,21,38,.92), rgba(10,14,26,.94));
+  border-radius: 18px;
+  box-shadow: 0 16px 60px rgba(0,0,0,.55);
+  padding: 14px;
+}
+.modalTop{ display:flex; align-items:center; justify-content:space-between; gap: 10px; }
+.modalTitle{ font-weight: 800; letter-spacing: -.02em; font-size: 14px; color: #dbe7ff; }
+.modalMeta{ margin-top: 6px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+
+button.ghost{
+  background: rgba(10,14,26,.35);
+}
+
+.focusControls{ display:flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.focusQ{
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line2);
+  background: rgba(6,10,21,.70);
+  font-size: clamp(16px, 2.4vw, 22px);
+  line-height: 1.45;
+}
+
+.timerRow{ display:flex; align-items:center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }

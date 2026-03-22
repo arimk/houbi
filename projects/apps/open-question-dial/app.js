@@ -297,6 +297,13 @@ function buildPinnedMarkdown({ topic, seed, variant, tone, hashHex, questions, p
   return lines.join("\n");
 }
 
+function fmtTimer(sec){
+  const s = Math.max(0, sec | 0);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return String(m).padStart(2, "0") + ":" + String(r).padStart(2, "0");
+}
+
 function main(){
   const elTopic = document.getElementById("topic");
   const elSeed = document.getElementById("seed");
@@ -311,7 +318,95 @@ function main(){
   const kHash = document.getElementById("kHash");
   const kPinned = document.getElementById("kPinned");
 
+  // Focus mode elements.
+  const elModal = document.getElementById("focusModal");
+  const elFocusMeta = document.getElementById("focusMeta");
+  const elFocusQ = document.getElementById("focusQ");
+  const elTimerLabel = document.getElementById("timerLabel");
+
   let debounceTimer = null;
+  let lastState = null;
+
+  let focusIndex = 0;
+  let timerSec = 600;
+  let timerHandle = null;
+
+  function setModalOpen(open){
+    if (!elModal) return;
+    if (open){
+      elModal.classList.add("isOpen");
+      elModal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    } else {
+      elModal.classList.remove("isOpen");
+      elModal.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    }
+  }
+
+  function timerStop(){
+    if (timerHandle){
+      clearInterval(timerHandle);
+      timerHandle = null;
+    }
+  }
+
+  function timerRender(){
+    if (elTimerLabel) elTimerLabel.textContent = fmtTimer(timerSec);
+  }
+
+  function timerReset(){
+    timerStop();
+    timerSec = 600;
+    timerRender();
+  }
+
+  function timerStart(){
+    if (timerHandle) return;
+    timerHandle = setInterval(() => {
+      timerSec = Math.max(0, (timerSec | 0) - 1);
+      timerRender();
+      if (timerSec <= 0){
+        timerStop();
+        try { navigator.vibrate && navigator.vibrate([120, 80, 120]); } catch {}
+      }
+    }, 1000);
+  }
+
+  function focusClamp(){
+    const st = lastState;
+    if (!st || !Array.isArray(st.questions) || !st.questions.length){
+      focusIndex = 0;
+      return;
+    }
+    focusIndex = Math.max(0, Math.min(st.questions.length - 1, focusIndex | 0));
+  }
+
+  function focusIsOpen(){
+    return elModal && elModal.classList.contains("isOpen");
+  }
+
+  function focusRender(){
+    const st = lastState;
+    if (!st) return;
+    focusClamp();
+
+    const q = st.questions[focusIndex] || "";
+    const pinSet = loadPins(st.hashHex);
+    const pinned = pinSet.has(focusIndex);
+
+    if (elFocusMeta){
+      elFocusMeta.textContent = `hash ${st.hashHex} | question ${focusIndex + 1}/${st.questions.length} | pinned ${pinned ? "yes" : "no"}`;
+    }
+    if (elFocusQ){
+      elFocusQ.textContent = q;
+    }
+
+    const btnPin = document.getElementById("btnFocusPin");
+    if (btnPin) btnPin.textContent = pinned ? "Unpin" : "Pin";
+
+    timerRender();
+  }
 
   function render(opts){
     const o = opts || {};
@@ -380,7 +475,10 @@ function main(){
       setQuery({ topic, seed, v: variant, tone, n: count });
     }
 
-    return { topic, seed, variant, tone, count, md, hashHex: built.hashHex, questions: built.questions, pinnedIdx };
+    const st = { topic, seed, variant, tone, count, md, hashHex: built.hashHex, questions: built.questions, pinnedIdx };
+    lastState = st;
+    if (focusIsOpen()) focusRender();
+    return st;
   }
 
   function renderSoon(){
@@ -452,6 +550,77 @@ function main(){
     const safe = (st.topic || "open-question-dial").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
     const name = `open-question-dial-${safe || "topic"}-${st.hashHex}.md`;
     downloadText(name, st.md, "text/markdown");
+  });
+
+  document.getElementById("btnFocus").addEventListener("click", () => {
+    const st = render({ updateUrl: true });
+    lastState = st;
+    focusIndex = 0;
+    timerReset();
+    setModalOpen(true);
+    focusRender();
+  });
+
+  document.getElementById("btnFocusClose").addEventListener("click", () => {
+    setModalOpen(false);
+    timerStop();
+  });
+
+  document.getElementById("btnFocusPrev").addEventListener("click", () => {
+    focusIndex = (focusIndex | 0) - 1;
+    focusClamp();
+    focusRender();
+  });
+
+  document.getElementById("btnFocusNext").addEventListener("click", () => {
+    focusIndex = (focusIndex | 0) + 1;
+    focusClamp();
+    focusRender();
+  });
+
+  document.getElementById("btnFocusPin").addEventListener("click", () => {
+    const st = lastState;
+    if (!st) return;
+    const pinSet = loadPins(st.hashHex);
+    if (pinSet.has(focusIndex)) pinSet.delete(focusIndex);
+    else pinSet.add(focusIndex);
+    savePins(st.hashHex, pinSet);
+    render({ updateUrl: true });
+    focusRender();
+  });
+
+  document.getElementById("btnTimerStart").addEventListener("click", () => { timerStart(); });
+  document.getElementById("btnTimerPause").addEventListener("click", () => { timerStop(); });
+  document.getElementById("btnTimerReset").addEventListener("click", () => { timerReset(); });
+
+  window.addEventListener("keydown", (e) => {
+    if (!focusIsOpen()) return;
+    if (e.key === "Escape"){
+      e.preventDefault();
+      setModalOpen(false);
+      timerStop();
+      return;
+    }
+    if (e.key === "ArrowLeft"){
+      e.preventDefault();
+      focusIndex = (focusIndex | 0) - 1;
+      focusClamp();
+      focusRender();
+      return;
+    }
+    if (e.key === "ArrowRight"){
+      e.preventDefault();
+      focusIndex = (focusIndex | 0) + 1;
+      focusClamp();
+      focusRender();
+      return;
+    }
+    if (e.key === " "){
+      e.preventDefault();
+      if (timerHandle) timerStop();
+      else timerStart();
+      return;
+    }
   });
 
   elTopic.addEventListener("input", renderSoon);

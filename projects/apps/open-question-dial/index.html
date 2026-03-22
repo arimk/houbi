@@ -63,6 +63,7 @@
           <button id="btnClearPins">Clear pins</button>
           <button id="btnLink">Copy link</button>
           <button id="btnDownload">Download .md</button>
+          <button id="btnFocus">Focus mode</button>
         </div>
 
         <p class="hint">Tip: Keep the seed if you want to refine the same list over time. Change variant when you want a nearby alternate. Remix makes a new seed from the current UTC time.</p>
@@ -86,6 +87,33 @@
       </section>
     </section>
   </main>
+
+  <div id="focusModal" class="modal" aria-hidden="true">
+    <div class="modalInner">
+      <div class="modalTop">
+        <div class="modalTitle">Focus</div>
+        <button id="btnFocusClose" class="ghost">Close</button>
+      </div>
+      <div id="focusMeta" class="modalMeta"></div>
+
+      <div class="focusControls">
+        <button id="btnFocusPrev" class="ghost">Prev</button>
+        <button id="btnFocusPin" class="ghost">Pin</button>
+        <button id="btnFocusNext" class="ghost">Next</button>
+      </div>
+
+      <div id="focusQ" class="focusQ"></div>
+
+      <div class="timerRow">
+        <span id="timerLabel" class="pill2">10:00</span>
+        <button id="btnTimerStart" class="ghost">Start</button>
+        <button id="btnTimerPause" class="ghost">Pause</button>
+        <button id="btnTimerReset" class="ghost">Reset</button>
+      </div>
+
+      <p class="hint small">Tip: Pin in focus mode if it is a keeper. Close with Escape.</p>
+    </div>
+  </div>
 
   <script type="module" src="./app.js"></script>
 </body>
