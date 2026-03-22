@@ -83,6 +83,40 @@ button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(
 .qPinned{ color: #dffcff; }
 .outBox{ margin-top: 8px; }
 
+/* History */
+.hr{
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(118,165,255,.22), transparent);
+  margin: 14px 0 12px;
+}
+.h2Small{
+  margin:0;
+  font-size: 13px;
+  letter-spacing: -.01em;
+  color: #dbe7ff;
+}
+.historyTop{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+.historyActions{ display:flex; align-items:center; gap: 10px; }
+.chk{ display:flex; align-items:center; gap: 8px; margin: 0; color: #cfe0ff; font-size: 12px; }
+.chk input{ width: auto; }
+.historyList{ margin-top: 10px; display:flex; flex-direction:column; gap: 8px; }
+.historyItem{
+  border: 1px solid var(--line2);
+  background: rgba(6,10,21,.55);
+  border-radius: 14px;
+  padding: 10px;
+}
+.historyMeta{ color: var(--muted); font-size: 11px; line-height: 1.4; }
+.historyTitle{ margin-top: 3px; font-size: 12px; line-height: 1.35; color: #ecf3ff; }
+.historyBtns{ margin-top: 8px; display:flex; flex-wrap:wrap; gap: 8px; }
+.historyBtns button{ padding: 8px 10px; font-size: 12px; }
+
 /* Focus modal */
 .modal{
   position: fixed;

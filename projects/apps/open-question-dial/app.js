@@ -1,6 +1,7 @@
 // Open Question Dial
 // Deterministic open questions from (topic + seed + variant + tone).
 // Now supports pinning questions (stored in localStorage by hash).
+// Plus local History (saved states).
 // ASCII only.
 
 function fnv1a32(str){
@@ -188,6 +189,17 @@ function setQuery({ topic, seed, v, tone, n }){
   window.history.replaceState(null, "", url);
 }
 
+function makeLink({ topic, seed, v, tone, n }){
+  const p = new URLSearchParams();
+  if (topic) p.set("topic", topic);
+  if (seed) p.set("seed", seed);
+  p.set("v", String(v));
+  p.set("tone", tone);
+  p.set("n", String(n));
+  const qs = p.toString();
+  return window.location.origin + window.location.pathname + (qs ? ("?" + qs) : "");
+}
+
 function currentLink(){
   return window.location.origin + window.location.pathname + window.location.search;
 }
@@ -236,6 +248,99 @@ function savePins(hashHex, pinSet){
   } catch {
     // ignore
   }
+}
+
+// History storage
+const HISTORY_STORAGE_KEY = "oqd:history:v1";
+const AUTO_HISTORY_KEY = "oqd:autoHistory:v1";
+
+function loadHistory(){
+  try {
+    const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    const out = [];
+    for (const it of arr){
+      if (!it || typeof it !== "object") continue;
+      out.push({
+        savedUtc: String(it.savedUtc || ""),
+        topic: String(it.topic || ""),
+        seed: String(it.seed || ""),
+        variant: clampInt(it.variant, 0, 99, 0),
+        tone: String(it.tone || "gentle"),
+        count: clampInt(it.count, 3, 24, 9)
+      });
+    }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(items){
+  try {
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(items || []));
+  } catch {
+    // ignore
+  }
+}
+
+function getAutoHistoryEnabled(){
+  try {
+    const raw = localStorage.getItem(AUTO_HISTORY_KEY);
+    if (raw === null) return true;
+    return raw === "1";
+  } catch {
+    return true;
+  }
+}
+
+function setAutoHistoryEnabled(v){
+  try {
+    localStorage.setItem(AUTO_HISTORY_KEY, v ? "1" : "0");
+  } catch {
+    // ignore
+  }
+}
+
+function addToHistory(st){
+  const items = loadHistory();
+  const built = buildQuestions(st);
+  const sig = built.hashHex + "|" + String(st.count);
+
+  const next = [];
+  next.push({
+    savedUtc: nowUtcCompact(),
+    topic: String(st.topic || ""),
+    seed: String(st.seed || ""),
+    variant: clampInt(st.variant, 0, 99, 0),
+    tone: String(st.tone || "gentle"),
+    count: clampInt(st.count, 3, 24, 9),
+    sig
+  });
+
+  // Keep unique by (hash + count).
+  for (const it of items){
+    const built2 = buildQuestions(it);
+    const sig2 = built2.hashHex + "|" + String(it.count);
+    if (sig2 === sig) continue;
+    next.push(it);
+    if (next.length >= 24) break;
+  }
+
+  // Strip extra field
+  const clean = next.map((it) => ({
+    savedUtc: it.savedUtc,
+    topic: it.topic,
+    seed: it.seed,
+    variant: it.variant,
+    tone: it.tone,
+    count: it.count
+  }));
+
+  saveHistory(clean);
+  return clean;
 }
 
 function buildMarkdown({ topic, seed, variant, tone, hashHex, questions, pinnedIdx }){
@@ -317,6 +422,10 @@ function main(){
   const kSeed = document.getElementById("kSeed");
   const kHash = document.getElementById("kHash");
   const kPinned = document.getElementById("kPinned");
+
+  // History elements.
+  const elHistoryList = document.getElementById("historyList");
+  const elAutoHistory = document.getElementById("chkAutoHistory");
 
   // Focus mode elements.
   const elModal = document.getElementById("focusModal");
@@ -408,6 +517,95 @@ function main(){
     timerRender();
   }
 
+  function renderHistory(){
+    if (!elHistoryList) return;
+    const items = loadHistory();
+    elHistoryList.innerHTML = "";
+
+    if (!items.length){
+      const empty = document.createElement("div");
+      empty.className = "historyMeta";
+      empty.textContent = "(No saved items yet.)";
+      elHistoryList.appendChild(empty);
+      return;
+    }
+
+    for (let i = 0; i < items.length; i++){
+      const it = items[i];
+      const built = buildQuestions(it);
+      const title = (it.topic || "(untitled)").trim();
+
+      const row = document.createElement("div");
+      row.className = "historyItem";
+
+      const meta = document.createElement("div");
+      meta.className = "historyMeta";
+      meta.textContent = `saved ${it.savedUtc || "-"} | seed ${it.seed || "(empty)"} | v${it.variant} | ${it.tone} | n${it.count} | hash ${built.hashHex}`;
+
+      const t = document.createElement("div");
+      t.className = "historyTitle";
+      t.textContent = title;
+
+      const btns = document.createElement("div");
+      btns.className = "historyBtns";
+
+      const bLoad = document.createElement("button");
+      bLoad.type = "button";
+      bLoad.textContent = "Load";
+      bLoad.addEventListener("click", () => {
+        elTopic.value = it.topic || "";
+        elSeed.value = it.seed || "";
+        elVariant.value = String(clampInt(it.variant, 0, 99, 0));
+        elTone.value = it.tone || "gentle";
+        elCount.value = String(clampInt(it.count, 3, 24, 9));
+        render({ updateUrl: true });
+      });
+
+      const bLink = document.createElement("button");
+      bLink.type = "button";
+      bLink.textContent = "Copy link";
+      bLink.addEventListener("click", async () => {
+        const url = makeLink({ topic: it.topic, seed: it.seed, v: it.variant, tone: it.tone, n: it.count });
+        try {
+          await copyToClipboard(url);
+        } catch {
+          alert(url);
+        }
+      });
+
+      const bRemove = document.createElement("button");
+      bRemove.type = "button";
+      bRemove.className = "ghost";
+      bRemove.textContent = "Remove";
+      bRemove.addEventListener("click", () => {
+        const items2 = loadHistory();
+        const next = [];
+        for (let j = 0; j < items2.length; j++){
+          if (j !== i) next.push(items2[j]);
+        }
+        saveHistory(next);
+        renderHistory();
+      });
+
+      btns.appendChild(bLoad);
+      btns.appendChild(bLink);
+      btns.appendChild(bRemove);
+
+      row.appendChild(meta);
+      row.appendChild(t);
+      row.appendChild(btns);
+
+      elHistoryList.appendChild(row);
+    }
+  }
+
+  function recordHistoryIfEnabled(st){
+    const enabled = elAutoHistory ? !!elAutoHistory.checked : getAutoHistoryEnabled();
+    if (!enabled) return;
+    addToHistory(st);
+    renderHistory();
+  }
+
   function render(opts){
     const o = opts || {};
 
@@ -494,16 +692,36 @@ function main(){
   elTone.value = q.tone;
   elCount.value = String(clampInt(q.n, 3, 24, 9));
 
-  document.getElementById("btnGen").addEventListener("click", () => { render({ updateUrl: true }); });
+  // History initial state.
+  if (elAutoHistory){
+    elAutoHistory.checked = getAutoHistoryEnabled();
+    elAutoHistory.addEventListener("change", () => {
+      setAutoHistoryEnabled(!!elAutoHistory.checked);
+    });
+  }
+  const btnClearHistory = document.getElementById("btnClearHistory");
+  if (btnClearHistory){
+    btnClearHistory.addEventListener("click", () => {
+      saveHistory([]);
+      renderHistory();
+    });
+  }
+
+  document.getElementById("btnGen").addEventListener("click", () => {
+    const st = render({ updateUrl: true });
+    recordHistoryIfEnabled(st);
+  });
 
   document.getElementById("btnNext").addEventListener("click", () => {
     elVariant.value = String(clampInt(Number(elVariant.value) + 1, 0, 99, 0));
-    render({ updateUrl: true });
+    const st = render({ updateUrl: true });
+    recordHistoryIfEnabled(st);
   });
 
   document.getElementById("btnRemix").addEventListener("click", () => {
     elSeed.value = nowUtcCompact();
-    render({ updateUrl: true });
+    const st = render({ updateUrl: true });
+    recordHistoryIfEnabled(st);
   });
 
   document.getElementById("btnCopy").addEventListener("click", async () => {
@@ -635,6 +853,7 @@ function main(){
   }
 
   render({ updateUrl: true });
+  renderHistory();
 }
 
 main();

@@ -67,6 +67,19 @@
         </div>
 
         <p class="hint">Tip: Keep the seed if you want to refine the same list over time. Change variant when you want a nearby alternate. Remix makes a new seed from the current UTC time.</p>
+
+        <hr class="hr" />
+
+        <div class="historyTop">
+          <h2 class="h2Small">History</h2>
+          <div class="historyActions">
+            <label class="chk"><input id="chkAutoHistory" type="checkbox" /> Auto save</label>
+            <button id="btnClearHistory" class="ghost" type="button">Clear</button>
+          </div>
+        </div>
+
+        <div id="historyList" class="historyList"></div>
+        <p class="hint small">History is stored locally in your browser. It remembers topic + seed + settings so you can jump back to a previous list.</p>
       </section>
 
       <section class="card">
