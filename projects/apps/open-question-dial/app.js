@@ -250,6 +250,28 @@ function savePins(hashHex, pinSet){
   }
 }
 
+// Notes storage (per question, per hash)
+function noteStorageKey(hashHex, idx){
+  return "oqd:note:v1:" + String(hashHex || "") + ":" + String(idx | 0);
+}
+
+function loadNote(hashHex, idx){
+  try {
+    return String(localStorage.getItem(noteStorageKey(hashHex, idx)) || "");
+  } catch {
+    return "";
+  }
+}
+
+function saveNote(hashHex, idx, text){
+  try {
+    localStorage.setItem(noteStorageKey(hashHex, idx), String(text || ""));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // History storage
 const HISTORY_STORAGE_KEY = "oqd:history:v1";
 const AUTO_HISTORY_KEY = "oqd:autoHistory:v1";
@@ -432,6 +454,8 @@ function main(){
   const elFocusMeta = document.getElementById("focusMeta");
   const elFocusQ = document.getElementById("focusQ");
   const elTimerLabel = document.getElementById("timerLabel");
+  const elFocusNote = document.getElementById("focusNote");
+  const elNoteStatus = document.getElementById("noteStatus");
 
   let debounceTimer = null;
   let lastState = null;
@@ -439,6 +463,9 @@ function main(){
   let focusIndex = 0;
   let timerSec = 600;
   let timerHandle = null;
+
+  let noteDebounce = null;
+  let lastNoteSig = "";
 
   function setModalOpen(open){
     if (!elModal) return;
@@ -509,6 +536,16 @@ function main(){
     }
     if (elFocusQ){
       elFocusQ.textContent = q;
+    }
+
+    // Notes for this question.
+    if (elFocusNote){
+      const sig = st.hashHex + ":" + String(focusIndex | 0);
+      if (sig !== lastNoteSig){
+        elFocusNote.value = loadNote(st.hashHex, focusIndex);
+        lastNoteSig = sig;
+        if (elNoteStatus) elNoteStatus.textContent = "";
+      }
     }
 
     const btnPin = document.getElementById("btnFocusPin");
@@ -810,6 +847,50 @@ function main(){
   document.getElementById("btnTimerStart").addEventListener("click", () => { timerStart(); });
   document.getElementById("btnTimerPause").addEventListener("click", () => { timerStop(); });
   document.getElementById("btnTimerReset").addEventListener("click", () => { timerReset(); });
+
+  const btnCopyNote = document.getElementById("btnCopyNote");
+  if (btnCopyNote){
+    btnCopyNote.addEventListener("click", async () => {
+      const st = lastState;
+      if (!st) return;
+      const q = st.questions[focusIndex] || "";
+      const note = elFocusNote ? String(elFocusNote.value || "").trim() : "";
+      const lines = [];
+      lines.push("# Open Question Dial - Note");
+      lines.push("");
+      lines.push(`- hash: ${st.hashHex}`);
+      lines.push(`- question: ${focusIndex + 1}/${st.questions.length}`);
+      lines.push("");
+      lines.push("## Question");
+      lines.push("");
+      lines.push(q ? ("- " + q) : "(empty)");
+      lines.push("");
+      lines.push("## Note");
+      lines.push("");
+      lines.push(note || "(empty)");
+      lines.push("");
+      const md = lines.join("\n");
+      try {
+        await copyToClipboard(md);
+        if (elNoteStatus) elNoteStatus.textContent = "copied";
+      } catch {
+        alert("Clipboard unavailable. Select and copy manually.");
+      }
+    });
+  }
+
+  if (elFocusNote){
+    elFocusNote.addEventListener("input", () => {
+      const st = lastState;
+      if (!st) return;
+      if (noteDebounce) clearTimeout(noteDebounce);
+      if (elNoteStatus) elNoteStatus.textContent = "saving...";
+      noteDebounce = setTimeout(() => {
+        const ok = saveNote(st.hashHex, focusIndex, elFocusNote.value);
+        if (elNoteStatus) elNoteStatus.textContent = ok ? "saved locally" : "save failed";
+      }, 140);
+    });
+  }
 
   window.addEventListener("keydown", (e) => {
     if (!focusIsOpen()) return;

@@ -156,4 +156,26 @@ button.ghost{
   line-height: 1.45;
 }
 
+.noteBox{
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line2);
+  background: rgba(6,10,21,.55);
+}
+.noteBox textarea{
+  min-height: 96px;
+}
+.noteActions{
+  margin-top: 8px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+}
+.noteStatus{
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .timerRow{ display:flex; align-items:center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
