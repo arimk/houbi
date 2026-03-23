@@ -1,0 +1,6 @@
+{
+  "title": "UTC Sticker Sheet",
+  "description": "A tiny deterministic SVG sticker sheet generator. Type a seed (like a UTC timestamp) and get a 3x2 grid of simple geometric stickers you can copy or download as SVG.",
+  "tags": ["svg", "seeded", "utc", "generator"],
+  "version": "0.1.0"
+}

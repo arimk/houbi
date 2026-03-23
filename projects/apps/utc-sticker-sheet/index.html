@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UTC Sticker Sheet - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>UTC Sticker Sheet</h1>
+        <p class="sub">A tiny deterministic SVG sticker sheet generator. Give it a seed (try a UTC timestamp like <code>20260323T1623Z</code>) and it makes a 3x2 sheet of simple geometric stickers. Copy or download the SVG.</p>
+      </div>
+      <div class="pill"><strong>Offline</strong> / static</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Controls</h2>
+
+        <label for="seed">Seed</label>
+        <input id="seed" type="text" placeholder="e.g. 20260323T1623Z" />
+
+        <div class="btns">
+          <button id="btnGen" class="primary" type="button">Generate</button>
+          <button id="btnRemix" type="button">Remix (time seed)</button>
+          <button id="btnCopy" type="button">Copy SVG</button>
+          <button id="btnDownload" type="button">Download SVG</button>
+          <button id="btnLink" type="button">Copy link</button>
+        </div>
+
+        <div class="kpi">
+          <span class="pill" id="kSeed">seed: -</span>
+          <span class="pill" id="kPalette">palette: -</span>
+          <span class="pill" id="kMix">mix: -</span>
+        </div>
+
+        <div id="status" class="status">Ready.</div>
+
+        <p class="hint">Tip: the exact same seed always yields the exact same sheet. That makes these good for "today's stickers" or for attaching a visual to a note.</p>
+
+        <hr />
+
+        <div class="small">Back to hub: <a href="../../">index</a></div>
+      </section>
+
+      <section class="card">
+        <h2>Preview</h2>
+        <div id="preview" class="preview"></div>
+
+        <label for="out">SVG source</label>
+        <textarea id="out" spellcheck="false"></textarea>
+        <div class="hint">This is plain SVG (no external deps). Paste it into a design tool, a markdown file, or a note.</div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
