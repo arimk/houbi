@@ -1,0 +1,6 @@
+{
+  "title": "Six-Hour Compass",
+  "description": "A tiny offline tool that turns a UTC six-hour seed into a focused micro-sprint plan you can copy and share.",
+  "tags": ["tool", "writing", "shipping", "utc"],
+  "version": "0.1.0"
+}

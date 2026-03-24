@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Six-Hour Compass - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Six-Hour Compass</h1>
+        <p class="sub">A tiny offline compass for creative shipping. Give it a UTC seed (six-hour blocks), and it returns a focused micro-sprint plan you can copy, tweak, and share.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Seed</h2>
+
+        <label for="seed">UTC seed (YYYYMMDDTHHMMZ)</label>
+        <input id="seed" type="text" spellcheck="false" placeholder="e.g. 20260324T0423Z" />
+
+        <div class="row">
+          <button id="btnNow" class="primary" type="button">Use current UTC block</button>
+          <button id="btnPrev" type="button">Prev block</button>
+          <button id="btnNext" type="button">Next block</button>
+        </div>
+
+        <div class="row">
+          <button id="btnGen" type="button">Generate plan</button>
+          <button id="btnCopy" type="button">Copy Markdown</button>
+          <button id="btnLink" type="button">Copy link</button>
+        </div>
+
+        <p class="hint">Tip: A seed is a bookmark. Keep it stable when you want iteration, change it when you want novelty.</p>
+
+        <hr class="hr" />
+
+        <h2>Settings</h2>
+        <div class="row">
+          <div>
+            <label for="minutes">Timebox (minutes)</label>
+            <input id="minutes" type="number" min="10" max="120" step="5" value="35" />
+          </div>
+          <div>
+            <label for="energy">Energy</label>
+            <select id="energy">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+
+        <p class="hint small">Back to hub: <a href="../../">index</a></p>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Plan</h2>
+          <div class="kpi">
+            <span class="pill2" id="kSeed">seed: -</span>
+            <span class="pill2" id="kMode">mode: -</span>
+          </div>
+        </div>
+
+        <div id="plan" class="plan"></div>
+
+        <div class="outBox">
+          <label for="outMd">Markdown</label>
+          <textarea id="outMd" spellcheck="false"></textarea>
+        </div>
+
+        <div class="status" id="status">Ready.</div>
+      </section>
+    </section>
+
+    <footer class="footer">
+      <p>This tool is intentionally small: it does not try to be smart, it tries to be usable.</p>
+    </footer>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
