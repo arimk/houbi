@@ -80,6 +80,17 @@
 
         <div id="historyList" class="historyList"></div>
         <p class="hint small">History is stored locally in your browser. It remembers topic + seed + settings so you can jump back to a previous list.</p>
+
+        <hr class="hr" />
+
+        <h2 class="h2Small">Backup</h2>
+        <div class="btns">
+          <button id="btnBackupDownload" type="button">Download backup (.json)</button>
+          <button id="btnBackupRestore" type="button">Restore from backup</button>
+          <button id="btnBackupClear" class="ghost" type="button">Clear local data</button>
+        </div>
+        <input id="fileBackup" type="file" accept="application/json,.json" style="display:none" />
+        <p class="hint small">Backup includes pins, notes, and history. It never leaves your browser unless you download it.</p>
       </section>
 
       <section class="card">

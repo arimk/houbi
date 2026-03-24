@@ -216,6 +216,67 @@ function downloadText(filename, text, mime){
   URL.revokeObjectURL(url);
 }
 
+function listOqdKeys(){
+  const out = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++){
+      const k = localStorage.key(i);
+      if (!k) continue;
+      if (String(k).startsWith("oqd:")) out.push(String(k));
+    }
+  } catch {
+    return [];
+  }
+  out.sort();
+  return out;
+}
+
+function exportBackup(){
+  const keys = listOqdKeys();
+  const data = { version: 1, exportedUtc: nowUtcCompact(), kv: {} };
+  for (const k of keys){
+    try {
+      data.kv[k] = String(localStorage.getItem(k) || "");
+    } catch {
+      // ignore
+    }
+  }
+  return data;
+}
+
+function clearOqdData(){
+  const keys = listOqdKeys();
+  for (const k of keys){
+    try { localStorage.removeItem(k); } catch {}
+  }
+  return keys.length;
+}
+
+function restoreBackup(obj, opts){
+  const o = opts || {};
+  if (!obj || typeof obj !== "object") return { ok: false, msg: "invalid backup" };
+  if (!obj.kv || typeof obj.kv !== "object") return { ok: false, msg: "missing kv" };
+  const keys = Object.keys(obj.kv).filter((k) => String(k).startsWith("oqd:"));
+  if (!keys.length) return { ok: false, msg: "no oqd keys" };
+
+  if (o.replace){
+    clearOqdData();
+  }
+
+  let setCount = 0;
+  for (const k of keys){
+    const v = obj.kv[k];
+    try {
+      localStorage.setItem(String(k), String(v));
+      setCount++;
+    } catch {
+      // ignore
+    }
+  }
+
+  return { ok: true, msg: "restored", setCount };
+}
+
 async function copyToClipboard(text){
   await navigator.clipboard.writeText(text);
 }
@@ -741,6 +802,62 @@ function main(){
     btnClearHistory.addEventListener("click", () => {
       saveHistory([]);
       renderHistory();
+    });
+  }
+
+  // Backup / restore.
+  const btnBackupDownload = document.getElementById("btnBackupDownload");
+  if (btnBackupDownload){
+    btnBackupDownload.addEventListener("click", () => {
+      const data = exportBackup();
+      const name = "oqd-backup-" + nowUtcCompact() + ".json";
+      downloadText(name, JSON.stringify(data, null, 2), "application/json");
+    });
+  }
+
+  const fileBackup = document.getElementById("fileBackup");
+  const btnBackupRestore = document.getElementById("btnBackupRestore");
+  if (btnBackupRestore && fileBackup){
+    btnBackupRestore.addEventListener("click", () => {
+      fileBackup.value = "";
+      fileBackup.click();
+    });
+
+    fileBackup.addEventListener("change", () => {
+      const f = fileBackup.files && fileBackup.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const txt = String(r.result || "");
+          const obj = JSON.parse(txt);
+          const ok = window.confirm("Restore backup and replace existing local data for this app?");
+          const res = restoreBackup(obj, { replace: ok });
+          if (!res.ok){
+            alert("Restore failed: " + res.msg);
+            return;
+          }
+          render({ updateUrl: true });
+          renderHistory();
+          alert("Restored " + String(res.setCount || 0) + " items.");
+        } catch {
+          alert("Restore failed: invalid JSON");
+        }
+      };
+      r.onerror = () => { alert("Restore failed: could not read file"); };
+      r.readAsText(f);
+    });
+  }
+
+  const btnBackupClear = document.getElementById("btnBackupClear");
+  if (btnBackupClear){
+    btnBackupClear.addEventListener("click", () => {
+      const ok = window.confirm("Clear all local data for Open Question Dial (pins, notes, history)?");
+      if (!ok) return;
+      const n = clearOqdData();
+      render({ updateUrl: true });
+      renderHistory();
+      alert("Cleared " + String(n) + " keys.");
     });
   }
 
