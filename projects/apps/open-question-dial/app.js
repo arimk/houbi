@@ -337,6 +337,30 @@ function saveNote(hashHex, idx, text){
 const HISTORY_STORAGE_KEY = "oqd:history:v1";
 const AUTO_HISTORY_KEY = "oqd:autoHistory:v1";
 
+// Focus timer preference (minutes)
+const TIMER_MIN_KEY = "oqd:timerMin:v1";
+
+function loadTimerMin(){
+  try {
+    const raw = localStorage.getItem(TIMER_MIN_KEY);
+    const n = Number.parseInt(String(raw || ""), 10);
+    if (!Number.isFinite(n)) return 10;
+    return clampInt(n, 1, 90, 10);
+  } catch {
+    return 10;
+  }
+}
+
+function saveTimerMin(min){
+  const n = clampInt(min, 1, 90, 10);
+  try {
+    localStorage.setItem(TIMER_MIN_KEY, String(n));
+  } catch {
+    // ignore
+  }
+  return n;
+}
+
 function loadHistory(){
   try {
     const raw = localStorage.getItem(HISTORY_STORAGE_KEY);
@@ -515,6 +539,7 @@ function main(){
   const elFocusMeta = document.getElementById("focusMeta");
   const elFocusQ = document.getElementById("focusQ");
   const elTimerLabel = document.getElementById("timerLabel");
+  const elTimerPreset = document.getElementById("timerPreset");
   const elFocusNote = document.getElementById("focusNote");
   const elNoteStatus = document.getElementById("noteStatus");
 
@@ -522,11 +547,17 @@ function main(){
   let lastState = null;
 
   let focusIndex = 0;
+  let timerMin = 10;
   let timerSec = 600;
   let timerHandle = null;
 
   let noteDebounce = null;
   let lastNoteSig = "";
+
+  // Init timer preference.
+  timerMin = loadTimerMin();
+  timerSec = Math.max(0, (timerMin | 0) * 60);
+  if (elTimerPreset) elTimerPreset.value = String(timerMin);
 
   function setModalOpen(open){
     if (!elModal) return;
@@ -554,7 +585,7 @@ function main(){
 
   function timerReset(){
     timerStop();
-    timerSec = 600;
+    timerSec = Math.max(0, (timerMin | 0) * 60);
     timerRender();
   }
 
@@ -960,6 +991,16 @@ function main(){
     render({ updateUrl: true });
     focusRender();
   });
+
+  function applyTimerPreset(){
+    const v = elTimerPreset ? clampInt(elTimerPreset.value, 1, 90, 10) : 10;
+    timerMin = saveTimerMin(v);
+    timerReset();
+  }
+
+  const btnTimerSet = document.getElementById("btnTimerSet");
+  if (btnTimerSet) btnTimerSet.addEventListener("click", () => { applyTimerPreset(); });
+  if (elTimerPreset) elTimerPreset.addEventListener("change", () => { applyTimerPreset(); });
 
   document.getElementById("btnTimerStart").addEventListener("click", () => { timerStart(); });
   document.getElementById("btnTimerPause").addEventListener("click", () => { timerStop(); });

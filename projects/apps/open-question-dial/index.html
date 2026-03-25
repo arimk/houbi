@@ -139,6 +139,13 @@
 
       <div class="timerRow">
         <span id="timerLabel" class="pill2">10:00</span>
+        <select id="timerPreset" aria-label="Timer minutes">
+          <option value="5">5m</option>
+          <option value="10" selected>10m</option>
+          <option value="15">15m</option>
+          <option value="25">25m</option>
+        </select>
+        <button id="btnTimerSet" class="ghost">Set</button>
         <button id="btnTimerStart" class="ghost">Start</button>
         <button id="btnTimerPause" class="ghost">Pause</button>
         <button id="btnTimerReset" class="ghost">Reset</button>
