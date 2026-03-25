@@ -87,6 +87,16 @@
     code{ color: #b7d6ff; }
 
     .tiny{ font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.55; }
+
+    .history{ margin-top: 12px; border-top: 1px solid var(--line2); padding-top: 12px; }
+    .history h3{ margin: 0 0 8px; font-size: 13px; color: #dbe7ff; letter-spacing: -.01em; }
+    .historyList{ display:flex; flex-direction: column; gap: 8px; }
+    .histItem{ border: 1px solid var(--line2); border-radius: 14px; padding: 10px; background: rgba(6,10,21,.48); }
+    .histTop{ display:flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+    .histTitle{ font-weight: 800; color: #dfeaff; }
+    .histMeta{ font-size: 11px; color: var(--muted); font-family: var(--mono); }
+    .histBtns{ margin-top: 8px; display:flex; gap: 8px; flex-wrap: wrap; }
+    .histBtns button{ padding: 8px 10px; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -139,15 +149,17 @@
 
         <div class="btns">
           <button id="roll" class="primary">Roll idea</button>
+          <button id="nextVariant">Next variant</button>
           <button id="remix">Remix seed</button>
           <button id="useUtc">Use current UTC minute</button>
           <button id="copy">Copy Markdown</button>
           <button id="copyLink">Copy link</button>
+          <button id="save">Save to History</button>
           <button id="reset">Reset</button>
         </div>
 
         <div class="status" id="status">Ready.</div>
-        <div class="tiny">Shortcut: press <code>R</code> to roll (when not typing). The seed is part of the output: if you like something, keep the seed.</div>
+        <div class="tiny">Shortcuts: press <code>R</code> to roll, <code>N</code> for next variant (when not typing). The seed is part of the output: if you like something, keep the seed.</div>
       </div>
 
       <div class="card">
@@ -157,6 +169,14 @@
 
         <label for="notes">Notes (optional)</label>
         <textarea id="notes" placeholder="Add a one-line plan: scope, next step, what to try..."></textarea>
+
+        <div class="history" id="historyWrap" style="display:none">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap">
+            <h3>Idea History (local)</h3>
+            <button id="clearHistory" title="Clears local history">Clear</button>
+          </div>
+          <div class="historyList" id="historyList"></div>
+        </div>
       </div>
     </section>
   </main>
@@ -170,15 +190,24 @@
     const notesEl = el('notes');
 
     const rollBtn = el('roll');
+    const nextBtn = el('nextVariant');
     const remixBtn = el('remix');
     const utcBtn = el('useUtc');
     const copyBtn = el('copy');
     const linkBtn = el('copyLink');
+    const saveBtn = el('save');
     const resetBtn = el('reset');
 
     const ideaEl = el('idea');
     const metaEl = el('meta');
     const statusEl = el('status');
+
+    const historyWrap = el('historyWrap');
+    const historyListEl = el('historyList');
+    const clearHistoryBtn = el('clearHistory');
+
+    const HISTORY_KEY = 'houbi_seededIdeaMixer_history_v1';
+    const HISTORY_MAX = 14;
 
     function setStatus(msg, kind){
       statusEl.textContent = msg;
@@ -359,6 +388,15 @@
       return { seedStr, headline, details, verb, obj, c1: constraintA, c2, twist };
     }
 
+    function escapeHtml(s){
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/\'/g, '&#39;');
+    }
+
     function render(){
       const st = currentState();
       if (!st.seed){
@@ -381,16 +419,7 @@
       ideaEl.innerHTML = html;
       metaEl.innerHTML = 'Seed key: <code>' + escapeHtml(idea.seedStr) + '</code><br/>Shareable URL state is kept in the address bar.';
       scheduleUrlSync();
-      setStatus('Rolled. Copy Markdown if you want to move fast.', 'ok');
-    }
-
-    function escapeHtml(s){
-      return String(s || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/\'/g, '&#39;');
+      setStatus('Rolled. Save to History if you want a local stack.', 'ok');
     }
 
     function makeMarkdown(){
@@ -421,7 +450,118 @@
       await navigator.clipboard.writeText(txt);
     }
 
+    function safeJsonParse(s, fallback){
+      try{ return JSON.parse(s); }catch(e){ return fallback; }
+    }
+
+    function loadHistory(){
+      const raw = localStorage.getItem(HISTORY_KEY);
+      const arr = safeJsonParse(raw || '[]', []);
+      if (!Array.isArray(arr)) return [];
+      return arr;
+    }
+
+    function saveHistory(arr){
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0, HISTORY_MAX)));
+    }
+
+    function renderHistory(){
+      const hist = loadHistory();
+      historyListEl.innerHTML = '';
+      if (!hist.length){
+        historyWrap.style.display = 'none';
+        return;
+      }
+      historyWrap.style.display = 'block';
+
+      hist.forEach((item) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'histItem';
+
+        const top = document.createElement('div');
+        top.className = 'histTop';
+
+        const title = document.createElement('div');
+        title.className = 'histTitle';
+        title.textContent = item.headline || '(idea)';
+
+        const meta = document.createElement('div');
+        meta.className = 'histMeta';
+        meta.textContent = (item.ts || '') + ' | ' + (item.seed || '') + ' | ' + (item.mode || '') + ' | v' + (item.variant || '0');
+
+        top.appendChild(title);
+        top.appendChild(meta);
+
+        const btns = document.createElement('div');
+        btns.className = 'histBtns';
+
+        const b1 = document.createElement('button');
+        b1.textContent = 'Copy link';
+        b1.addEventListener('click', async () => {
+          try{ await copyText(item.url || ''); setStatus('Copied link from history.', 'ok'); }
+          catch(e){ setStatus('Copy failed (clipboard permission).', 'warn'); }
+        });
+
+        const b2 = document.createElement('button');
+        b2.textContent = 'Copy Markdown';
+        b2.addEventListener('click', async () => {
+          try{ await copyText(item.md || ''); setStatus('Copied Markdown from history.', 'ok'); }
+          catch(e){ setStatus('Copy failed (clipboard permission).', 'warn'); }
+        });
+
+        const b3 = document.createElement('button');
+        b3.textContent = 'Load';
+        b3.addEventListener('click', () => {
+          seedEl.value = item.seed || '';
+          modeEl.value = item.mode || 'mixed';
+          variantEl.value = String(item.variant || '0');
+          notesEl.value = item.notes || '';
+          render();
+          setStatus('Loaded from history.', 'ok');
+        });
+
+        btns.appendChild(b3);
+        btns.appendChild(b1);
+        btns.appendChild(b2);
+
+        wrap.appendChild(top);
+        wrap.appendChild(btns);
+        historyListEl.appendChild(wrap);
+      });
+    }
+
+    function saveCurrentToHistory(){
+      const st = currentState();
+      if (!st.seed){ setStatus('Set a seed first.', 'warn'); return; }
+      const idea = buildIdea(st);
+      const url = window.location.origin + urlForState(st);
+      const entry = {
+        ts: currentUtcMinuteTs(),
+        seed: st.seed,
+        mode: st.mode,
+        variant: st.variant,
+        notes: st.notes,
+        headline: idea.headline,
+        url,
+        md: makeMarkdown()
+      };
+      const hist = loadHistory();
+      const next = [entry].concat(hist).slice(0, HISTORY_MAX);
+      saveHistory(next);
+      renderHistory();
+      setStatus('Saved to local history.', 'ok');
+    }
+
+    function nextVariant(){
+      const v = parseInt(variantEl.value || '0', 10);
+      const nv = (isFinite(v) ? (v + 1) : 0) % 10;
+      variantEl.value = String(nv);
+      render();
+    }
+
     rollBtn.addEventListener('click', () => render());
+
+    nextBtn.addEventListener('click', () => nextVariant());
 
     remixBtn.addEventListener('click', () => {
       const base = normalizeSeed(seedEl.value) || 'seed';
@@ -455,6 +595,14 @@
       }
     });
 
+    saveBtn.addEventListener('click', () => saveCurrentToHistory());
+
+    clearHistoryBtn.addEventListener('click', () => {
+      localStorage.removeItem(HISTORY_KEY);
+      renderHistory();
+      setStatus('Cleared local history.', 'ok');
+    });
+
     resetBtn.addEventListener('click', () => {
       seedEl.value = '';
       modeEl.value = 'mixed';
@@ -473,6 +621,7 @@
     document.addEventListener('keydown', (ev) => {
       if (isTypingTarget(ev)) return;
       if (ev.key === 'r' || ev.key === 'R'){ render(); }
+      if (ev.key === 'n' || ev.key === 'N'){ nextVariant(); }
     });
 
     ;(function init(){
@@ -482,6 +631,7 @@
         seedEl.value = currentUtcMinuteTs();
       }
       render();
+      renderHistory();
       ['input','change'].forEach((evt) => {
         seedEl.addEventListener(evt, scheduleUrlSync);
         modeEl.addEventListener(evt, scheduleUrlSync);
