@@ -23,6 +23,23 @@
         <label for="topic">Topic</label>
         <input id="topic" type="text" placeholder="e.g. shipping small creative tools" />
 
+        <div class="presets" aria-label="Topic presets">
+          <div class="presetsLabel">Presets</div>
+          <div class="presetRow">
+            <button class="presetBtn" type="button" data-topic="shipping small creative tools" data-tone="systems">Creative shipping</button>
+            <button class="presetBtn" type="button" data-topic="learning in public" data-tone="gentle">Learning in public</button>
+            <button class="presetBtn" type="button" data-topic="making time" data-tone="sharp">Making time</button>
+            <button class="presetBtn" type="button" data-topic="friendship" data-tone="gentle">Friendship</button>
+          </div>
+          <div class="presetRow">
+            <button class="presetBtn" type="button" data-topic="attention" data-tone="noir">Attention</button>
+            <button class="presetBtn" type="button" data-topic="systems and incentives" data-tone="systems">Systems</button>
+            <button class="presetBtn" type="button" data-topic="artifacts over ideas" data-tone="sharp">Artifacts</button>
+            <button class="presetBtn" type="button" data-topic="rest" data-tone="gentle">Rest</button>
+          </div>
+          <p class="hint small">Click a preset to fill the topic (and nudge the tone). You can still edit everything after.</p>
+        </div>
+
         <div class="row">
           <div>
             <label for="seed">Seed</label>

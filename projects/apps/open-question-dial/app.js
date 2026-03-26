@@ -1080,6 +1080,19 @@ function main(){
     }
   });
 
+  // Preset topic buttons.
+  for (const btn of Array.from(document.querySelectorAll(".presetBtn"))){
+    btn.addEventListener("click", () => {
+      const topic = String(btn.getAttribute("data-topic") || "").trim();
+      const tone = String(btn.getAttribute("data-tone") || "").trim();
+      if (topic) elTopic.value = topic;
+      if (tone) elTone.value = tone;
+      // Nudge variant back to 0 so a preset feels like a fresh starting point.
+      elVariant.value = "0";
+      render({ updateUrl: true });
+    });
+  }
+
   elTopic.addEventListener("input", renderSoon);
   elSeed.addEventListener("input", renderSoon);
   elVariant.addEventListener("input", renderSoon);
