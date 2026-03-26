@@ -11,6 +11,15 @@ function utcTsFromDate(d){
   return `${y}${mo}${da}T${hh}${mm}Z`;
 }
 
+function utcHumanFromDate(d){
+  const y = d.getUTCFullYear();
+  const mo = pad2(d.getUTCMonth() + 1);
+  const da = pad2(d.getUTCDate());
+  const hh = pad2(d.getUTCHours());
+  const mm = pad2(d.getUTCMinutes());
+  return `${y}-${mo}-${da} ${hh}:${mm}`;
+}
+
 function floorToSixHours(d){
   const y = d.getUTCFullYear();
   const mo = d.getUTCMonth();
@@ -65,6 +74,18 @@ function pick(rng, arr){
 }
 
 function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
+
+function blockLabelFromSeedTs(ts){
+  const d = parseTs(ts);
+  if (!d) return "-";
+  const start = floorToSixHours(d);
+  const end = new Date(start.getTime() + 6 * 60 * 60 * 1000 - 60 * 1000);
+  const sameDay = start.getUTCFullYear() === end.getUTCFullYear() && start.getUTCMonth() === end.getUTCMonth() && start.getUTCDate() === end.getUTCDate();
+  if (sameDay){
+    return `${utcHumanFromDate(start)}-${pad2(end.getUTCHours())}:${pad2(end.getUTCMinutes())} UTC`;
+  }
+  return `${utcHumanFromDate(start)} to ${utcHumanFromDate(end)} UTC`;
+}
 
 function planFor(ts, minutes, energy){
   const seed = hash32(`${ts}|${minutes}|${energy}`);
@@ -150,6 +171,8 @@ function planFor(ts, minutes, energy){
   const md = [
     `## Six-Hour Compass (${ts})`,
     "",
+    `Block: ${blockLabelFromSeedTs(ts)}`,
+    "",
     `Mode: **${mode}**`,
     "",
     `Constraint: **${constraint}**`,
@@ -204,6 +227,7 @@ function setPlanHtml(ts, plan){
   ].join("\n");
 
   $("#kSeed").textContent = `seed: ${ts}`;
+  $("#kBlock").textContent = `block: ${blockLabelFromSeedTs(ts)}`;
   $("#kMode").textContent = `mode: ${plan.mode}`;
 }
 
@@ -237,19 +261,38 @@ function setUrlSeed(seed){
   history.replaceState(null, "", u.toString());
 }
 
+function downloadText(filename, text){
+  const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 function boot(){
   const seedInUrl = getSeedFromUrl();
   if (seedInUrl) $("#seed").value = seedInUrl;
 
-  $("#btnNow").addEventListener("click", () => {
+  function setSeedToCurrentBlock(quiet){
     const now = new Date();
     const flo = floorToSixHours(now);
-    $("#seed").value = utcTsFromDate(flo).replace(/Z$/, "000Z").replace(/T([0-9]{2})[0-9]{2}000Z$/, (m) => m);
-    // Note: we keep minutes as 00 by flooring; format expects HHMM.
-    // utcTsFromDate already gives HHMM; flo is at :00.
     $("#seed").value = utcTsFromDate(flo);
-    setStatus("Seed set to current UTC block.", "ok");
-  });
+    if (!quiet) setStatus("Seed set to current UTC block.", "ok");
+  }
+
+  // Default seed if empty.
+  if (!seedInUrl){
+    const cur = $("#seed").value.trim();
+    if (!cur) setSeedToCurrentBlock(true);
+  }
+
+  $("#btnNow").addEventListener("click", () => setSeedToCurrentBlock(false));
 
   function stepBlock(dir){
     const ts = $("#seed").value.trim();
@@ -266,7 +309,7 @@ function boot(){
   $("#btnPrev").addEventListener("click", () => stepBlock(-1));
   $("#btnNext").addEventListener("click", () => stepBlock(1));
 
-  $("#btnGen").addEventListener("click", () => {
+  function generate(){
     const ts = $("#seed").value.trim();
     if (!parseTs(ts)){
       setStatus("Invalid seed. Use YYYYMMDDTHHMMZ (example: 20260324T0423Z).", "warn");
@@ -280,7 +323,9 @@ function boot(){
     $("#outMd").value = plan.md;
     setUrlSeed(ts);
     setStatus("Plan generated.", "ok");
-  });
+  }
+
+  $("#btnGen").addEventListener("click", generate);
 
   $("#btnCopy").addEventListener("click", async () => {
     const text = $("#outMd").value.trim();
@@ -298,6 +343,45 @@ function boot(){
     setUrlSeed(ts);
     const ok = await copyText(window.location.href);
     setStatus(ok ? "Copied link." : "Copy failed (clipboard permission).", ok ? "ok" : "warn");
+  });
+
+  $("#btnDl").addEventListener("click", () => {
+    const ts = $("#seed").value.trim();
+    if (!parseTs(ts)){
+      setStatus("Set a valid seed first.", "warn");
+      return;
+    }
+    const text = $("#outMd").value.trim();
+    if (!text){
+      setStatus("Nothing to download yet. Generate a plan first.", "warn");
+      return;
+    }
+    downloadText(`sixhour-compass-${ts}.md`, text + "\n");
+    setStatus("Downloaded Markdown.", "ok");
+  });
+
+  // Input convenience
+  $("#seed").addEventListener("keydown", (e) => {
+    if (e.key === "Enter"){
+      e.preventDefault();
+      generate();
+    }
+  });
+
+  // Keyboard shortcuts (ignore when typing in text fields except seed Enter).
+  window.addEventListener("keydown", (e) => {
+    const t = (e.target && e.target.tagName) ? String(e.target.tagName).toLowerCase() : "";
+    const inField = t === "textarea" || t === "input" || t === "select";
+    if (inField) return;
+
+    const k = String(e.key || "").toLowerCase();
+    if (k === "n"){ e.preventDefault(); setSeedToCurrentBlock(false); return; }
+    if (e.key === "["){ e.preventDefault(); stepBlock(-1); return; }
+    if (e.key === "]"){ e.preventDefault(); stepBlock(1); return; }
+    if (k === "c"){ e.preventDefault(); $("#btnCopy").click(); return; }
+    if (k === "l"){ e.preventDefault(); $("#btnLink").click(); return; }
+    if (k === "d"){ e.preventDefault(); $("#btnDl").click(); return; }
+    if (k === "g"){ e.preventDefault(); generate(); return; }
   });
 
   // Auto-generate if URL has seed.
