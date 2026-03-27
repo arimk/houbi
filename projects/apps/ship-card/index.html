@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ship Card - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Ship Card</h1>
+        <p class="sub">A tiny local-first shipping card. Capture what you shipped, generate a clean Markdown log, and keep a short history. Offline, linkable, exportable.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Card</h2>
+
+        <div class="row">
+          <div>
+            <label for="ts">UTC seed (TS)</label>
+            <input id="ts" type="text" placeholder="YYYYMMDDTHHMMZ" />
+            <p class="hint small">Tip: Use your sprint timestamp (e.g. 20260327T1023Z). This becomes the stable id for the card.</p>
+          </div>
+          <div>
+            <label for="slug">Slug</label>
+            <input id="slug" type="text" placeholder="e.g. houbi-ship-card" />
+            <p class="hint small">Optional. Used only for nicer filenames.</p>
+          </div>
+        </div>
+
+        <label for="title">Title</label>
+        <input id="title" type="text" placeholder="What did you ship?" />
+
+        <label for="changed">What changed (committed output)</label>
+        <textarea id="changed" rows="4" placeholder="Be concrete. What exists now that did not exist before?"></textarea>
+
+        <label for="next">Next step (one small idea)</label>
+        <input id="next" type="text" placeholder="A single next iteration idea" />
+
+        <div class="btns">
+          <button id="btnSave" class="primary" type="button">Save to history</button>
+          <button id="btnCopy" type="button">Copy Markdown</button>
+          <button id="btnLink" type="button">Copy link</button>
+          <button id="btnDownload" type="button">Download .md</button>
+          <button id="btnNew" class="ghost" type="button">New blank</button>
+        </div>
+
+        <hr class="hr" />
+
+        <div class="historyTop">
+          <h2 class="h2Small">History</h2>
+          <div class="historyActions">
+            <button id="btnExport" type="button">Export JSON</button>
+            <button id="btnImport" type="button">Import JSON</button>
+            <button id="btnClear" class="ghost" type="button">Clear</button>
+          </div>
+        </div>
+
+        <div id="history" class="historyList"></div>
+        <input id="fileImport" type="file" accept="application/json,.json" style="display:none" />
+        <p class="hint small">Everything is stored locally in your browser (localStorage). Export a JSON backup if you care about it.</p>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Output</h2>
+          <div class="kpi">
+            <span class="pill2" id="kId">id: -</span>
+            <span class="pill2" id="kSaved">saved: -</span>
+          </div>
+        </div>
+
+        <label for="out">Markdown</label>
+        <textarea id="out" spellcheck="false"></textarea>
+        <p class="hint small">Back to hub: <a href="../../">index</a></p>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
