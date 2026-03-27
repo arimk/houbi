@@ -33,6 +33,26 @@ function clampInt(v, lo, hi, fallback){
   return Math.max(lo, Math.min(hi, n));
 }
 
+function parsePinsParam(raw, maxCount){
+  const txt = String(raw || "").trim();
+  if (!txt) return [];
+  const parts = txt.split(",");
+  const out = [];
+  const seen = new Set();
+  const lim = clampInt(maxCount, 0, 256, 32);
+  for (const p of parts){
+    const n = Number.parseInt(String(p || "").trim(), 10);
+    if (!Number.isFinite(n)) continue;
+    if (n < 0 || n > 255) continue;
+    if (seen.has(n)) continue;
+    seen.add(n);
+    out.push(n);
+    if (out.length >= lim) break;
+  }
+  out.sort((a,b) => a - b);
+  return out;
+}
+
 function nowUtcCompact(){
   // YYYYMMDDTHHMMZ
   const d = new Date();
@@ -173,29 +193,34 @@ function readQuery(){
     seed: p.get("seed") || "",
     v: p.get("v") || "0",
     tone: p.get("tone") || "gentle",
-    n: p.get("n") || "9"
+    n: p.get("n") || "9",
+    pins: p.get("pins") || ""
   };
 }
 
-function setQuery({ topic, seed, v, tone, n }){
+function setQuery({ topic, seed, v, tone, n, pins }){
   const p = new URLSearchParams();
   if (topic) p.set("topic", topic);
   if (seed) p.set("seed", seed);
   p.set("v", String(v));
   p.set("tone", tone);
   p.set("n", String(n));
+  const pinTxt = String(pins || "").trim();
+  if (pinTxt) p.set("pins", pinTxt);
   const qs = p.toString();
   const url = window.location.pathname + (qs ? ("?" + qs) : "");
   window.history.replaceState(null, "", url);
 }
 
-function makeLink({ topic, seed, v, tone, n }){
+function makeLink({ topic, seed, v, tone, n, pins }){
   const p = new URLSearchParams();
   if (topic) p.set("topic", topic);
   if (seed) p.set("seed", seed);
   p.set("v", String(v));
   p.set("tone", tone);
   p.set("n", String(n));
+  const pinTxt = String(pins || "").trim();
+  if (pinTxt) p.set("pins", pinTxt);
   const qs = p.toString();
   return window.location.origin + window.location.pathname + (qs ? ("?" + qs) : "");
 }
@@ -799,7 +824,8 @@ function main(){
     kPinned.textContent = `pinned: ${pinnedIdx.length}`;
 
     if (o.updateUrl){
-      setQuery({ topic, seed, v: variant, tone, n: count });
+      const pinTxt = pinsInUrl ? pinnedIdx.join(",") : "";
+      setQuery({ topic, seed, v: variant, tone, n: count, pins: pinTxt });
     }
 
     const st = { topic, seed, variant, tone, count, md, hashHex: built.hashHex, questions: built.questions, pinnedIdx };
@@ -815,6 +841,9 @@ function main(){
 
   // Load query state.
   const q = readQuery();
+  const initialPins = parsePinsParam(q.pins, 64);
+  let pinsInUrl = initialPins.length > 0;
+
   if (q.topic) elTopic.value = q.topic;
   if (q.seed) elSeed.value = q.seed;
   elVariant.value = String(clampInt(q.v, 0, 99, 0));
@@ -947,6 +976,28 @@ function main(){
       alert(url);
     }
   });
+
+  const btnLinkPinned = document.getElementById("btnLinkPinned");
+  if (btnLinkPinned){
+    btnLinkPinned.addEventListener("click", async () => {
+      // Opt-in: only add pins to the URL when explicitly requested.
+      pinsInUrl = true;
+      const st = render({ updateUrl: true });
+      const url = makeLink({
+        topic: st.topic,
+        seed: st.seed,
+        v: st.variant,
+        tone: st.tone,
+        n: st.count,
+        pins: (Array.isArray(st.pinnedIdx) && st.pinnedIdx.length) ? st.pinnedIdx.join(",") : ""
+      });
+      try {
+        await copyToClipboard(url);
+      } catch {
+        alert(url);
+      }
+    });
+  }
 
   document.getElementById("btnDownload").addEventListener("click", () => {
     const st = render({ updateUrl: true });
@@ -1104,7 +1155,16 @@ function main(){
     elSeed.value = nowUtcCompact();
   }
 
-  render({ updateUrl: true });
+  let st0 = render({ updateUrl: true });
+
+  // If a pins= param was provided, apply it to local storage for this exact hash.
+  // This makes a pinned link shareable across devices.
+  if (initialPins.length){
+    const ps = new Set(initialPins);
+    savePins(st0.hashHex, ps);
+    st0 = render({ updateUrl: true });
+  }
+
   renderHistory();
 }
 
