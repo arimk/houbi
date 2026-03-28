@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Six-Hour Sprint Card - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Six-Hour Sprint Card</h1>
+        <p class="sub">A tiny UTC-seeded sprint card: deterministic prompt + constraints + a checklist, plus a simple timer. Offline and shareable.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Controls</h2>
+
+        <label for="seed">Seed (UTC)</label>
+        <input id="seed" type="text" placeholder="e.g. 20260328T0423Z" />
+
+        <div class="row">
+          <div>
+            <label for="variant">Variant</label>
+            <input id="variant" type="number" min="0" max="99" step="1" value="0" />
+          </div>
+          <div>
+            <label for="minutes">Timebox (minutes)</label>
+            <input id="minutes" type="number" min="5" max="180" step="5" value="45" />
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnGen" class="primary" type="button">Generate</button>
+          <button id="btnNext" type="button">Next variant</button>
+          <button id="btnRemix" type="button">Remix seed</button>
+          <button id="btnCopy" type="button">Copy Markdown</button>
+          <button id="btnLink" type="button">Copy link</button>
+          <button id="btnStart" type="button">Start timer</button>
+          <button id="btnPause" type="button">Pause</button>
+          <button id="btnReset" class="ghost" type="button">Reset</button>
+        </div>
+
+        <div class="status" id="status">Ready.</div>
+        <p class="hint">Tip: Keep the seed to iterate. Bump the variant when you want a nearby alternate. Remix makes a new UTC seed.</p>
+
+        <hr class="hr" />
+
+        <h2 class="h2Small">Markdown</h2>
+        <textarea id="outMd" spellcheck="false"></textarea>
+        <p class="hint small">Back to hub: <a href="../../">index</a></p>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Card</h2>
+          <div class="kpi">
+            <span class="pill2" id="kSeed">seed: -</span>
+            <span class="pill2" id="kHash">hash: -</span>
+            <span class="pill2" id="kTimer">timer: --:--</span>
+          </div>
+        </div>
+
+        <section id="card" class="cardInner" aria-label="Sprint card"></section>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
