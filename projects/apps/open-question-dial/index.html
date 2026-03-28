@@ -121,6 +121,19 @@
           </div>
         </div>
         <ol id="outList" class="outList"></ol>
+
+        <section class="pinBoard">
+          <div class="pinTop">
+            <h3 class="h3Small">Pinned board</h3>
+            <div class="pinActions">
+              <button id="btnCopyPinnedNotes" class="ghost" type="button">Copy pinned + notes</button>
+              <button id="btnDownloadPinnedNotes" class="ghost" type="button">Download pinned + notes</button>
+            </div>
+          </div>
+          <div id="pinnedBoard" class="pinnedBoard"></div>
+          <p class="hint small">This shows your pinned questions for the current hash, with their notes. Everything is stored locally.</p>
+        </section>
+
         <div class="outBox">
           <label for="outMd">Markdown</label>
           <textarea id="outMd" spellcheck="false"></textarea>

@@ -92,6 +92,33 @@ button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(
 .qPinned{ color: #dffcff; }
 .outBox{ margin-top: 8px; }
 
+/* Pinned board */
+.pinBoard{ margin-top: 12px; padding-top: 6px; }
+.pinTop{ display:flex; align-items:baseline; justify-content:space-between; gap: 10px; }
+.h3Small{ margin:0; font-size: 13px; letter-spacing: -.01em; color: #dbe7ff; }
+.pinActions{ display:flex; flex-wrap: wrap; gap: 8px; }
+.pinActions button{ padding: 8px 10px; font-size: 12px; }
+.pinnedBoard{ margin-top: 10px; display:flex; flex-direction:column; gap: 10px; }
+.pinCard{
+  border: 1px solid var(--line2);
+  background: rgba(6,10,21,.55);
+  border-radius: 14px;
+  padding: 10px;
+}
+.pinMeta{ color: var(--muted); font-size: 11px; line-height: 1.4; display:flex; align-items:center; justify-content:space-between; gap: 10px; }
+.pinQ{ margin-top: 6px; font-size: 13px; line-height: 1.45; color: #ecf3ff; }
+.pinNoteLabel{ margin-top: 10px; font-size: 12px; color: #cfe0ff; }
+.pinNote{
+  width: 100%;
+  margin-top: 6px;
+  min-height: 70px;
+  resize: vertical;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.pinNoteStatus{ margin-top: 6px; color: var(--muted); font-size: 11px; }
+
 /* History */
 .hr{
   border: none;

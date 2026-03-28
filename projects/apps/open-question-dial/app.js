@@ -534,6 +534,38 @@ function buildPinnedMarkdown({ topic, seed, variant, tone, hashHex, questions, p
   return lines.join("\n");
 }
 
+function buildPinnedNotesMarkdown({ topic, seed, variant, tone, hashHex, questions, pinnedIdx }){
+  const pins = Array.isArray(pinnedIdx) ? pinnedIdx : [];
+  const title = (topic || "Open Question Dial").trim();
+  const lines = [];
+  lines.push(`# Pinned + Notes - ${title}`);
+  lines.push("");
+  lines.push(`- seed: ${seed || "(empty)"}`);
+  lines.push(`- variant: ${variant}`);
+  lines.push(`- tone: ${tone}`);
+  lines.push(`- hash: ${hashHex}`);
+  lines.push("");
+  if (!pins.length){
+    lines.push("(No pinned questions yet.)");
+    lines.push("");
+    return lines.join("\n");
+  }
+
+  for (const idx of pins){
+    const q = questions[idx] || "";
+    const note = loadNote(hashHex, idx).trim();
+    lines.push(`## Q${idx + 1}`);
+    lines.push("");
+    lines.push(q ? (`- ${q}`) : "- (empty)");
+    lines.push("");
+    lines.push("Notes:");
+    lines.push("");
+    lines.push(note ? note : "(empty)");
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
 function fmtTimer(sec){
   const s = Math.max(0, sec | 0);
   const m = Math.floor(s / 60);
@@ -550,6 +582,7 @@ function main(){
 
   const elOutList = document.getElementById("outList");
   const elOutMd = document.getElementById("outMd");
+  const elPinnedBoard = document.getElementById("pinnedBoard");
 
   const kSeed = document.getElementById("kSeed");
   const kHash = document.getElementById("kHash");
@@ -753,6 +786,82 @@ function main(){
     }
   }
 
+  function renderPinnedBoard(st){
+    if (!elPinnedBoard) return;
+    const pins = Array.isArray(st.pinnedIdx) ? st.pinnedIdx : [];
+    elPinnedBoard.innerHTML = "";
+
+    if (!pins.length){
+      const empty = document.createElement("div");
+      empty.className = "historyMeta";
+      empty.textContent = "(No pinned questions for this hash yet.)";
+      elPinnedBoard.appendChild(empty);
+      return;
+    }
+
+    for (const idx of pins){
+      const q = st.questions[idx] || "";
+
+      const card = document.createElement("div");
+      card.className = "pinCard";
+
+      const meta = document.createElement("div");
+      meta.className = "pinMeta";
+
+      const left = document.createElement("div");
+      left.textContent = `Q${idx + 1} of ${st.questions.length}`;
+
+      const btnUnpin = document.createElement("button");
+      btnUnpin.type = "button";
+      btnUnpin.className = "ghost";
+      btnUnpin.textContent = "Unpin";
+      btnUnpin.addEventListener("click", () => {
+        const pinSet = loadPins(st.hashHex);
+        pinSet.delete(idx);
+        savePins(st.hashHex, pinSet);
+        render({ updateUrl: true, keepPins: true });
+      });
+
+      meta.appendChild(left);
+      meta.appendChild(btnUnpin);
+
+      const qt = document.createElement("div");
+      qt.className = "pinQ";
+      qt.textContent = q;
+
+      const lbl = document.createElement("div");
+      lbl.className = "pinNoteLabel";
+      lbl.textContent = "Note";
+
+      const ta = document.createElement("textarea");
+      ta.className = "pinNote";
+      ta.spellcheck = false;
+      ta.value = loadNote(st.hashHex, idx);
+
+      const stxt = document.createElement("div");
+      stxt.className = "pinNoteStatus";
+      stxt.textContent = "";
+
+      let tHandle = null;
+      ta.addEventListener("input", () => {
+        if (tHandle) clearTimeout(tHandle);
+        stxt.textContent = "saving...";
+        tHandle = setTimeout(() => {
+          const ok = saveNote(st.hashHex, idx, ta.value);
+          stxt.textContent = ok ? "saved locally" : "save failed";
+        }, 140);
+      });
+
+      card.appendChild(meta);
+      card.appendChild(qt);
+      card.appendChild(lbl);
+      card.appendChild(ta);
+      card.appendChild(stxt);
+
+      elPinnedBoard.appendChild(card);
+    }
+  }
+
   function recordHistoryIfEnabled(st){
     const enabled = elAutoHistory ? !!elAutoHistory.checked : getAutoHistoryEnabled();
     if (!enabled) return;
@@ -830,6 +939,7 @@ function main(){
 
     const st = { topic, seed, variant, tone, count, md, hashHex: built.hashHex, questions: built.questions, pinnedIdx };
     lastState = st;
+    renderPinnedBoard(st);
     if (focusIsOpen()) focusRender();
     return st;
   }
@@ -956,6 +1066,30 @@ function main(){
       alert("Clipboard unavailable. Use download.");
     }
   });
+
+  const btnCopyPinnedNotes = document.getElementById("btnCopyPinnedNotes");
+  if (btnCopyPinnedNotes){
+    btnCopyPinnedNotes.addEventListener("click", async () => {
+      const st = render({ updateUrl: true });
+      const pm = buildPinnedNotesMarkdown(st);
+      try {
+        await copyToClipboard(pm);
+      } catch {
+        alert("Clipboard unavailable. Use download.");
+      }
+    });
+  }
+
+  const btnDownloadPinnedNotes = document.getElementById("btnDownloadPinnedNotes");
+  if (btnDownloadPinnedNotes){
+    btnDownloadPinnedNotes.addEventListener("click", () => {
+      const st = render({ updateUrl: true });
+      const pm = buildPinnedNotesMarkdown(st);
+      const safe = (st.topic || "open-question-dial").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const name = `open-question-dial-pinned-notes-${safe || "topic"}-${st.hashHex}.md`;
+      downloadText(name, pm, "text/markdown");
+    });
+  }
 
   document.getElementById("btnClearPins").addEventListener("click", () => {
     const st = render({ updateUrl: true });
