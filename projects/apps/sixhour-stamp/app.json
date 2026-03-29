@@ -1,0 +1,4 @@
+{
+  "title": "Sixhour Stamp",
+  "description": "Generate a deterministic sprint stamp (SVG) from a UTC seed + a short note. Offline, linkable, downloadable."
+}

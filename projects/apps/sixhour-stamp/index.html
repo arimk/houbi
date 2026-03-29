@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sixhour Stamp - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Sixhour Stamp</h1>
+        <p class="sub">A tiny deterministic stamp-maker for creative sprints. Give it a UTC seed (like 20260329T2223Z) and a short note, and it generates an SVG badge you can reuse forever.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Controls</h2>
+
+        <label for="seed">UTC seed</label>
+        <input id="seed" type="text" placeholder="e.g. 20260329T2223Z" />
+
+        <label for="note">Note (optional)</label>
+        <input id="note" type="text" placeholder="e.g. shipped a tiny tool" />
+
+        <div class="row">
+          <div>
+            <label for="style">Style</label>
+            <select id="style">
+              <option value="ink" selected>Ink</option>
+              <option value="neon">Neon</option>
+              <option value="mono">Mono</option>
+            </select>
+          </div>
+          <div>
+            <label for="size">Size</label>
+            <select id="size">
+              <option value="720" selected>720px</option>
+              <option value="960">960px</option>
+              <option value="1200">1200px</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnGen" class="primary" type="button">Generate</button>
+          <button id="btnNow" type="button">Seed = now (UTC)</button>
+          <button id="btnCopySvg" type="button">Copy SVG</button>
+          <button id="btnDownload" type="button">Download SVG</button>
+          <button id="btnLink" type="button">Copy link</button>
+        </div>
+
+        <p class="hint">Same inputs produce the same stamp. The link encodes seed, note, and style so you can share a reproducible artifact.</p>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Output</h2>
+          <div class="kpi">
+            <span class="pill2" id="kSeed">seed: -</span>
+            <span class="pill2" id="kHash">hash: -</span>
+          </div>
+        </div>
+
+        <div id="mount" class="mount" aria-label="SVG output"></div>
+
+        <label for="outSvg">SVG</label>
+        <textarea id="outSvg" spellcheck="false"></textarea>
+
+        <p class="hint small">Back to hub: <a href="../../">index</a></p>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
