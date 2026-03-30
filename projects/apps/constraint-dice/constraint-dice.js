@@ -48,19 +48,27 @@ function normalizeDifficulty(diff){
   return ok.includes(d) ? d : "standard";
 }
 
+function normalizeTopic(topic){
+  const t = String(topic || "").trim().replaceAll(/\s+/g, " ");
+  if (!t) return "";
+  return t.slice(0, 80);
+}
+
 function readQuery(){
   const sp = new URLSearchParams(window.location.search || "");
   const seed = (sp.get("seed") || "").trim();
+  const topic = (sp.get("topic") || "").trim();
   const minutes = (sp.get("minutes") || "").trim();
   const variant = (sp.get("v") || "").trim();
   const mode = (sp.get("mode") || "").trim();
   const difficulty = (sp.get("d") || "").trim();
-  return { seed, minutes, variant, mode, difficulty };
+  return { seed, topic, minutes, variant, mode, difficulty };
 }
 
-function setQuery({ seed, minutes, variant, mode, difficulty }){
+function setQuery({ seed, topic, minutes, variant, mode, difficulty }){
   const sp = new URLSearchParams(window.location.search || "");
   if (seed) sp.set("seed", seed); else sp.delete("seed");
+  if (topic) sp.set("topic", topic); else sp.delete("topic");
   if (minutes !== "") sp.set("minutes", String(minutes)); else sp.delete("minutes");
   if (variant !== "") sp.set("v", String(variant)); else sp.delete("v");
   if (mode) sp.set("mode", mode); else sp.delete("mode");
@@ -98,9 +106,9 @@ function saveHistory(items){
 
 function upsertHistory(entry){
   const items = loadHistory();
-  const id = String(entry.seed || "") + "|" + String(entry.minutes || "") + "|" + String(entry.variant || "") + "|" + String(entry.difficulty || "") + "|" + String(entry.mode || "");
+  const id = String(entry.seed || "") + "|" + String(entry.topic || "") + "|" + String(entry.minutes || "") + "|" + String(entry.variant || "") + "|" + String(entry.difficulty || "") + "|" + String(entry.mode || "");
   const deduped = items.filter((it) => {
-    const itId = String(it.seed || "") + "|" + String(it.minutes || "") + "|" + String(it.variant || "") + "|" + String(it.difficulty || "") + "|" + String(it.mode || "");
+    const itId = String(it.seed || "") + "|" + String(it.topic || "") + "|" + String(it.minutes || "") + "|" + String(it.variant || "") + "|" + String(it.difficulty || "") + "|" + String(it.mode || "");
     return itId !== id;
   });
   const next = [entry].concat(deduped).slice(0, 12);
@@ -182,16 +190,18 @@ const BANK = {
   ]
 };
 
-function buildBrief({ seed, variant, minutes, mode, difficulty }){
+function buildBrief({ seed, topic, variant, minutes, mode, difficulty }){
   const v = clampInt(variant, 0, 99, 0);
   const diff = normalizeDifficulty(difficulty);
-  const combinedSeed = String(seed) + "::v" + String(v) + "::d" + diff;
+  const t = normalizeTopic(topic);
+  const combinedSeed = String(seed) + "::t" + (t || "-") + "::v" + String(v) + "::d" + diff;
   const rng = mulberry32(hashStringToUint32(combinedSeed));
 
   const medium = pick(rng, BANK.mediums[mode] || BANK.mediums.mixed);
-  const topic = pick(rng, BANK.topics);
+  const pickedTopic = pick(rng, BANK.topics);
   const lens = pick(rng, BANK.lenses);
   const deliverable = pick(rng, BANK.deliverables[mode] || BANK.deliverables.mixed);
+  const finalTopic = t || pickedTopic;
 
   const baseConstraints = BANK.constraints.slice();
   if (diff === "easy") baseConstraints.push.apply(baseConstraints, BANK.constraints_easy);
@@ -228,7 +238,7 @@ function buildBrief({ seed, variant, minutes, mode, difficulty }){
     minutes,
     mode,
     medium,
-    topic,
+    topic: finalTopic,
     lens,
     deliverable,
     constraints,
@@ -247,7 +257,7 @@ function buildBrief({ seed, variant, minutes, mode, difficulty }){
     "- Timestamp (UTC): `" + new Date().toISOString() + "`",
     "",
     "## What to make",
-    "Build a **" + medium + "** about **" + topic + "**.",
+    "Build a **" + medium + "** about **" + finalTopic + "**.",
     "",
     "## Lens",
     "- " + lens,
@@ -319,6 +329,7 @@ function downloadText(filename, text){
 }
 
 const $seed = document.getElementById("seed");
+const $topic = document.getElementById("topic");
 const $minutes = document.getElementById("minutes");
 const $variant = document.getElementById("variant");
 const $difficulty = document.getElementById("difficulty");
@@ -368,12 +379,16 @@ function renderHistory(items){
   }
   $historyList.innerHTML = arr.map((it) => {
     const seed = String(it.seed || "");
+    const topic = normalizeTopic(it.topic);
     const minutes = String(it.minutes || "");
     const variant = String(it.variant || "0");
     const difficulty = normalizeDifficulty(it.difficulty);
     const mode = normalizeMode(it.mode);
-    const label = seed + "  (" + minutes + "m, v" + variant + ", " + difficulty + ", " + mode + ")";
-    const qs = new URLSearchParams({ seed, minutes, v: variant, d: difficulty, mode }).toString();
+    const head = topic ? (seed + " / " + topic) : seed;
+    const label = head + "  (" + minutes + "m, v" + variant + ", " + difficulty + ", " + mode + ")";
+    const params = { seed, minutes, v: variant, d: difficulty, mode };
+    if (topic) params.topic = topic;
+    const qs = new URLSearchParams(params).toString();
     return "<li><a href=\"?" + qs + "\">" + label + "</a></li>";
   }).join("");
 }
@@ -382,6 +397,7 @@ function renderBatch(){
   if (!$batchList) return;
 
   const seed = ensureSeed();
+  const topic = normalizeTopic($topic && $topic.value);
   const minutes = clampInt($minutes.value, 10, 180, 45);
   const baseVariant = clampInt($variant.value, 0, 99, 0);
   const difficulty = normalizeDifficulty($difficulty.value || "standard");
@@ -392,7 +408,7 @@ function renderBatch(){
   $batchList.innerHTML = "";
   for (let i = 0; i < variants.length; i++){
     const v = variants[i];
-    const { picks, md } = buildBrief({ seed, variant: v, minutes, difficulty, mode });
+    const { picks, md } = buildBrief({ seed, topic, variant: v, minutes, difficulty, mode });
 
     const li = document.createElement("li");
 
@@ -445,7 +461,9 @@ function renderBatch(){
     btnLink.type = "button";
     btnLink.textContent = "Copy link";
     btnLink.addEventListener("click", async () => {
-      const qs = new URLSearchParams({ seed, minutes: String(minutes), v: String(v), d: difficulty, mode }).toString();
+      const params = { seed, minutes: String(minutes), v: String(v), d: difficulty, mode };
+      if (topic) params.topic = topic;
+      const qs = new URLSearchParams(params).toString();
       const link = window.location.origin + window.location.pathname + "?" + qs;
       try {
         await navigator.clipboard.writeText(link);
@@ -470,6 +488,8 @@ function renderBatch(){
 
 function roll(){
   const seed = ensureSeed();
+  const topic = normalizeTopic($topic && $topic.value);
+  if ($topic) $topic.value = topic;
   const minutes = clampInt($minutes.value, 10, 180, 45);
   $minutes.value = String(minutes);
   const variant = clampInt($variant.value, 0, 99, 0);
@@ -479,13 +499,13 @@ function roll(){
   const mode = normalizeMode($mode.value || "mixed");
   $mode.value = mode;
 
-  setQuery({ seed, minutes, variant, difficulty, mode });
+  setQuery({ seed, topic, minutes, variant, difficulty, mode });
 
-  const { picks, md } = buildBrief({ seed, variant, minutes, difficulty, mode });
+  const { picks, md } = buildBrief({ seed, topic, variant, minutes, difficulty, mode });
   $out.value = md;
   setKpi(picks);
 
-  const items = upsertHistory({ seed, minutes, variant, difficulty, mode, ts: Date.now() });
+  const items = upsertHistory({ seed, topic, minutes, variant, difficulty, mode, ts: Date.now() });
   renderHistory(items);
 
   renderBatch();
@@ -594,6 +614,7 @@ window.addEventListener("keydown", (e) => {
 (function init(){
   const q = readQuery();
   if (q.seed) $seed.value = q.seed;
+  if (q.topic && $topic) $topic.value = normalizeTopic(q.topic);
   if (q.minutes) $minutes.value = String(clampInt(q.minutes, 10, 180, 45));
   if (q.variant) $variant.value = String(clampInt(q.variant, 0, 99, 0));
   if (q.difficulty) $difficulty.value = normalizeDifficulty(q.difficulty);
