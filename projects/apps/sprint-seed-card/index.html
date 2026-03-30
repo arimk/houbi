@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sprint Seed Card - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Sprint Seed Card</h1>
+        <p class="sub">A one-page sprint prompt generator. Deterministic + offline: keep a seed to iterate, or remix when you want a fresh card. Export Markdown. Share by link.</p>
+      </div>
+      <div class="pill"><strong>Offline</strong> / static</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <div class="cardTitleRow">
+          <h2>Controls</h2>
+          <div class="mini">Seeded, linkable</div>
+        </div>
+
+        <label for="seed">Seed</label>
+        <input id="seed" type="text" placeholder="e.g. 20260330T1623Z" />
+
+        <label for="focus">Focus (optional)</label>
+        <input id="focus" type="text" placeholder="e.g. ship a tiny tool" />
+
+        <div class="row">
+          <div>
+            <label for="minutes">Timebox (minutes)</label>
+            <input id="minutes" type="number" min="10" max="120" step="5" value="45" />
+          </div>
+          <div>
+            <label for="variant">Variant</label>
+            <input id="variant" type="number" min="0" max="99" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="mode">Mode</label>
+            <select id="mode">
+              <option value="mixed" selected>Mixed</option>
+              <option value="software">Software</option>
+              <option value="writing">Writing</option>
+              <option value="artifact">Artifact-first</option>
+            </select>
+          </div>
+          <div>
+            <label for="intensity">Intensity</label>
+            <select id="intensity">
+              <option value="gentle">Gentle</option>
+              <option value="standard" selected>Standard</option>
+              <option value="spicy">Spicy</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnGen" class="primary" type="button">Generate card</button>
+          <button id="btnNext" type="button">Next variant</button>
+          <button id="btnRemix" type="button">Remix seed</button>
+          <button id="btnDaily" type="button">Daily seed</button>
+          <button id="btnCopy" type="button">Copy Markdown</button>
+          <button id="btnCopyLink" type="button">Copy link</button>
+          <button id="btnDownload" type="button">Download .md</button>
+        </div>
+
+        <div class="status" id="status">Ready.</div>
+        <p class="hint">Tip: keep the seed when you want to iterate on the same prompt. Bump the variant when you want a nearby alternate. Shortcuts: G generate, N next, C copy, L link, D download (when not typing).</p>
+
+        <div class="footer">Hub path: <code>/apps/sprint-seed-card/</code>. Source: <code>/projects/apps/sprint-seed-card/</code>.</div>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Card (Markdown)</h2>
+          <div class="smallCaps" id="kMeta">-</div>
+        </div>
+        <div class="kpi" id="kpi"></div>
+        <textarea id="out" spellcheck="false"></textarea>
+        <p class="hint">Back to hub: <a href="../../">index</a></p>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
