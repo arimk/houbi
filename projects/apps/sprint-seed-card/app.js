@@ -274,6 +274,122 @@ const $out = document.getElementById("out");
 const $kpi = document.getElementById("kpi");
 const $kMeta = document.getElementById("kMeta");
 
+const $libList = document.getElementById("libList");
+const $libCount = document.getElementById("libCount");
+const $btnLibExport = document.getElementById("btnLibExport");
+const $btnLibClear = document.getElementById("btnLibClear");
+
+const LIB_KEY = "ssc_library_v1";
+const LIB_MAX = 12;
+
+function libLoad(){
+  try {
+    const raw = localStorage.getItem(LIB_KEY);
+    if (!raw) return [];
+    const items = JSON.parse(raw);
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
+function libSave(items){
+  try {
+    localStorage.setItem(LIB_KEY, JSON.stringify(items || []));
+  } catch {
+    // ignore
+  }
+}
+
+function libIdFor(meta){
+  return String(meta.combinedSeed || meta.seed || "") + "::" + String(meta.minutes || "") + "::" + String(meta.mode || "") + "::" + String(meta.intensity || "");
+}
+
+function libAdd(card, inputs){
+  if (!card || !card.meta || !card.md) return;
+
+  const meta = {
+    id: libIdFor(card.meta),
+    savedAt: new Date().toISOString(),
+    seed: card.meta.seed,
+    variant: card.meta.variant,
+    minutes: card.meta.minutes,
+    mode: card.meta.mode,
+    intensity: card.meta.intensity,
+    focus: inputs.focus || "",
+    combinedSeed: card.meta.combinedSeed
+  };
+
+  const item = { meta, md: card.md };
+
+  const items = libLoad();
+  const filtered = items.filter((it) => it && it.meta && it.meta.id !== meta.id);
+  filtered.unshift(item);
+  const next = filtered.slice(0, LIB_MAX);
+  libSave(next);
+  libRender(next);
+}
+
+function libClear(){
+  libSave([]);
+  libRender([]);
+}
+
+function libRender(items){
+  const arr = Array.isArray(items) ? items : [];
+  if ($libCount) $libCount.textContent = String(arr.length) + " saved";
+  if (!$libList) return;
+
+  if (!arr.length){
+    $libList.innerHTML = "<li class=\"hint\">No saved cards yet. Generate one.</li>";
+    return;
+  }
+
+  $libList.innerHTML = arr.map((it, idx) => {
+    const m = (it && it.meta) ? it.meta : {};
+    const title = "seed " + String(m.seed || "-") + " / v" + String(m.variant || 0);
+    const metaLine = String(m.mode || "-") + ", " + String(m.intensity || "-") + ", " + String(m.minutes || "-") + "m" + (m.focus ? (" / " + m.focus) : "");
+    return "<li class=\"libItem\" data-idx=\"" + String(idx) + "\">" +
+      "<div class=\"libMain\">" +
+        "<div class=\"libTitle\">" + title + "</div>" +
+        "<div class=\"libMeta\">" + metaLine + "</div>" +
+      "</div>" +
+      "<div class=\"libBtns\">" +
+        "<button type=\"button\" data-act=\"load\" data-idx=\"" + String(idx) + "\">Load</button>" +
+        "<button class=\"danger\" type=\"button\" data-act=\"del\" data-idx=\"" + String(idx) + "\">Del</button>" +
+      "</div>" +
+    "</li>";
+  }).join("");
+}
+
+function libExportMarkdown(){
+  const items = libLoad();
+  if (!items.length) return "";
+  const lines = [];
+  lines.push("# Sprint Seed Card Library");
+  lines.push("");
+  lines.push("Exported at: " + new Date().toISOString());
+  lines.push("");
+
+  for (let i = 0; i < items.length; i++){
+    const it = items[i];
+    const m = (it && it.meta) ? it.meta : {};
+    lines.push("---");
+    lines.push("");
+    lines.push("## " + String(m.seed || "-") + " / v" + String(m.variant || 0));
+    lines.push("");
+    lines.push("- mode: " + String(m.mode || "-"));
+    lines.push("- intensity: " + String(m.intensity || "-"));
+    lines.push("- minutes: " + String(m.minutes || "-"));
+    if (m.focus) lines.push("- focus: " + String(m.focus));
+    lines.push("");
+    lines.push(String(it.md || ""));
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
 function ensureSeed(){
   const raw = ($seed.value || "").trim();
   if (raw) return raw;
@@ -302,7 +418,8 @@ function generate(){
   setKpi($kpi, card);
   $kMeta.textContent = "seed " + card.meta.seed + " / v" + String(card.meta.variant) + " / " + String(card.meta.minutes) + "m";
 
-  setStatus($status, "Generated. Keep going.", "ok");
+  libAdd(card, { focus });
+  setStatus($status, "Generated. Saved to library.", "ok");
 }
 
 function isTypingTarget(el){
@@ -369,6 +486,67 @@ $btnDownload.addEventListener("click", () => {
   setStatus($status, "Downloaded: " + fn, "ok");
 });
 
+if ($btnLibExport){
+  $btnLibExport.addEventListener("click", () => {
+    const md = libExportMarkdown();
+    if (!md.trim()){
+      setStatus($status, "Library is empty.", "warn");
+      return;
+    }
+    downloadText("sprint-seed-card_library.md", md);
+    setStatus($status, "Exported library.", "ok");
+  });
+}
+
+if ($btnLibClear){
+  $btnLibClear.addEventListener("click", () => {
+    const items = libLoad();
+    if (!items.length){
+      setStatus($status, "Library already empty.", "ok");
+      return;
+    }
+    const ok = window.confirm("Clear saved cards from this browser? This cannot be undone.");
+    if (!ok) return;
+    libClear();
+    setStatus($status, "Cleared library.", "ok");
+  });
+}
+
+if ($libList){
+  $libList.addEventListener("click", (e) => {
+    const t = e && e.target ? e.target : null;
+    if (!t) return;
+    const act = String(t.getAttribute("data-act") || "");
+    const idx = clampInt(t.getAttribute("data-idx"), 0, 9999, -1);
+    if (!act || idx < 0) return;
+
+    const items = libLoad();
+    if (idx >= items.length) return;
+
+    if (act === "del"){
+      const next = items.slice(0, idx).concat(items.slice(idx + 1));
+      libSave(next);
+      libRender(next);
+      setStatus($status, "Deleted saved card.", "ok");
+      return;
+    }
+
+    if (act === "load"){
+      const it = items[idx];
+      const m = (it && it.meta) ? it.meta : {};
+      $seed.value = String(m.seed || "");
+      $variant.value = String(clampInt(m.variant, 0, 99, 0));
+      $minutes.value = String(clampInt(m.minutes, 10, 120, 45));
+      $mode.value = normalizeMode(m.mode);
+      $intensity.value = normalizeIntensity(m.intensity);
+      $focus.value = normalizeText(m.focus || "", 90);
+      generate();
+      setStatus($status, "Loaded from library.", "ok");
+      return;
+    }
+  });
+}
+
 window.addEventListener("keydown", (e) => {
   if (!e || e.defaultPrevented) return;
   if (isTypingTarget(e.target)) return;
@@ -391,5 +569,6 @@ window.addEventListener("keydown", (e) => {
   if (q.mode) $mode.value = normalizeMode(q.mode);
   if (q.intensity) $intensity.value = normalizeIntensity(q.intensity);
 
+  libRender(libLoad());
   generate();
 })();

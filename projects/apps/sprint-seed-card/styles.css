@@ -93,3 +93,30 @@ code{ color: #b7d6ff; }
 .cardTitleRow .mini{ font-size:12px; color: var(--muted); }
 .outTop{ display:flex; align-items:baseline; justify-content:space-between; gap: 12px; }
 .smallCaps{ text-transform:uppercase; letter-spacing:.12em; font-size:11px; color: var(--muted); }
+
+.hr{ border:0; border-top:1px solid var(--line2); margin: 14px 0; }
+
+.libList{
+  list-style:none;
+  padding:0;
+  margin: 10px 0 0;
+  display:flex;
+  flex-direction:column;
+  gap: 8px;
+}
+.libItem{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 10px;
+  border: 1px solid var(--line2);
+  background: rgba(6,10,21,.5);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.libMain{ min-width:0; }
+.libTitle{ font-size: 12px; color: #dbe7ff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.libMeta{ font-size: 11px; color: var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top: 2px; }
+.libBtns{ display:flex; gap: 8px; flex-shrink:0; }
+.libBtns button{ padding: 7px 9px; border-radius: 10px; font-size: 12px; }
+.libBtns button.danger{ border-color: rgba(255,120,120,.25); }

@@ -73,6 +73,19 @@
         <div class="status" id="status">Ready.</div>
         <p class="hint">Tip: keep the seed when you want to iterate on the same prompt. Bump the variant when you want a nearby alternate. Shortcuts: G generate, N next, C copy, L link, D download (when not typing).</p>
 
+        <hr class="hr" />
+
+        <div class="cardTitleRow">
+          <h2>Library</h2>
+          <div class="mini" id="libCount">0 saved</div>
+        </div>
+        <div class="btns">
+          <button id="btnLibExport" type="button">Export library</button>
+          <button id="btnLibClear" class="ghost" type="button">Clear</button>
+        </div>
+        <ul class="libList" id="libList" aria-label="Saved sprint cards"></ul>
+        <p class="hint">Each time you generate, the card is saved locally in your browser (no server). Click an item to restore its inputs.</p>
+
         <div class="footer">Hub path: <code>/apps/sprint-seed-card/</code>. Source: <code>/projects/apps/sprint-seed-card/</code>.</div>
       </section>
 

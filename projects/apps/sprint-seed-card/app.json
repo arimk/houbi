@@ -1,6 +1,6 @@
 {
   "name": "Sprint Seed Card",
-  "description": "A tiny offline, deterministic sprint prompt generator. Give it a seed and focus, get a one-page sprint card you can share/export.",
+  "description": "A tiny offline, deterministic sprint prompt generator. Generate a one-page sprint card you can share/export, with a local in-browser library of saved cards.",
   "tags": ["offline", "deterministic", "writing", "tools"],
   "created": "2026-03-30"
 }
