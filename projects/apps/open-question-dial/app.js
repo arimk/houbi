@@ -33,6 +33,30 @@ function clampInt(v, lo, hi, fallback){
   return Math.max(lo, Math.min(hi, n));
 }
 
+function escapeHtml(s){
+  return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+function highlightHtml(text, q){
+  const t = String(text || "");
+  const needle = String(q || "").trim().toLowerCase();
+  if (!needle) return escapeHtml(t);
+  const low = t.toLowerCase();
+  let i = 0;
+  let out = "";
+  while (i < t.length){
+    const j = low.indexOf(needle, i);
+    if (j === -1){
+      out += escapeHtml(t.slice(i));
+      break;
+    }
+    out += escapeHtml(t.slice(i, j));
+    out += "<mark>" + escapeHtml(t.slice(j, j + needle.length)) + "</mark>";
+    i = j + needle.length;
+  }
+  return out;
+}
+
 function parsePinsParam(raw, maxCount){
   const txt = String(raw || "").trim();
   if (!txt) return [];
@@ -580,6 +604,9 @@ function main(){
   const elTone = document.getElementById("tone");
   const elCount = document.getElementById("count");
 
+  const elFilter = document.getElementById("filter");
+  const btnFilterClear = document.getElementById("btnFilterClear");
+
   const elOutList = document.getElementById("outList");
   const elOutMd = document.getElementById("outMd");
   const elPinnedBoard = document.getElementById("pinnedBoard");
@@ -603,6 +630,14 @@ function main(){
 
   let debounceTimer = null;
   let lastState = null;
+
+  function kpiFlash(txt){
+    if (!kHash) return;
+    kHash.textContent = String(txt || "");
+    window.setTimeout(() => {
+      if (lastState) kHash.textContent = "hash: " + lastState.hashHex;
+    }, 850);
+  }
 
   let focusIndex = 0;
   let timerMin = 10;
@@ -878,6 +913,8 @@ function main(){
     const tone = elTone.value || "gentle";
     const count = clampInt(elCount.value, 3, 24, 9);
 
+    const filter = elFilter ? String(elFilter.value || "").trim().toLowerCase() : "";
+
     const built = buildQuestions({ topic, seed, variant, tone, count });
 
     // Load pins for this exact output hash.
@@ -898,7 +935,17 @@ function main(){
 
       const txt = document.createElement("div");
       txt.className = "qText" + (cb.checked ? " qPinned" : "");
-      txt.textContent = q;
+
+      const show = !filter || String(q || "").toLowerCase().includes(filter);
+      if (!show){
+        li.style.display = "none";
+      }
+
+      if (filter && show){
+        txt.innerHTML = highlightHtml(q, filter);
+      } else {
+        txt.textContent = q;
+      }
 
       cb.addEventListener("change", () => {
         if (cb.checked) pinSet.add(i);
@@ -907,6 +954,24 @@ function main(){
         // Update styling + markdown.
         txt.className = "qText" + (cb.checked ? " qPinned" : "");
         render({ updateUrl: true, keepPins: true });
+      });
+
+      txt.addEventListener("click", async (e) => {
+        if (e && e.altKey){
+          const st = render({ updateUrl: true, keepPins: true });
+          lastState = st;
+          focusIndex = i;
+          timerReset();
+          setModalOpen(true);
+          focusRender();
+          return;
+        }
+        try {
+          await copyToClipboard(q);
+          kpiFlash("copied");
+        } catch {
+          alert(q);
+        }
       });
 
       row.appendChild(cb);
@@ -1283,6 +1348,14 @@ function main(){
   elVariant.addEventListener("input", renderSoon);
   elTone.addEventListener("change", renderSoon);
   elCount.addEventListener("change", renderSoon);
+  if (elFilter) elFilter.addEventListener("input", renderSoon);
+  if (btnFilterClear){
+    btnFilterClear.addEventListener("click", () => {
+      if (!elFilter) return;
+      elFilter.value = "";
+      render({ updateUrl: true, keepPins: true });
+    });
+  }
 
   // Default seed if none.
   if (!elSeed.value){
