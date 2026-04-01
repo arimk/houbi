@@ -38,6 +38,16 @@
             <button class="presetBtn" type="button" data-topic="rest" data-tone="gentle">Rest</button>
           </div>
           <p class="hint small">Click a preset to fill the topic (and nudge the tone). You can still edit everything after.</p>
+
+          <div class="historyTop" style="margin-top:10px">
+            <h2 class="h2Small">Saved presets</h2>
+            <div class="historyActions">
+              <button id="btnSavePreset" type="button">Save current</button>
+              <button id="btnClearPresets" class="ghost" type="button">Clear</button>
+            </div>
+          </div>
+          <div id="savedPresets" class="historyList"></div>
+          <p class="hint small">These presets are stored locally in your browser (topic + tone). They never leave your device unless you export a backup.</p>
         </div>
 
         <div class="row">

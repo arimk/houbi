@@ -386,6 +386,64 @@ function saveNote(hashHex, idx, text){
 const HISTORY_STORAGE_KEY = "oqd:history:v1";
 const AUTO_HISTORY_KEY = "oqd:autoHistory:v1";
 
+// Topic presets storage (local)
+const PRESETS_STORAGE_KEY = "oqd:topicPresets:v1";
+
+function loadSavedPresets(){
+  try {
+    const raw = localStorage.getItem(PRESETS_STORAGE_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    const out = [];
+    for (const it of arr){
+      if (!it || typeof it !== "object") continue;
+      const topic = String(it.topic || "").trim();
+      const tone = String(it.tone || "gentle").trim();
+      if (!topic) continue;
+      out.push({ topic: topic.slice(0, 140), tone: tone || "gentle", savedUtc: String(it.savedUtc || "") });
+    }
+    return out.slice(0, 24);
+  } catch {
+    return [];
+  }
+}
+
+function saveSavedPresets(items){
+  const arr = Array.isArray(items) ? items : [];
+  try {
+    localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(arr));
+  } catch {
+    // ignore
+  }
+}
+
+function addSavedPreset(topic, tone){
+  const t = String(topic || "").trim().replace(/\s+/g, " ");
+  if (!t) return loadSavedPresets();
+  const toneKey = String(tone || "gentle").trim() || "gentle";
+
+  const items = loadSavedPresets();
+  const sig = t.toLowerCase() + "|" + toneKey;
+
+  const next = [];
+  next.push({ topic: t.slice(0, 140), tone: toneKey, savedUtc: nowUtcCompact() });
+  for (const it of items){
+    const sig2 = String(it.topic || "").trim().toLowerCase() + "|" + String(it.tone || "gentle").trim();
+    if (sig2 === sig) continue;
+    next.push(it);
+    if (next.length >= 12) break;
+  }
+
+  saveSavedPresets(next);
+  return next;
+}
+
+function clearSavedPresets(){
+  saveSavedPresets([]);
+  return [];
+}
+
 // Focus timer preference (minutes)
 const TIMER_MIN_KEY = "oqd:timerMin:v1";
 
@@ -619,6 +677,11 @@ function main(){
   const elHistoryList = document.getElementById("historyList");
   const elAutoHistory = document.getElementById("chkAutoHistory");
 
+  // Saved presets elements.
+  const elSavedPresets = document.getElementById("savedPresets");
+  const btnSavePreset = document.getElementById("btnSavePreset");
+  const btnClearPresets = document.getElementById("btnClearPresets");
+
   // Focus mode elements.
   const elModal = document.getElementById("focusModal");
   const elFocusMeta = document.getElementById("focusMeta");
@@ -818,6 +881,72 @@ function main(){
       row.appendChild(btns);
 
       elHistoryList.appendChild(row);
+    }
+  }
+
+  function renderSavedPresetsUi(){
+    if (!elSavedPresets) return;
+    const items = loadSavedPresets();
+    elSavedPresets.innerHTML = "";
+
+    if (!items.length){
+      const empty = document.createElement("div");
+      empty.className = "historyMeta";
+      empty.textContent = "(No saved presets yet.)";
+      elSavedPresets.appendChild(empty);
+      return;
+    }
+
+    for (let i = 0; i < items.length; i++){
+      const it = items[i];
+      const topic = String(it.topic || "").trim();
+      const tone = String(it.tone || "gentle").trim() || "gentle";
+
+      const row = document.createElement("div");
+      row.className = "historyItem";
+
+      const meta = document.createElement("div");
+      meta.className = "historyMeta";
+      meta.textContent = `tone ${tone}` + (it.savedUtc ? (` | saved ${it.savedUtc}`) : "");
+
+      const t = document.createElement("div");
+      t.className = "historyTitle";
+      t.textContent = topic;
+
+      const btns = document.createElement("div");
+      btns.className = "historyBtns";
+
+      const bLoad = document.createElement("button");
+      bLoad.type = "button";
+      bLoad.textContent = "Load";
+      bLoad.addEventListener("click", () => {
+        elTopic.value = topic;
+        elTone.value = tone;
+        render({ updateUrl: true });
+      });
+
+      const bRemove = document.createElement("button");
+      bRemove.type = "button";
+      bRemove.className = "ghost";
+      bRemove.textContent = "Remove";
+      bRemove.addEventListener("click", () => {
+        const items2 = loadSavedPresets();
+        const next = [];
+        for (let j = 0; j < items2.length; j++){
+          if (j !== i) next.push(items2[j]);
+        }
+        saveSavedPresets(next);
+        renderSavedPresetsUi();
+      });
+
+      btns.appendChild(bLoad);
+      btns.appendChild(bRemove);
+
+      row.appendChild(meta);
+      row.appendChild(t);
+      row.appendChild(btns);
+
+      elSavedPresets.appendChild(row);
     }
   }
 
@@ -1037,6 +1166,28 @@ function main(){
     btnClearHistory.addEventListener("click", () => {
       saveHistory([]);
       renderHistory();
+    });
+  }
+
+  // Saved presets.
+  if (btnSavePreset){
+    btnSavePreset.addEventListener("click", () => {
+      const t = String(elTopic.value || "").trim();
+      if (!t){
+        alert("Add a topic first, then save it as a preset.");
+        return;
+      }
+      addSavedPreset(t, String(elTone.value || "gentle"));
+      renderSavedPresetsUi();
+    });
+  }
+
+  if (btnClearPresets){
+    btnClearPresets.addEventListener("click", () => {
+      const ok = window.confirm("Clear saved presets (local only)?");
+      if (!ok) return;
+      clearSavedPresets();
+      renderSavedPresetsUi();
     });
   }
 
@@ -1373,6 +1524,7 @@ function main(){
   }
 
   renderHistory();
+  renderSavedPresetsUi();
 }
 
 main();
