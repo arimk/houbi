@@ -355,6 +355,69 @@ const $clearHistory = document.getElementById("clearHistory");
 
 const $batchList = document.getElementById("batchList");
 
+const $timerLabel = document.getElementById("timerLabel");
+const $btnTimerSet = document.getElementById("btnTimerSet");
+const $btnTimerStart = document.getElementById("btnTimerStart");
+const $btnTimerPause = document.getElementById("btnTimerPause");
+const $btnTimerReset = document.getElementById("btnTimerReset");
+
+let timerInterval = null;
+let timerRemainingSec = 0;
+let timerRunning = false;
+
+function fmtTimer(sec){
+  const s = Math.max(0, clampInt(sec, 0, 24 * 60 * 60, 0));
+  const mm = Math.floor(s / 60);
+  const ss = s % 60;
+  return String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
+}
+
+function renderTimer(){
+  if (!$timerLabel) return;
+  $timerLabel.textContent = fmtTimer(timerRemainingSec);
+}
+
+function stopTimer(){
+  if (timerInterval){
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  timerRunning = false;
+}
+
+function setTimerFromMinutes(){
+  const minutes = clampInt($minutes.value, 10, 180, 45);
+  $minutes.value = String(minutes);
+  stopTimer();
+  timerRemainingSec = minutes * 60;
+  renderTimer();
+}
+
+function startTimer(){
+  if (timerRunning) return;
+  if (timerRemainingSec <= 0) setTimerFromMinutes();
+  timerRunning = true;
+  renderTimer();
+  timerInterval = setInterval(() => {
+    timerRemainingSec = Math.max(0, timerRemainingSec - 1);
+    renderTimer();
+    if (timerRemainingSec <= 0){
+      stopTimer();
+      setStatus($status, "Timebox done. Ship the smallest useful slice.", "ok");
+    }
+  }, 1000);
+}
+
+function pauseTimer(){
+  if (!timerRunning) return;
+  stopTimer();
+  renderTimer();
+}
+
+function toggleTimer(){
+  if (timerRunning) pauseTimer(); else startTimer();
+}
+
 function setKpi(p){
   const items = [
     { k: "Medium", v: p.medium },
@@ -498,6 +561,7 @@ function roll(){
   if ($topic) $topic.value = topic;
   const minutes = clampInt($minutes.value, 10, 180, 45);
   $minutes.value = String(minutes);
+  if (!timerRunning) setTimerFromMinutes();
   const variant = clampInt($variant.value, 0, 99, 0);
   $variant.value = String(variant);
   const batchCount = $batchCount ? clampInt($batchCount.value, 1, 6, 3) : 3;
@@ -595,6 +659,26 @@ $download.addEventListener("click", () => {
   setStatus($status, "Downloaded: " + fn, "ok");
 });
 
+if ($btnTimerSet) $btnTimerSet.addEventListener("click", () => {
+  setTimerFromMinutes();
+  setStatus($status, "Timer set.", "ok");
+});
+
+if ($btnTimerStart) $btnTimerStart.addEventListener("click", () => {
+  startTimer();
+  setStatus($status, "Timer started.", "ok");
+});
+
+if ($btnTimerPause) $btnTimerPause.addEventListener("click", () => {
+  pauseTimer();
+  setStatus($status, "Timer paused.", "ok");
+});
+
+if ($btnTimerReset) $btnTimerReset.addEventListener("click", () => {
+  setTimerFromMinutes();
+  setStatus($status, "Timer reset.", "ok");
+});
+
 $clearHistory.addEventListener("click", () => {
   saveHistory([]);
   renderHistory([]);
@@ -619,6 +703,7 @@ window.addEventListener("keydown", (e) => {
   if (k === "c"){ e.preventDefault(); $copy.click(); return; }
   if (k === "l"){ e.preventDefault(); $copyLink.click(); return; }
   if (k === "d"){ e.preventDefault(); $download.click(); return; }
+  if (k === "t"){ e.preventDefault(); toggleTimer(); return; }
 });
 
 // initial (hydrate from query)
@@ -633,5 +718,6 @@ window.addEventListener("keydown", (e) => {
   if (q.mode) $mode.value = normalizeMode(q.mode);
 
   renderHistory(loadHistory());
+  setTimerFromMinutes();
   roll();
 })();

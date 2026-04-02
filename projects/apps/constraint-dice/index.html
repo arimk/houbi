@@ -202,7 +202,7 @@
         </div>
 
         <div class="status" id="status">Ready.</div>
-        <div class="hint">Tip: Keep the seed if you want to iterate. Change the mode if you feel stuck. Remix creates a new seed based on time. Shortcuts: R roll, N next, C copy, L link, D download (when not typing).</div>
+        <div class="hint">Tip: Keep the seed if you want to iterate. Change the mode if you feel stuck. Remix creates a new seed based on time. Shortcuts: R roll, N next, C copy, L link, D download, T timer start/pause (when not typing).</div>
 
         <div class="history" id="history">
           <div class="history-head">
@@ -218,6 +218,20 @@
         <h2>Brief (Markdown)</h2>
         <div class="kpi" id="kpi"></div>
         <textarea id="out" spellcheck="false"></textarea>
+
+        <div class="history" id="timer" style="margin-top:12px">
+          <div class="history-head">
+            <h3>Timebox timer</h3>
+            <div class="hint" style="margin:0">Quick countdown for the current minutes setting.</div>
+          </div>
+          <div class="row" style="align-items:center">
+            <div class="pill" id="timerLabel" style="text-align:center">00:00</div>
+            <button id="btnTimerSet" type="button">Set</button>
+            <button id="btnTimerStart" type="button">Start</button>
+            <button id="btnTimerPause" type="button">Pause</button>
+            <button id="btnTimerReset" type="button">Reset</button>
+          </div>
+        </div>
 
         <div class="history" id="batch" style="margin-top:12px">
           <div class="history-head">
