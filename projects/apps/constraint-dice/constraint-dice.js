@@ -60,17 +60,19 @@ function readQuery(){
   const topic = (sp.get("topic") || "").trim();
   const minutes = (sp.get("minutes") || "").trim();
   const variant = (sp.get("v") || "").trim();
+  const batchCount = (sp.get("bn") || "").trim();
   const mode = (sp.get("mode") || "").trim();
   const difficulty = (sp.get("d") || "").trim();
-  return { seed, topic, minutes, variant, mode, difficulty };
+  return { seed, topic, minutes, variant, batchCount, mode, difficulty };
 }
 
-function setQuery({ seed, topic, minutes, variant, mode, difficulty }){
+function setQuery({ seed, topic, minutes, variant, batchCount, mode, difficulty }){
   const sp = new URLSearchParams(window.location.search || "");
   if (seed) sp.set("seed", seed); else sp.delete("seed");
   if (topic) sp.set("topic", topic); else sp.delete("topic");
   if (minutes !== "") sp.set("minutes", String(minutes)); else sp.delete("minutes");
   if (variant !== "") sp.set("v", String(variant)); else sp.delete("v");
+  if (batchCount !== "") sp.set("bn", String(batchCount)); else sp.delete("bn");
   if (mode) sp.set("mode", mode); else sp.delete("mode");
   if (difficulty) sp.set("d", difficulty); else sp.delete("d");
   const qs = sp.toString();
@@ -332,6 +334,7 @@ const $seed = document.getElementById("seed");
 const $topic = document.getElementById("topic");
 const $minutes = document.getElementById("minutes");
 const $variant = document.getElementById("variant");
+const $batchCount = document.getElementById("batchCount");
 const $difficulty = document.getElementById("difficulty");
 const $mode = document.getElementById("mode");
 const $out = document.getElementById("out");
@@ -400,10 +403,13 @@ function renderBatch(){
   const topic = normalizeTopic($topic && $topic.value);
   const minutes = clampInt($minutes.value, 10, 180, 45);
   const baseVariant = clampInt($variant.value, 0, 99, 0);
+  const batchCount = $batchCount ? clampInt($batchCount.value, 1, 6, 3) : 3;
+  if ($batchCount) $batchCount.value = String(batchCount);
   const difficulty = normalizeDifficulty($difficulty.value || "standard");
   const mode = normalizeMode($mode.value || "mixed");
 
-  const variants = [baseVariant, (baseVariant + 1) % 100, (baseVariant + 2) % 100];
+  const variants = [];
+  for (let i = 0; i < batchCount; i++) variants.push((baseVariant + i) % 100);
 
   $batchList.innerHTML = "";
   for (let i = 0; i < variants.length; i++){
@@ -494,12 +500,14 @@ function roll(){
   $minutes.value = String(minutes);
   const variant = clampInt($variant.value, 0, 99, 0);
   $variant.value = String(variant);
+  const batchCount = $batchCount ? clampInt($batchCount.value, 1, 6, 3) : 3;
+  if ($batchCount) $batchCount.value = String(batchCount);
   const difficulty = normalizeDifficulty($difficulty.value || "standard");
   $difficulty.value = difficulty;
   const mode = normalizeMode($mode.value || "mixed");
   $mode.value = mode;
 
-  setQuery({ seed, topic, minutes, variant, difficulty, mode });
+  setQuery({ seed, topic, minutes, variant, batchCount, difficulty, mode });
 
   const { picks, md } = buildBrief({ seed, topic, variant, minutes, difficulty, mode });
   $out.value = md;
@@ -521,7 +529,10 @@ if ($roll3){
     if (el){
       el.scrollIntoView({ behavior: "smooth", block: "start" });
     }
-    setStatus($status, "Rolled batch: v" + String($variant.value) + "..v" + String((clampInt($variant.value, 0, 99, 0) + 2) % 100) + ".", "ok");
+    const base = clampInt($variant.value, 0, 99, 0);
+    const n = $batchCount ? clampInt($batchCount.value, 1, 6, 3) : 3;
+    const end = (base + Math.max(0, n - 1)) % 100;
+    setStatus($status, "Rolled batch: v" + String(base) + "..v" + String(end) + " (" + String(n) + ").", "ok");
   });
 }
 
@@ -617,6 +628,7 @@ window.addEventListener("keydown", (e) => {
   if (q.topic && $topic) $topic.value = normalizeTopic(q.topic);
   if (q.minutes) $minutes.value = String(clampInt(q.minutes, 10, 180, 45));
   if (q.variant) $variant.value = String(clampInt(q.variant, 0, 99, 0));
+  if (q.batchCount && $batchCount) $batchCount.value = String(clampInt(q.batchCount, 1, 6, 3));
   if (q.difficulty) $difficulty.value = normalizeDifficulty(q.difficulty);
   if (q.mode) $mode.value = normalizeMode(q.mode);
 

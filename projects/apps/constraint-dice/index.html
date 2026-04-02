@@ -166,6 +166,10 @@
             <input id="variant" type="number" min="0" max="99" step="1" value="0" />
           </div>
           <div>
+            <label for="batchCount">Batch</label>
+            <input id="batchCount" type="number" min="1" max="6" step="1" value="3" />
+          </div>
+          <div>
             <label for="difficulty">Difficulty</label>
             <select id="difficulty">
               <option value="easy">Easy</option>
@@ -188,7 +192,7 @@
 
         <div class="btns">
           <button id="roll" class="primary">Roll brief</button>
-          <button id="roll3">Roll x3</button>
+          <button id="roll3">Roll batch</button>
           <button id="remix">Remix seed</button>
           <button id="daily">Daily seed</button>
           <button id="nextVariant">Next variant</button>
