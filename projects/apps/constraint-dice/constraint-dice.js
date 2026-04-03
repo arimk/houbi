@@ -360,6 +360,87 @@ const $btnTimerSet = document.getElementById("btnTimerSet");
 const $btnTimerStart = document.getElementById("btnTimerStart");
 const $btnTimerPause = document.getElementById("btnTimerPause");
 const $btnTimerReset = document.getElementById("btnTimerReset");
+const $timerSound = document.getElementById("timerSound");
+const $timerNotify = document.getElementById("timerNotify");
+
+const TIMER_PREF_KEY = "houbi_constraint_dice_timer_prefs_v1";
+
+function loadTimerPrefs(){
+  try {
+    const raw = window.localStorage.getItem(TIMER_PREF_KEY);
+    if (!raw) return { sound: true, notify: false };
+    const obj = JSON.parse(raw);
+    return {
+      sound: (obj && typeof obj.sound === "boolean") ? obj.sound : true,
+      notify: (obj && typeof obj.notify === "boolean") ? obj.notify : false
+    };
+  } catch {
+    return { sound: true, notify: false };
+  }
+}
+
+function saveTimerPrefs(p){
+  try {
+    window.localStorage.setItem(TIMER_PREF_KEY, JSON.stringify({
+      sound: !!p.sound,
+      notify: !!p.notify
+    }));
+  } catch {
+    // ignore
+  }
+}
+
+function playBeep(){
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return false;
+    const ctx = new Ctx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.value = 880;
+    g.gain.value = 0.0001;
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.start();
+    const t0 = ctx.currentTime;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(0.18, t0 + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.22);
+    o.stop(t0 + 0.24);
+    setTimeout(() => { try { ctx.close(); } catch {} }, 350);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function fireTimerDone(){
+  const prefs = loadTimerPrefs();
+  if (prefs.sound) playBeep();
+
+  const msg = "Constraint Dice: timebox done. Ship the smallest useful slice.";
+  if (prefs.notify && ("Notification" in window)){
+    try {
+      if (Notification.permission === "granted"){
+        new Notification("Timebox done", { body: msg });
+      } else if (Notification.permission === "default"){
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") new Notification("Timebox done", { body: msg });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  try {
+    const prev = document.title;
+    document.title = "[DONE] " + prev;
+    setTimeout(() => { document.title = prev; }, 2200);
+  } catch {
+    // ignore
+  }
+}
 
 let timerInterval = null;
 let timerRemainingSec = 0;
@@ -404,6 +485,7 @@ function startTimer(){
     if (timerRemainingSec <= 0){
       stopTimer();
       setStatus($status, "Timebox done. Ship the smallest useful slice.", "ok");
+      fireTimerDone();
     }
   }, 1000);
 }
@@ -718,6 +800,20 @@ window.addEventListener("keydown", (e) => {
   if (q.mode) $mode.value = normalizeMode(q.mode);
 
   renderHistory(loadHistory());
+
+  const tp = loadTimerPrefs();
+  if ($timerSound) $timerSound.checked = !!tp.sound;
+  if ($timerNotify) $timerNotify.checked = !!tp.notify;
+  if ($timerSound) $timerSound.addEventListener("change", () => {
+    saveTimerPrefs({ sound: !!$timerSound.checked, notify: $timerNotify ? !!$timerNotify.checked : false });
+  });
+  if ($timerNotify) $timerNotify.addEventListener("change", () => {
+    saveTimerPrefs({ sound: $timerSound ? !!$timerSound.checked : true, notify: !!$timerNotify.checked });
+    if ($timerNotify.checked && ("Notification" in window) && Notification.permission === "default"){
+      Notification.requestPermission().catch(() => {});
+    }
+  });
+
   setTimerFromMinutes();
   roll();
 })();
