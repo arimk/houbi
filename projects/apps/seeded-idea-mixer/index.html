@@ -83,6 +83,14 @@
     }
     .idea strong{ color: var(--cyan); font-weight: 800; }
 
+    .ideaList{ margin-top: 10px; display:flex; flex-direction: column; gap: 10px; }
+    .ideaItem{ border: 1px solid var(--line2); border-radius: 16px; background: rgba(6,10,21,.55); padding: 12px; cursor: pointer; }
+    .ideaItem:hover{ border-color: var(--line); }
+    .ideaItem .k{ font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 8px; }
+    .ideaItem ul{ margin: 8px 0 0; padding-left: 18px; color:#d6e3ff; font-size: 14px; line-height: 1.55; }
+    .ideaItem li{ margin: 2px 0; }
+    .ideaItem .h{ font-weight: 900; color: var(--cyan); }
+
     .meta{ margin-top: 12px; color: var(--muted); font-size: 12px; line-height: 1.6; }
     code{ color: #b7d6ff; }
 
@@ -147,6 +155,17 @@
           </div>
         </div>
 
+        <div class="row">
+          <div>
+            <label for="count">Ideas</label>
+            <select id="count">
+              <option value="1" selected>1</option>
+              <option value="3">3</option>
+              <option value="5">5</option>
+            </select>
+          </div>
+        </div>
+
         <div class="btns">
           <button id="roll" class="primary">Roll idea</button>
           <button id="nextVariant">Next variant</button>
@@ -164,7 +183,8 @@
 
       <div class="card">
         <h2>Output</h2>
-        <div class="idea" id="idea">Roll to generate an idea.</div>
+        <div class="idea" id="idea">Roll to generate ideas.</div>
+        <div id="ideaList" class="ideaList"></div>
         <div class="meta" id="meta"></div>
 
         <label for="notes">Notes (optional)</label>
@@ -187,6 +207,7 @@
     const seedEl = el('seed');
     const modeEl = el('mode');
     const variantEl = el('variant');
+    const countEl = el('count');
     const notesEl = el('notes');
 
     const rollBtn = el('roll');
@@ -199,6 +220,7 @@
     const resetBtn = el('reset');
 
     const ideaEl = el('idea');
+    const ideaListEl = el('ideaList');
     const metaEl = el('meta');
     const statusEl = el('status');
 
@@ -327,6 +349,7 @@
         seed: sp.get('seed') || '',
         mode: sp.get('mode') || 'mixed',
         variant: sp.get('v') || '0',
+        count: sp.get('k') || '1',
         notes: sp.get('notes') || ''
       };
     }
@@ -335,6 +358,7 @@
       if (typeof st.seed === 'string') seedEl.value = st.seed;
       if (typeof st.mode === 'string') modeEl.value = st.mode;
       if (typeof st.variant === 'string') variantEl.value = st.variant;
+      if (typeof st.count === 'string') countEl.value = st.count;
       if (typeof st.notes === 'string') notesEl.value = st.notes;
     }
 
@@ -343,6 +367,7 @@
         seed: normalizeSeed(seedEl.value),
         mode: modeEl.value,
         variant: variantEl.value,
+        count: countEl.value,
         notes: String(notesEl.value || '').slice(0, 800)
       };
     }
@@ -352,6 +377,7 @@
       if (st.seed) sp.set('seed', st.seed);
       if (st.mode && st.mode !== 'mixed') sp.set('mode', st.mode);
       if (st.variant && st.variant !== '0') sp.set('v', st.variant);
+      if (st.count && st.count !== '1') sp.set('k', st.count);
       if (st.notes) sp.set('notes', st.notes);
       const qs = sp.toString();
       return qs ? (window.location.pathname + '?' + qs) : window.location.pathname;
@@ -366,8 +392,9 @@
       }, 120);
     }
 
-    function buildIdea(st){
-      const seedStr = (st.seed || 'seed') + '|' + st.mode + '|v' + st.variant;
+    function buildIdea(st, idx){
+      const i = (typeof idx === 'number' && isFinite(idx)) ? idx : 0;
+      const seedStr = (st.seed || 'seed') + '|' + st.mode + '|v' + st.variant + '|i' + i;
       const rng = makeRng(seedStr);
       const verb = pick(rng, BANKS.verbs);
       const objs = BANKS.objects[st.mode] || BANKS.objects.mixed;
@@ -401,48 +428,85 @@
       const st = currentState();
       if (!st.seed){
         ideaEl.innerHTML = 'Enter a seed, then roll.';
+        ideaListEl.innerHTML = '';
         metaEl.textContent = '';
         setStatus('Tip: click "Use current UTC minute" for a quick seed.', '');
         scheduleUrlSync();
         return;
       }
 
-      const idea = buildIdea(st);
-      const html = '<strong>' + escapeHtml(idea.headline) + '</strong>' +
-        '<div style="margin-top:8px;color:#d6e3ff;font-size:14px;line-height:1.55">' +
-        '<ul style="margin:0;padding-left:18px">' +
-        '<li>' + escapeHtml(idea.details[0]) + '</li>' +
-        '<li>' + escapeHtml(idea.details[1]) + '</li>' +
-        '<li>' + escapeHtml(idea.details[2]) + '</li>' +
-        '</ul>' +
-        '</div>';
-      ideaEl.innerHTML = html;
-      metaEl.innerHTML = 'Seed key: <code>' + escapeHtml(idea.seedStr) + '</code><br/>Shareable URL state is kept in the address bar.';
+      let k = parseInt(String(st.count || '1'), 10);
+      if (!isFinite(k) || k < 1) k = 1;
+      if (k > 5) k = 5;
+
+      const ideas = [];
+      for (let i = 0; i < k; i++) ideas.push(buildIdea(st, i));
+
+      ideaEl.innerHTML = '<strong>' + escapeHtml(ideas[0].headline) + '</strong>' +
+        '<div style="margin-top:8px;color:#d6e3ff;font-size:14px;line-height:1.55">Showing ' + k + ' deterministic idea(s). Click an item to copy its headline.</div>';
+
+      const parts = ideas.map((idea, i) => {
+        return '' +
+          '<div class="ideaItem" data-idx="' + i + '">' +
+            '<div class="h">' + escapeHtml(idea.headline) + '</div>' +
+            '<ul>' +
+              '<li>' + escapeHtml(idea.details[0]) + '</li>' +
+              '<li>' + escapeHtml(idea.details[1]) + '</li>' +
+              '<li>' + escapeHtml(idea.details[2]) + '</li>' +
+            '</ul>' +
+            '<div class="k">key: ' + escapeHtml(idea.seedStr) + '</div>' +
+          '</div>';
+      });
+      ideaListEl.innerHTML = parts.join('');
+
+      Array.from(ideaListEl.querySelectorAll('.ideaItem')).forEach((node) => {
+        node.addEventListener('click', async () => {
+          const idx = parseInt(node.getAttribute('data-idx') || '0', 10);
+          const pickIdea = ideas[Math.max(0, Math.min(ideas.length - 1, idx))];
+          try{ await copyText(pickIdea.headline); setStatus('Copied headline.', 'ok'); }
+          catch(e){ setStatus('Copy failed (clipboard permission).', 'warn'); }
+        });
+      });
+
+      metaEl.innerHTML = 'Seed: <code>' + escapeHtml(st.seed) + '</code> | Mode: <code>' + escapeHtml(st.mode) + '</code> | Variant: <code>' + escapeHtml(st.variant) + '</code> | Ideas: <code>' + k + '</code><br/>Shareable URL state is kept in the address bar.';
       scheduleUrlSync();
       setStatus('Rolled. Save to History if you want a local stack.', 'ok');
     }
 
     function makeMarkdown(){
       const st = currentState();
-      const idea = buildIdea(st);
+      let k = parseInt(String(st.count || '1'), 10);
+      if (!isFinite(k) || k < 1) k = 1;
+      if (k > 5) k = 5;
+
+      const ideas = [];
+      for (let i = 0; i < k; i++) ideas.push(buildIdea(st, i));
+
       const note = String(st.notes || '').trim();
       const lines = [];
-      lines.push('# ' + idea.headline);
+      lines.push('# Seeded Idea Mixer');
       lines.push('');
       lines.push('- Seed: ' + st.seed);
       lines.push('- Mode: ' + st.mode);
       lines.push('- Variant: ' + st.variant);
+      lines.push('- Ideas: ' + String(k));
       lines.push('');
-      lines.push('## Constraints');
-      lines.push('- ' + idea.details[0]);
-      lines.push('- ' + idea.details[1]);
-      lines.push('- ' + idea.details[2]);
-      if (note){
+
+      ideas.forEach((idea, i) => {
+        lines.push('## Idea ' + String(i + 1) + ': ' + idea.headline);
         lines.push('');
+        lines.push('- ' + idea.details[0]);
+        lines.push('- ' + idea.details[1]);
+        lines.push('- ' + idea.details[2]);
+        lines.push('');
+      });
+
+      if (note){
         lines.push('## Notes');
         lines.push(note);
+        lines.push('');
       }
-      lines.push('');
+
       return lines.join('\n');
     }
 
@@ -533,7 +597,7 @@
     function saveCurrentToHistory(){
       const st = currentState();
       if (!st.seed){ setStatus('Set a seed first.', 'warn'); return; }
-      const idea = buildIdea(st);
+      const idea = buildIdea(st, 0);
       const url = window.location.origin + urlForState(st);
       const entry = {
         ts: currentUtcMinuteTs(),
@@ -560,6 +624,8 @@
     }
 
     rollBtn.addEventListener('click', () => render());
+
+    countEl.addEventListener('change', () => render());
 
     nextBtn.addEventListener('click', () => nextVariant());
 
@@ -607,6 +673,7 @@
       seedEl.value = '';
       modeEl.value = 'mixed';
       variantEl.value = '0';
+      countEl.value = '1';
       notesEl.value = '';
       render();
     });
@@ -636,6 +703,7 @@
         seedEl.addEventListener(evt, scheduleUrlSync);
         modeEl.addEventListener(evt, scheduleUrlSync);
         variantEl.addEventListener(evt, scheduleUrlSync);
+        countEl.addEventListener(evt, scheduleUrlSync);
         notesEl.addEventListener(evt, scheduleUrlSync);
       });
     })();
