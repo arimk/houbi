@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UTC Seed Story Starter - Houbi</title>
+  <style>
+    :root{
+      color-scheme: dark;
+      --bg0:#05060a;--bg1:#0b0f1a;
+      --card:rgba(15,24,43,.76);
+      --line:rgba(118,165,255,.22);--line2:rgba(118,165,255,.14);
+      --text:#ecf3ff;--muted:#9ab0d7;
+      --cyan:#6df0ff;--violet:#a58bff;
+      --ok:#4dffb5;--warn:#ffd56d;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; min-height:100vh; font-family: var(--sans); color: var(--text);
+      background:
+        radial-gradient(1000px 500px at 90% -10%, rgba(80,111,255,.25), transparent 60%),
+        radial-gradient(900px 600px at -10% 110%, rgba(0,220,255,.18), transparent 60%),
+        linear-gradient(170deg, var(--bg0) 0%, var(--bg1) 70%);
+      padding: 24px 16px 42px;
+    }
+    a{ color:#8cb9ff; }
+    .wrap{ max-width: 980px; margin: 0 auto; }
+    header{ display:flex; align-items:flex-start; justify-content:space-between; gap: 12px; flex-wrap:wrap; }
+    h1{ margin:0; font-size: clamp(26px, 4vw, 40px); letter-spacing:-.03em; line-height:1.05; }
+    .sub{ margin: 8px 0 0; color: var(--muted); line-height:1.65; max-width: 78ch; }
+    .nav{ display:flex; gap: 10px; align-items:center; flex-wrap:wrap; }
+    .pill{ border:1px solid rgba(133,164,255,.25); background: rgba(82,103,189,.18); padding: 6px 10px; border-radius: 999px; font-size: 12px; color: #d9e5ff; }
+
+    .grid{ margin-top: 18px; display:grid; grid-template-columns: 1fr; gap: 14px; }
+    @media (min-width: 920px){ .grid{ grid-template-columns: 420px 1fr; } }
+
+    .card{
+      border: 1px solid var(--line2);
+      background: linear-gradient(160deg, rgba(14,21,38,.84), var(--card));
+      border-radius: 18px;
+      box-shadow: 0 12px 38px rgba(0,0,0,.38);
+      padding: 14px;
+    }
+    .card h2{ margin: 0 0 10px; font-size: 16px; letter-spacing:-.01em; color: #dbe7ff; }
+
+    label{ display:block; margin: 10px 0 6px; color: #cfe0ff; font-size: 13px; }
+    input[type="text"], select, textarea{
+      width: 100%; border-radius: 12px; border: 1px solid var(--line2);
+      background: rgba(6,10,21,.72); color: var(--text);
+      padding: 10px 11px; outline: none;
+    }
+    textarea{ min-height: 120px; resize: vertical; font-family: var(--mono); font-size: 12px; line-height: 1.5; }
+
+    .row{ display:flex; gap: 10px; flex-wrap:wrap; }
+    .row > *{ flex: 1; min-width: 180px; }
+
+    .btns{ display:flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+    button{
+      border: 1px solid var(--line2);
+      background: rgba(6,10,21,.72);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform .12s ease, border-color .12s ease;
+      font-weight: 600;
+    }
+    button:hover{ transform: translateY(-1px); border-color: var(--line); }
+    button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(109,240,255,.12) inset; }
+
+    .status{ margin-top: 10px; font-size: 12px; color: var(--muted); }
+    .status.ok{ color: var(--ok); }
+    .status.warn{ color: var(--warn); }
+
+    .out{
+      border: 1px solid var(--line2);
+      border-radius: 16px;
+      background: rgba(6,10,21,.55);
+      padding: 12px;
+      margin-top: 10px;
+    }
+    .out h3{ margin: 0 0 6px; font-size: 13px; color: #dbe7ff; letter-spacing:-.01em; }
+    .prompt{ font-size: 16px; line-height: 1.55; letter-spacing: -.01em; }
+    .prompt strong{ color: var(--cyan); font-weight: 900; }
+    .meta{ margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+
+    .tiny{ font-size: 11px; color: var(--muted); margin-top: 10px; line-height: 1.55; }
+    code{ color: #b7d6ff; }
+
+    .chips{ display:flex; gap: 8px; flex-wrap:wrap; margin-top: 10px; }
+    .chip{ border:1px solid rgba(133,164,255,.25); background: rgba(82,103,189,.18); padding: 5px 10px; border-radius: 999px; font-size: 12px; color: #d9e5ff; }
+    .chip strong{ color: var(--violet); }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div>
+        <h1>UTC Seed Story Starter</h1>
+        <p class="sub">A deterministic story-starter generator. Give it a UTC seed (like <code>20260404T2223Z</code>), and you can share a link that reproduces the exact same prompt.</p>
+      </div>
+      <nav class="nav">
+        <span class="pill">/projects/apps/utc-seed-story-starter/</span>
+        <a class="pill" href="/">Hub</a>
+      </nav>
+    </header>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Controls</h2>
+
+        <label for="seed">Seed (UTC)</label>
+        <input id="seed" type="text" placeholder="e.g. 20260404T2223Z" autocomplete="off" spellcheck="false" />
+
+        <div class="row">
+          <div>
+            <label for="variant">Variant</label>
+            <select id="variant">
+              <option value="0" selected>0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+            </select>
+          </div>
+          <div>
+            <label for="density">Density</label>
+            <select id="density">
+              <option value="short" selected>Short</option>
+              <option value="rich">Rich</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="useUtc" class="primary">Use current UTC minute</button>
+          <button id="roll">Generate</button>
+          <button id="next">Next variant</button>
+          <button id="copy">Copy prompt</button>
+          <button id="copyLink">Copy link</button>
+          <button id="reset">Reset</button>
+        </div>
+
+        <div class="status" id="status">Ready.</div>
+        <div class="tiny">Shortcuts: <code>G</code> generate, <code>N</code> next variant, <code>C</code> copy (when not typing).</div>
+      </div>
+
+      <div class="card">
+        <h2>Output</h2>
+        <div class="out">
+          <h3>Prompt</h3>
+          <div class="prompt" id="prompt">Generate a prompt to begin.</div>
+          <div class="chips" id="chips" aria-label="prompt tags"></div>
+          <div class="meta" id="meta"></div>
+        </div>
+
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" placeholder="What would you write? What would you cut? What would you test first?"></textarea>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const el = (id) => document.getElementById(id);
+
+    const seedEl = el('seed');
+    const variantEl = el('variant');
+    const densityEl = el('density');
+    const notesEl = el('notes');
+
+    const useUtcBtn = el('useUtc');
+    const rollBtn = el('roll');
+    const nextBtn = el('next');
+    const copyBtn = el('copy');
+    const copyLinkBtn = el('copyLink');
+    const resetBtn = el('reset');
+
+    const statusEl = el('status');
+    const promptEl = el('prompt');
+    const metaEl = el('meta');
+    const chipsEl = el('chips');
+
+    function setStatus(msg, kind){
+      statusEl.textContent = msg;
+      statusEl.className = 'status' + (kind ? (' ' + kind) : '');
+    }
+
+    function pad2(n){ return String(n).padStart(2, '0'); }
+    function currentUtcMinuteTs(){
+      const d = new Date();
+      const y = d.getUTCFullYear();
+      const mo = pad2(d.getUTCMonth() + 1);
+      const da = pad2(d.getUTCDate());
+      const hh = pad2(d.getUTCHours());
+      const mm = pad2(d.getUTCMinutes());
+      return '' + y + mo + da + 'T' + hh + mm + 'Z';
+    }
+
+    function normalizeSeed(s){
+      return String(s || '').trim();
+    }
+
+    // xmur3 + sfc32 for deterministic PRNG from string seed.
+    function xmur3(str){
+      let h = 1779033703 ^ str.length;
+      for (let i = 0; i < str.length; i++){
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+      }
+      return function(){
+        h = Math.imul(h ^ (h >>> 16), 2246822507);
+        h = Math.imul(h ^ (h >>> 13), 3266489909);
+        h ^= (h >>> 16);
+        return h >>> 0;
+      };
+    }
+    function sfc32(a, b, c, d){
+      return function(){
+        a >>>= 0; b >>>= 0; c >>>= 0; d >>>= 0;
+        let t = (a + b) | 0;
+        a = b ^ (b >>> 9);
+        b = (c + (c << 3)) | 0;
+        c = (c << 21) | (c >>> 11);
+        d = (d + 1) | 0;
+        t = (t + d) | 0;
+        c = (c + t) | 0;
+        return (t >>> 0) / 4294967296;
+      };
+    }
+    function makeRng(seed){
+      const h = xmur3(seed);
+      return sfc32(h(), h(), h(), h());
+    }
+    function pick(rng, arr){
+      return arr[Math.floor(rng() * arr.length)];
+    }
+
+    const BANK = {
+      protagonists: [
+        'an apprentice cartographer',
+        'a burned-out product manager',
+        'a night-shift librarian',
+        'a retired locksmith',
+        'a climate auditor',
+        'a street photographer',
+        'a junior translator',
+        'an archivist of lost software',
+        'a courier with a strict route',
+        'a museum guard who takes notes'
+      ],
+      wants: [
+        'to prove a small thing',
+        'to undo a mistake quietly',
+        'to keep a promise without saying it',
+        'to ship something before sunset',
+        'to find the missing step',
+        'to protect a fragile truth',
+        'to leave a clean handoff',
+        'to make an honest record'
+      ],
+      settings: [
+        'in a city where clocks are always wrong',
+        'inside a warehouse of unlabeled boxes',
+        'on a ferry that never reaches shore',
+        'during a week of relentless drizzle',
+        'at a temporary office built overnight',
+        'in a quiet district at 03:00',
+        'beneath a neon sign that flickers once per hour'
+      ],
+      objects: [
+        'a spreadsheet that predicts feelings',
+        'a key with a stamped timestamp',
+        'a receipt that rewrites itself',
+        'an unclaimed voicemail loop',
+        'a map with one street missing',
+        'a small badge that opens the wrong door',
+        'a notebook full of clean, unused pages'
+      ],
+      constraints: [
+        'No one is allowed to explain the rules.',
+        'Everything must be done in 45 minutes.',
+        'The plan must fit on one index card.',
+        'Only two tools can be used, total.',
+        'The protagonist must ask one direct question.',
+        'The ending must be reversible.'
+      ],
+      twists: [
+        'A detail repeats with a different meaning.',
+        'Someone offers help, but at a cost.',
+        'The evidence is correct, the conclusion is not.',
+        'A shortcut becomes a trap.',
+        'A small kindness breaks the pattern.',
+        'The real antagonist is a missing definition.'
+      ]
+    };
+
+    function stateFromUrl(){
+      const sp = new URLSearchParams(window.location.search);
+      return {
+        seed: sp.get('seed') || '',
+        v: sp.get('v') || '0',
+        d: sp.get('d') || 'short',
+        notes: sp.get('notes') || ''
+      };
+    }
+
+    function currentState(){
+      return {
+        seed: normalizeSeed(seedEl.value),
+        v: String(variantEl.value || '0'),
+        d: String(densityEl.value || 'short'),
+        notes: String(notesEl.value || '').slice(0, 800)
+      };
+    }
+
+    function urlForState(st){
+      const sp = new URLSearchParams();
+      if (st.seed) sp.set('seed', st.seed);
+      if (st.v && st.v !== '0') sp.set('v', st.v);
+      if (st.d && st.d !== 'short') sp.set('d', st.d);
+      if (st.notes) sp.set('notes', st.notes);
+      const qs = sp.toString();
+      return qs ? (window.location.pathname + '?' + qs) : window.location.pathname;
+    }
+
+    let urlSyncTimer = null;
+    function scheduleUrlSync(){
+      if (urlSyncTimer) window.clearTimeout(urlSyncTimer);
+      urlSyncTimer = window.setTimeout(() => {
+        const u = urlForState(currentState());
+        window.history.replaceState(null, '', u);
+      }, 120);
+    }
+
+    function applyState(st){
+      if (typeof st.seed === 'string') seedEl.value = st.seed;
+      if (typeof st.v === 'string') variantEl.value = st.v;
+      if (typeof st.d === 'string') densityEl.value = st.d;
+      if (typeof st.notes === 'string') notesEl.value = st.notes;
+    }
+
+    function buildPrompt(st){
+      const seed = st.seed || 'seed';
+      const key = seed + '|v' + st.v + '|d' + st.d;
+      const rng = makeRng(key);
+
+      const p = pick(rng, BANK.protagonists);
+      const w = pick(rng, BANK.wants);
+      const s = pick(rng, BANK.settings);
+      const o = pick(rng, BANK.objects);
+      const c = pick(rng, BANK.constraints);
+      const t = pick(rng, BANK.twists);
+
+      const short = 'Write a scene about ' + p + ' who wants ' + w + ', ' + s + '. They discover ' + o + '. ' + c + ' ' + t;
+      const rich = short + ' End the scene on a concrete action (not a summary). Include one line of dialogue that sounds like a real person.';
+
+      return {
+        text: (st.d === 'rich') ? rich : short,
+        tags: {
+          seed: seed,
+          protagonist: p,
+          setting: s
+        }
+      };
+    }
+
+    function renderPrompt(res, st){
+      promptEl.textContent = res.text;
+      chipsEl.innerHTML = '';
+
+      const mkChip = (k, v) => {
+        const span = document.createElement('span');
+        span.className = 'chip';
+        span.innerHTML = '<strong>' + escapeHtml(k) + '</strong> ' + escapeHtml(v);
+        return span;
+      };
+
+      chipsEl.appendChild(mkChip('seed', st.seed || ''));
+      chipsEl.appendChild(mkChip('v', String(st.v)));
+      chipsEl.appendChild(mkChip('density', String(st.d)));
+
+      metaEl.innerHTML = 'Shareable URL state: <code>' + escapeHtml(urlForState(st)) + '</code>';
+    }
+
+    function escapeHtml(s){
+      return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/\'/g, '&#39;');
+    }
+
+    async function copyText(txt){
+      if (!txt) throw new Error('empty');
+      await navigator.clipboard.writeText(txt);
+    }
+
+    function generate(){
+      const st = currentState();
+      if (!st.seed){
+        setStatus('Add a seed (or click Use current UTC minute).', 'warn');
+        return;
+      }
+      const res = buildPrompt(st);
+      renderPrompt(res, st);
+      setStatus('Generated.', 'ok');
+      scheduleUrlSync();
+    }
+
+    useUtcBtn.addEventListener('click', () => {
+      seedEl.value = currentUtcMinuteTs();
+      setStatus('Seed set from current UTC minute.', 'ok');
+      scheduleUrlSync();
+    });
+
+    rollBtn.addEventListener('click', () => generate());
+
+    nextBtn.addEventListener('click', () => {
+      const v = Number(variantEl.value || '0');
+      variantEl.value = String((v + 1) % 10);
+      setStatus('Variant advanced.', 'ok');
+      scheduleUrlSync();
+      generate();
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      try{
+        await copyText(promptEl.textContent || '');
+        setStatus('Copied prompt.', 'ok');
+      }catch(e){
+        setStatus('Copy failed (clipboard permission).', 'warn');
+      }
+    });
+
+    copyLinkBtn.addEventListener('click', async () => {
+      try{
+        const u = window.location.origin + urlForState(currentState());
+        await copyText(u);
+        setStatus('Copied link.', 'ok');
+      }catch(e){
+        setStatus('Copy link failed (clipboard permission).', 'warn');
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      seedEl.value = '';
+      variantEl.value = '0';
+      densityEl.value = 'short';
+      notesEl.value = '';
+      promptEl.textContent = 'Generate a prompt to begin.';
+      chipsEl.innerHTML = '';
+      metaEl.textContent = '';
+      window.history.replaceState(null, '', window.location.pathname);
+      setStatus('Reset.', 'ok');
+    });
+
+    ;['input', 'change'].forEach((evt) => {
+      seedEl.addEventListener(evt, scheduleUrlSync);
+      variantEl.addEventListener(evt, scheduleUrlSync);
+      densityEl.addEventListener(evt, scheduleUrlSync);
+      notesEl.addEventListener(evt, scheduleUrlSync);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      const t = e.target;
+      const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+      if (typing) return;
+      const k = String(e.key || '').toLowerCase();
+      if (k === 'g'){
+        e.preventDefault();
+        generate();
+      }else if (k === 'n'){
+        e.preventDefault();
+        nextBtn.click();
+      }else if (k === 'c'){
+        e.preventDefault();
+        copyBtn.click();
+      }
+    });
+
+    // Init from URL.
+    const st0 = stateFromUrl();
+    applyState(st0);
+    if (normalizeSeed(st0.seed)){
+      generate();
+    }
+  </script>
+</body>
+</html>

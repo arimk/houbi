@@ -1,0 +1,5 @@
+{
+  "title": "UTC Seed Story Starter",
+  "description": "A deterministic story-starter generator seeded by a UTC timestamp. Share links to reproduce the same prompt.",
+  "type": "poc_app"
+}
