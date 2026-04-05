@@ -1,393 +1,260 @@
-const $ = (sel) => document.querySelector(sel);
+// Six-Hour Sprint Compass
+// Offline helper: TS (YYYYMMDDTHHMMZ) -> deterministic pick.
+// Reimplements tools/sixhour-pick-type.cjs in browser.
+// ASCII only.
 
 function pad2(n){ return String(n).padStart(2, "0"); }
 
-function utcTsFromDate(d){
-  const y = d.getUTCFullYear();
-  const mo = pad2(d.getUTCMonth() + 1);
-  const da = pad2(d.getUTCDate());
-  const hh = pad2(d.getUTCHours());
-  const mm = pad2(d.getUTCMinutes());
-  return `${y}${mo}${da}T${hh}${mm}Z`;
+function fmtTsFromDateUtc(d){
+  // YYYYMMDDTHHMMZ
+  return (
+    d.getUTCFullYear() +
+    pad2(d.getUTCMonth() + 1) +
+    pad2(d.getUTCDate()) +
+    "T" +
+    pad2(d.getUTCHours()) +
+    pad2(d.getUTCMinutes()) +
+    "Z"
+  );
 }
 
-function utcHumanFromDate(d){
-  const y = d.getUTCFullYear();
-  const mo = pad2(d.getUTCMonth() + 1);
-  const da = pad2(d.getUTCDate());
-  const hh = pad2(d.getUTCHours());
-  const mm = pad2(d.getUTCMinutes());
-  return `${y}-${mo}-${da} ${hh}:${mm}`;
-}
-
-function floorToSixHours(d){
-  const y = d.getUTCFullYear();
-  const mo = d.getUTCMonth();
-  const da = d.getUTCDate();
-  const hh = d.getUTCHours();
-  const flo = Math.floor(hh / 6) * 6;
-  return new Date(Date.UTC(y, mo, da, flo, 0, 0));
-}
-
-function parseTs(ts){
-  // Expected: YYYYMMDDTHHMMZ
-  const m = /^([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2})Z$/.exec((ts || "").trim());
+function parseTsToDateUtc(ts){
+  // Very small parser; returns null if invalid.
+  const s = String(ts || "").trim();
+  const m = /^([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2})Z$/.exec(s);
   if (!m) return null;
   const y = Number(m[1]);
-  const mo = Number(m[2]) - 1;
+  const mo = Number(m[2]);
   const da = Number(m[3]);
   const hh = Number(m[4]);
   const mm = Number(m[5]);
-  const d = new Date(Date.UTC(y, mo, da, hh, mm, 0));
-  if (Number.isNaN(d.getTime())) return null;
+  if (mo < 1 || mo > 12) return null;
+  if (da < 1 || da > 31) return null;
+  if (hh < 0 || hh > 23) return null;
+  if (mm < 0 || mm > 59) return null;
+  const d = new Date(Date.UTC(y, mo - 1, da, hh, mm, 0, 0));
+  // Re-format to ensure no overflow normalization.
+  if (fmtTsFromDateUtc(d) !== s) return null;
   return d;
 }
 
-function addHours(d, hours){
-  return new Date(d.getTime() + hours * 60 * 60 * 1000);
-}
-
-function hash32(str){
-  // FNV-1a 32-bit
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++){
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
+function hash31(str){
+  // Same as tools/sixhour-pick-type.cjs
+  let x = 0;
+  const s = String(str || "");
+  for (let i = 0; i < s.length; i++){
+    x = (Math.imul(x, 31) + s.charCodeAt(i)) >>> 0;
   }
-  return h >>> 0;
+  return x >>> 0;
 }
 
-function xorshift32(seed){
-  let x = seed >>> 0;
-  return () => {
-    x ^= (x << 13) >>> 0;
-    x ^= (x >>> 17) >>> 0;
-    x ^= (x << 5) >>> 0;
-    return (x >>> 0);
-  };
-}
+function pickType(ts){
+  const h = hash31(ts);
+  const r = (h % 10000) / 10000;
 
-function pick(rng, arr){
-  const n = arr.length;
-  const v = rng() % n;
-  return arr[v];
-}
+  const buckets = [
+    { k: "poc_app", w: 0.45 },
+    { k: "micro_essay", w: 0.20 },
+    { k: "utc_glyph", w: 0.15 },
+    { k: "haiku", w: 0.10 },
+    { k: "quote_react", w: 0.10 }
+  ];
 
-function clamp(n, a, b){ return Math.max(a, Math.min(b, n)); }
-
-function blockLabelFromSeedTs(ts){
-  const d = parseTs(ts);
-  if (!d) return "-";
-  const start = floorToSixHours(d);
-  const end = new Date(start.getTime() + 6 * 60 * 60 * 1000 - 60 * 1000);
-  const sameDay = start.getUTCFullYear() === end.getUTCFullYear() && start.getUTCMonth() === end.getUTCMonth() && start.getUTCDate() === end.getUTCDate();
-  if (sameDay){
-    return `${utcHumanFromDate(start)}-${pad2(end.getUTCHours())}:${pad2(end.getUTCMinutes())} UTC`;
+  let acc = 0;
+  for (const b of buckets){
+    acc += b.w;
+    if (r < acc) return { type: b.k, h, r, buckets };
   }
-  return `${utcHumanFromDate(start)} to ${utcHumanFromDate(end)} UTC`;
+  return { type: buckets[buckets.length - 1].k, h, r, buckets };
 }
 
-function planFor(ts, minutes, energy){
-  const seed = hash32(`${ts}|${minutes}|${energy}`);
-  const rng = xorshift32(seed);
-
-  const modes = [
-    "Build a tiny thing",
-    "Write and sharpen",
-    "Polish and simplify",
-    "Ship and share"
-  ];
-
-  const mode = pick(rng, modes);
-
-  const openers = [
-    "Make it real, then make it better.",
-    "Small, committed output beats perfect intent.",
-    "Do the smallest action that changes the deployed artifact.",
-    "If you can not demo it, it did not happen."
-  ];
-
-  const constraints = [
-    "One file only.",
-    "No new dependencies.",
-    "No scrolling UI.",
-    "Must work offline.",
-    "Must be linkable.",
-    "Text first, styling last.",
-    "Cut scope by 30%."
-  ];
-
-  const deliverables = [
-    "A live page with one clear interaction.",
-    "A new post that ends with a question.",
-    "A before/after screenshot and a short note.",
-    "A tiny tool you can re-use tomorrow.",
-    "A single new feature for an existing mini-app."
-  ];
-
-  const energyMoves = {
-    low: [
-      "Copy the last shipped thing, remove one annoyance.",
-      "Fix one bug, then stop.",
-      "Reduce friction: rename, reorder, simplify."
-    ],
-    medium: [
-      "Add one useful control.",
-      "Add one export path (copy/link/download).",
-      "Add one guided workflow (step 1/2/3)."
-    ],
-    high: [
-      "Add one new mode or view.",
-      "Add keyboard shortcuts and a focus flow.",
-      "Add a small visual artifact (SVG) and make it shareable."
-    ]
-  };
-
-  const timePlan = (() => {
-    const m = clamp(Number(minutes) || 35, 10, 120);
-    const a = Math.max(5, Math.round(m * 0.20));
-    const b = Math.max(10, Math.round(m * 0.60));
-    const c = Math.max(5, m - a - b);
-    return { m, a, b, c };
-  })();
-
-  const opener = pick(rng, openers);
-  const constraint = pick(rng, constraints);
-  const deliverable = pick(rng, deliverables);
-  const move = pick(rng, energyMoves[energy] || energyMoves.medium);
-
-  const steps = [
-    `${timePlan.a}m: Decide the smallest change. Write the acceptance check in one sentence.`,
-    `${timePlan.b}m: Build. Keep the loop tight (refresh, test, commit-ready).`,
-    `${timePlan.c}m: Ship polish: title, one hint line, and an export path.`
-  ];
-
-  const checklist = [
-    "Can someone use it without reading instructions?",
-    "Is there one obvious next step?",
-    "Did you make a committed change (git diff not empty)?"
-  ];
-
-  const md = [
-    `## Six-Hour Compass (${ts})`,
-    "",
-    `Block: ${blockLabelFromSeedTs(ts)}`,
-    "",
-    `Mode: **${mode}**`,
-    "",
-    `Constraint: **${constraint}**`,
-    "",
-    `Deliverable: **${deliverable}**`,
-    "",
-    `Move: ${move}`,
-    "",
-    "Plan:",
-    ...steps.map((s) => `- ${s}`),
-    "",
-    "Checks:",
-    ...checklist.map((s) => `- ${s}`),
-    "",
-    `Note: ${opener}`
-  ].join("\n");
-
-  return {
-    mode,
-    opener,
-    constraint,
-    deliverable,
-    move,
-    steps,
-    checklist,
-    md
-  };
+function setClipboard(text){
+  const t = String(text || "");
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    return navigator.clipboard.writeText(t);
+  }
+  // Fallback
+  const ta = document.createElement("textarea");
+  ta.value = t;
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand("copy"); } catch(e) {}
+  document.body.removeChild(ta);
+  return Promise.resolve();
 }
 
-function setStatus(msg, kind){
-  const el = $("#status");
-  el.textContent = msg;
-  el.classList.remove("ok");
-  el.classList.remove("warn");
-  if (kind) el.classList.add(kind);
+function snapToSixHourBoundary(d){
+  const x = new Date(d.getTime());
+  const hh = x.getUTCHours();
+  const snapped = Math.floor(hh / 6) * 6;
+  x.setUTCHours(snapped);
+  x.setUTCMinutes(0);
+  x.setUTCSeconds(0);
+  x.setUTCMilliseconds(0);
+  return x;
 }
 
-function setPlanHtml(ts, plan){
-  const el = $("#plan");
-  el.innerHTML = [
-    `<h3>${plan.opener}</h3>`,
-    `<div><strong>Mode:</strong> ${plan.mode}</div>`,
-    `<div><strong>Constraint:</strong> ${plan.constraint}</div>`,
-    `<div><strong>Deliverable:</strong> ${plan.deliverable}</div>`,
-    `<div><strong>Move:</strong> ${plan.move}</div>`,
-    "<ul>",
-    ...plan.steps.map((s) => `<li>${escapeHtml(s)}</li>`),
-    "</ul>",
-    "<ul>",
-    ...plan.checklist.map((s) => `<li>${escapeHtml(s)}</li>`),
-    "</ul>"
-  ].join("\n");
-
-  $("#kSeed").textContent = `seed: ${ts}`;
-  $("#kBlock").textContent = `block: ${blockLabelFromSeedTs(ts)}`;
-  $("#kMode").textContent = `mode: ${plan.mode}`;
+function addHoursUtc(d, hours){
+  return new Date(d.getTime() + (hours * 3600 * 1000));
 }
 
-function escapeHtml(s){
-  return String(s)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+function buildSchedule({ startTs, count, stepHours }){
+  const d0 = parseTsToDateUtc(startTs);
+  if (!d0) return [];
+  const out = [];
+  for (let i = 0; i < count; i++){
+    const di = addHoursUtc(d0, stepHours * i);
+    const ts = fmtTsFromDateUtc(di);
+    const p = pickType(ts);
+    out.push({ ts, type: p.type });
+  }
+  return out;
 }
 
-async function copyText(text){
-  try{
-    await navigator.clipboard.writeText(text);
-    return true;
-  }catch(_e){
-    return false;
+function scheduleToMarkdown(items){
+  const lines = [];
+  lines.push("Six-hour sprint schedule (deterministic picks)");
+  lines.push("");
+  for (const it of items){
+    lines.push("- " + it.ts + " -> " + it.type);
+  }
+  return lines.join("\n");
+}
+
+function renderBuckets(container, buckets, pickedType){
+  container.innerHTML = "";
+  for (const b of buckets){
+    const el = document.createElement("div");
+    el.className = "bucket";
+
+    const top = document.createElement("div");
+    top.className = "bucketTop";
+
+    const k = document.createElement("div");
+    k.className = "bucketKey";
+    k.textContent = b.k;
+
+    const w = document.createElement("div");
+    w.className = "bucketNote";
+    w.textContent = String(Math.round(b.w * 100)) + "%";
+
+    top.appendChild(k);
+    top.appendChild(w);
+
+    const bar = document.createElement("div");
+    bar.className = "bucketBar";
+    const fill = document.createElement("div");
+    fill.className = "bucketFill" + (b.k === pickedType ? " isPicked" : "");
+    fill.style.width = String(Math.max(0, Math.min(100, b.w * 100))) + "%";
+    bar.appendChild(fill);
+
+    const note = document.createElement("div");
+    note.className = "bucketNote";
+    note.textContent = (b.k === pickedType) ? "picked" : "";
+
+    el.appendChild(top);
+    el.appendChild(bar);
+    el.appendChild(note);
+    container.appendChild(el);
   }
 }
 
-function getSeedFromUrl(){
-  const u = new URL(window.location.href);
-  const seed = u.searchParams.get("seed");
-  return seed || "";
-}
+function main(){
+  const elTs = document.getElementById("ts");
+  const elPickType = document.getElementById("pickType");
+  const elPickMeta = document.getElementById("pickMeta");
+  const elBuckets = document.getElementById("buckets");
 
-function setUrlSeed(seed){
-  const u = new URL(window.location.href);
-  u.searchParams.set("seed", seed);
-  history.replaceState(null, "", u.toString());
-}
+  const elKTs = document.getElementById("kTs");
+  const elKHash = document.getElementById("kHash");
+  const elKR = document.getElementById("kR");
 
-function downloadText(filename, text){
-  const blob = new Blob([text], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
+  const elSchedule = document.getElementById("schedule");
+  const elN = document.getElementById("n");
+  const elStep = document.getElementById("step");
 
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
-function boot(){
-  const seedInUrl = getSeedFromUrl();
-  if (seedInUrl) $("#seed").value = seedInUrl;
-
-  function setSeedToCurrentBlock(quiet){
-    const now = new Date();
-    const flo = floorToSixHours(now);
-    $("#seed").value = utcTsFromDate(flo);
-    if (!quiet) setStatus("Seed set to current UTC block.", "ok");
+  function setTs(ts){
+    elTs.value = String(ts || "");
+    onTsChange();
   }
 
-  // Default seed if empty.
-  if (!seedInUrl){
-    const cur = $("#seed").value.trim();
-    if (!cur) setSeedToCurrentBlock(true);
-  }
-
-  $("#btnNow").addEventListener("click", () => setSeedToCurrentBlock(false));
-
-  function stepBlock(dir){
-    const ts = $("#seed").value.trim();
-    const d = parseTs(ts);
+  function onTsChange(){
+    const ts = String(elTs.value || "").trim();
+    const d = parseTsToDateUtc(ts);
     if (!d){
-      setStatus("Seed format should be YYYYMMDDTHHMMZ.", "warn");
+      elPickType.textContent = "-";
+      elPickMeta.textContent = "Enter a valid TS: YYYYMMDDTHHMMZ";
+      elKTs.textContent = "ts: -";
+      elKHash.textContent = "hash31: -";
+      elKR.textContent = "r: -";
+      elBuckets.innerHTML = "";
       return;
     }
-    const d2 = addHours(d, dir * 6);
-    $("#seed").value = utcTsFromDate(d2);
-    setStatus("Moved seed by one 6-hour block.", "ok");
+
+    const p = pickType(ts);
+    elPickType.textContent = p.type;
+    elPickMeta.textContent = "Deterministic pick for TS " + ts + ".";
+
+    elKTs.textContent = "ts: " + ts;
+    elKHash.textContent = "hash31: " + String(p.h);
+    elKR.textContent = "r: " + String(p.r.toFixed(4));
+
+    renderBuckets(elBuckets, p.buckets, p.type);
   }
 
-  $("#btnPrev").addEventListener("click", () => stepBlock(-1));
-  $("#btnNext").addEventListener("click", () => stepBlock(1));
-
-  function generate(){
-    const ts = $("#seed").value.trim();
-    if (!parseTs(ts)){
-      setStatus("Invalid seed. Use YYYYMMDDTHHMMZ (example: 20260324T0423Z).", "warn");
-      return;
+  function renderSchedule(items){
+    elSchedule.innerHTML = "";
+    for (const it of items){
+      const li = document.createElement("li");
+      li.textContent = it.ts + " -> " + it.type;
+      elSchedule.appendChild(li);
     }
-    const minutes = $("#minutes").value;
-    const energy = $("#energy").value;
-
-    const plan = planFor(ts, minutes, energy);
-    setPlanHtml(ts, plan);
-    $("#outMd").value = plan.md;
-    setUrlSeed(ts);
-    setStatus("Plan generated.", "ok");
   }
 
-  $("#btnGen").addEventListener("click", generate);
-
-  $("#btnCopy").addEventListener("click", async () => {
-    const text = $("#outMd").value.trim();
-    if (!text){ setStatus("Nothing to copy yet. Generate a plan first.", "warn"); return; }
-    const ok = await copyText(text);
-    setStatus(ok ? "Copied Markdown." : "Copy failed (clipboard permission).", ok ? "ok" : "warn");
-  });
-
-  $("#btnLink").addEventListener("click", async () => {
-    const ts = $("#seed").value.trim();
-    if (!parseTs(ts)){
-      setStatus("Set a valid seed first.", "warn");
-      return;
-    }
-    setUrlSeed(ts);
-    const ok = await copyText(window.location.href);
-    setStatus(ok ? "Copied link." : "Copy failed (clipboard permission).", ok ? "ok" : "warn");
-  });
-
-  $("#btnDl").addEventListener("click", () => {
-    const ts = $("#seed").value.trim();
-    if (!parseTs(ts)){
-      setStatus("Set a valid seed first.", "warn");
-      return;
-    }
-    const text = $("#outMd").value.trim();
-    if (!text){
-      setStatus("Nothing to download yet. Generate a plan first.", "warn");
-      return;
-    }
-    downloadText(`sixhour-compass-${ts}.md`, text + "\n");
-    setStatus("Downloaded Markdown.", "ok");
-  });
-
-  // Input convenience
-  $("#seed").addEventListener("keydown", (e) => {
-    if (e.key === "Enter"){
-      e.preventDefault();
-      generate();
-    }
-  });
-
-  // Keyboard shortcuts (ignore when typing in text fields except seed Enter).
-  window.addEventListener("keydown", (e) => {
-    const t = (e.target && e.target.tagName) ? String(e.target.tagName).toLowerCase() : "";
-    const inField = t === "textarea" || t === "input" || t === "select";
-    if (inField) return;
-
-    const k = String(e.key || "").toLowerCase();
-    if (k === "n"){ e.preventDefault(); setSeedToCurrentBlock(false); return; }
-    if (e.key === "["){ e.preventDefault(); stepBlock(-1); return; }
-    if (e.key === "]"){ e.preventDefault(); stepBlock(1); return; }
-    if (k === "c"){ e.preventDefault(); $("#btnCopy").click(); return; }
-    if (k === "l"){ e.preventDefault(); $("#btnLink").click(); return; }
-    if (k === "d"){ e.preventDefault(); $("#btnDl").click(); return; }
-    if (k === "g"){ e.preventDefault(); generate(); return; }
-  });
-
-  // Auto-generate if URL has seed.
-  if (seedInUrl && parseTs(seedInUrl)){
-    $("#btnGen").click();
+  function buildScheduleFromUi(){
+    const ts = String(elTs.value || "").trim();
+    const count = Number.parseInt(String(elN.value || "6"), 10);
+    const stepHours = Number.parseInt(String(elStep.value || "6"), 10);
+    const items = buildSchedule({ startTs: ts, count: Number.isFinite(count) ? count : 6, stepHours: Number.isFinite(stepHours) ? stepHours : 6 });
+    renderSchedule(items);
+    return items;
   }
+
+  elTs.addEventListener("input", onTsChange);
+
+  document.getElementById("btnNow").addEventListener("click", () => {
+    const d = new Date();
+    d.setUTCSeconds(0);
+    d.setUTCMilliseconds(0);
+    setTs(fmtTsFromDateUtc(d));
+  });
+
+  document.getElementById("btnSnap6").addEventListener("click", () => {
+    const d = new Date();
+    const s = snapToSixHourBoundary(d);
+    setTs(fmtTsFromDateUtc(s));
+  });
+
+  document.getElementById("btnCopy").addEventListener("click", () => {
+    setClipboard(String(elTs.value || "").trim());
+  });
+
+  document.getElementById("btnBuildSchedule").addEventListener("click", () => {
+    buildScheduleFromUi();
+  });
+
+  document.getElementById("btnCopySchedule").addEventListener("click", () => {
+    const items = buildScheduleFromUi();
+    setClipboard(scheduleToMarkdown(items));
+  });
+
+  // Initialize with current time.
+  const d = new Date();
+  d.setUTCSeconds(0);
+  d.setUTCMilliseconds(0);
+  setTs(fmtTsFromDateUtc(d));
 }
 
-boot();
+main();

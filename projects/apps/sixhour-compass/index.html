@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Six-Hour Compass - Houbi</title>
+  <title>Six-Hour Sprint Compass - Houbi</title>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
   <main class="wrap">
     <header class="top">
       <div>
-        <h1>Six-Hour Compass</h1>
-        <p class="sub">A tiny offline compass for creative shipping. Give it a UTC seed (six-hour blocks), and it returns a focused micro-sprint plan you can copy, tweak, and share.</p>
+        <h1>Six-Hour Sprint Compass</h1>
+        <p class="sub">A tiny offline helper: generate the UTC seed TS (YYYYMMDDTHHMMZ), deterministically pick the sprint type, and preview the next few six-hour runs.</p>
       </div>
       <div class="pill">Static / offline</div>
     </header>
@@ -20,72 +20,77 @@
       <section class="card">
         <h2>Seed</h2>
 
-        <label for="seed">UTC seed (YYYYMMDDTHHMMZ)</label>
-        <input id="seed" type="text" spellcheck="false" placeholder="e.g. 20260324T0423Z" />
+        <label for="ts">TS (UTC seed)</label>
+        <input id="ts" type="text" inputmode="latin" autocomplete="off" spellcheck="false" placeholder="e.g. 20260405T1623Z" />
 
-        <div class="row">
-          <button id="btnNow" class="primary" type="button">Use current UTC block</button>
-          <button id="btnPrev" type="button">Prev block</button>
-          <button id="btnNext" type="button">Next block</button>
+        <div class="btns">
+          <button id="btnNow" class="primary" type="button">Use now (UTC)</button>
+          <button id="btnSnap6" type="button">Snap to 6h boundary</button>
+          <button id="btnCopy" type="button">Copy TS</button>
         </div>
 
-        <div class="row">
-          <button id="btnGen" type="button">Generate plan</button>
-          <button id="btnCopy" type="button">Copy Markdown</button>
-          <button id="btnLink" type="button">Copy link</button>
-          <button id="btnDl" type="button">Download .md</button>
-        </div>
-
-        <p class="hint">Tip: A seed is a bookmark. Keep it stable when you want iteration, change it when you want novelty.</p>
-        <p class="hint small">Shortcuts: N = now, [ = prev, ] = next, Enter = generate, C = copy, L = link, D = download.</p>
+        <p class="hint">Determinism note: the picker here matches the repo helper (hash31 + weighted buckets). Same TS => same type.</p>
 
         <hr class="hr" />
 
-        <h2>Settings</h2>
+        <h2 class="h2Small">Next runs (preview)</h2>
         <div class="row">
           <div>
-            <label for="minutes">Timebox (minutes)</label>
-            <input id="minutes" type="number" min="10" max="120" step="5" value="35" />
+            <label for="n">How many</label>
+            <select id="n">
+              <option value="6" selected>6</option>
+              <option value="8">8</option>
+              <option value="12">12</option>
+            </select>
           </div>
           <div>
-            <label for="energy">Energy</label>
-            <select id="energy">
-              <option value="low">Low</option>
-              <option value="medium" selected>Medium</option>
-              <option value="high">High</option>
+            <label for="step">Step</label>
+            <select id="step">
+              <option value="6" selected>+6h</option>
+              <option value="3">+3h</option>
+              <option value="12">+12h</option>
             </select>
           </div>
         </div>
 
-        <p class="hint small">Back to hub: <a href="../../">index</a></p>
+        <div class="btns">
+          <button id="btnBuildSchedule" type="button">Build schedule</button>
+          <button id="btnCopySchedule" type="button">Copy schedule (md)</button>
+        </div>
+
+        <ol id="schedule" class="schedule"></ol>
       </section>
 
       <section class="card">
         <div class="outTop">
-          <h2>Plan</h2>
+          <h2>Pick</h2>
           <div class="kpi">
-            <span class="pill2" id="kSeed">seed: -</span>
-            <span class="pill2" id="kBlock">block: -</span>
-            <span class="pill2" id="kMode">mode: -</span>
+            <span class="pill2" id="kTs">ts: -</span>
+            <span class="pill2" id="kHash">hash31: -</span>
+            <span class="pill2" id="kR">r: -</span>
           </div>
         </div>
 
-        <div id="plan" class="plan"></div>
-
-        <div class="outBox">
-          <label for="outMd">Markdown</label>
-          <textarea id="outMd" spellcheck="false"></textarea>
+        <div class="pickBox">
+          <div class="pickType" id="pickType">-</div>
+          <div class="pickMeta" id="pickMeta">Enter a TS to see the deterministic pick.</div>
         </div>
 
-        <div class="status" id="status">Ready.</div>
+        <h3 class="h3">Buckets</h3>
+        <div class="buckets" id="buckets"></div>
+
+        <h3 class="h3">Help</h3>
+        <ul class="help">
+          <li><strong>Use now</strong>: sets TS to current UTC minute.</li>
+          <li><strong>Snap to 6h boundary</strong>: rounds down UTC time to 00:00 / 06:00 / 12:00 / 18:00 (minute = 00).</li>
+          <li><strong>Build schedule</strong>: generates a list of future TS values and their types.</li>
+        </ul>
+
+        <p class="hint small">Back to hub: <a href="../../">index</a></p>
       </section>
     </section>
-
-    <footer class="footer">
-      <p>This tool is intentionally small: it does not try to be smart, it tries to be usable.</p>
-    </footer>
   </main>
 
-  <script type="module" src="./app.js"></script>
+  <script src="./app.js"></script>
 </body>
 </html>
