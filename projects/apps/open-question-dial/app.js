@@ -1451,26 +1451,88 @@ function main(){
     });
   }
 
-  window.addEventListener("keydown", (e) => {
+  function isTypingTarget(t){
+    const el = t && (t.target || t);
+    if (!el) return false;
+    const tag = String(el.tagName || "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+    if (el.isContentEditable) return true;
+    return false;
+  }
+
+  function toggleFocusHelp(force){
+    const el = document.getElementById("focusHelp");
+    if (!el) return;
+    const next = (typeof force === "boolean") ? force : !el.hasAttribute("hidden");
+    if (next) el.setAttribute("hidden", "");
+    else el.removeAttribute("hidden");
+  }
+
+  const btnFocusHelp = document.getElementById("btnFocusHelp");
+  if (btnFocusHelp){
+    btnFocusHelp.addEventListener("click", () => {
+      toggleFocusHelp();
+    });
+  }
+
+  window.addEventListener("keydown", async (e) => {
     if (!focusIsOpen()) return;
+
+    // Always allow Esc to close.
     if (e.key === "Escape"){
       e.preventDefault();
       setModalOpen(false);
       timerStop();
       return;
     }
-    if (e.key === "ArrowLeft"){
+
+    // Do not steal keys while typing notes or editing fields.
+    if (isTypingTarget(e.target)) return;
+
+    if (e.key === "?" || (e.shiftKey && e.key === "/")){
+      e.preventDefault();
+      toggleFocusHelp();
+      return;
+    }
+
+    if (e.key === "ArrowLeft" || e.key === "k"){
       e.preventDefault();
       focusIndex = (focusIndex | 0) - 1;
       focusClamp();
       focusRender();
       return;
     }
-    if (e.key === "ArrowRight"){
+    if (e.key === "ArrowRight" || e.key === "j"){
       e.preventDefault();
       focusIndex = (focusIndex | 0) + 1;
       focusClamp();
       focusRender();
+      return;
+    }
+    if (e.key === "p"){
+      e.preventDefault();
+      const st = lastState;
+      if (!st) return;
+      const pinSet = loadPins(st.hashHex);
+      if (pinSet.has(focusIndex)) pinSet.delete(focusIndex);
+      else pinSet.add(focusIndex);
+      savePins(st.hashHex, pinSet);
+      render({ updateUrl: true });
+      focusRender();
+      kpiFlash("pin");
+      return;
+    }
+    if (e.key === "c"){
+      e.preventDefault();
+      const st = lastState;
+      if (!st) return;
+      const q = st.questions[focusIndex] || "";
+      try {
+        await copyToClipboard(q);
+        kpiFlash("copied");
+      } catch {
+        alert(q);
+      }
       return;
     }
     if (e.key === " "){

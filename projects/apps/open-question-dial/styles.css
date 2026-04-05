@@ -192,6 +192,28 @@ button.ghost{
   line-height: 1.45;
 }
 
+.focusHelp{
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px dashed rgba(120, 160, 255, 0.35);
+  background: rgba(6,10,21,.35);
+  color: #e7efff;
+}
+.focusHelpTitle{
+  font-weight: 800;
+  font-size: 12px;
+  color: #dbe7ff;
+  margin-bottom: 8px;
+}
+.focusHelp ul{
+  margin: 0;
+  padding-left: 18px;
+  color: rgba(231, 239, 255, 0.9);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .noteBox{
   margin-top: 12px;
   padding: 12px;

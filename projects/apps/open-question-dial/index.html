@@ -172,9 +172,22 @@
         <button id="btnFocusPrev" class="ghost">Prev</button>
         <button id="btnFocusPin" class="ghost">Pin</button>
         <button id="btnFocusNext" class="ghost">Next</button>
+        <button id="btnFocusHelp" class="ghost" type="button">Help</button>
       </div>
 
       <div id="focusQ" class="focusQ"></div>
+      <div id="focusHelp" class="focusHelp" hidden>
+        <div class="focusHelpTitle">Keyboard shortcuts (focus mode)</div>
+        <ul>
+          <li><b>j</b>/<b>k</b> or <b>Left</b>/<b>Right</b>: prev/next</li>
+          <li><b>p</b>: pin/unpin</li>
+          <li><b>c</b>: copy question</li>
+          <li><b>space</b>: start/pause timer</li>
+          <li><b>Esc</b>: close</li>
+          <li><b>?</b>: toggle this help</li>
+        </ul>
+        <div class="hint small">Tip: shortcuts are disabled while typing in a text box (except Esc).</div>
+      </div>
 
       <div class="noteBox">
         <label for="focusNote">Notes</label>
