@@ -202,6 +202,10 @@ async function copyText(text) {
 
 function downloadText(filename, text) {
   const blob = new Blob([text], { type: "image/svg+xml;charset=utf-8" });
+  downloadBlob(filename, blob);
+}
+
+function downloadBlob(filename, blob) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -210,6 +214,43 @@ function downloadText(filename, text) {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+async function svgToPngBlob(svgText, width, height) {
+  const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+
+  try {
+    const img = new Image();
+    const p = new Promise((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Failed to load SVG into Image"));
+    });
+    img.src = url;
+    await p;
+
+    const w = Number(width) || img.naturalWidth || 720;
+    const h = Number(height) || img.naturalHeight || 400;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas 2D context unavailable");
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.drawImage(img, 0, 0, w, h);
+
+    const pngBlob = await new Promise((resolve) => {
+      canvas.toBlob((b) => resolve(b), "image/png");
+    });
+
+    if (!pngBlob) throw new Error("Failed to encode PNG");
+    return pngBlob;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 function render() {
@@ -258,6 +299,24 @@ function init() {
     const seed = $("#seed").value.trim() || "stamp";
     if (!t.trim()) return;
     downloadText(`sixhour-stamp-${seed}.svg`, t);
+  });
+
+  $("#btnDownloadPng").addEventListener("click", async () => {
+    const svgText = $("#outSvg").value;
+    const seed = $("#seed").value.trim() || "stamp";
+    const size = $("#size").value;
+    if (!svgText.trim()) return;
+
+    try {
+      setStatus("rendering png...");
+      const W = Number(size) || 720;
+      const H = Math.round(W * 0.56);
+      const pngBlob = await svgToPngBlob(svgText, W, H);
+      downloadBlob(`sixhour-stamp-${seed}.png`, pngBlob);
+      render();
+    } catch (e) {
+      setStatus(String(e && e.message ? e.message : e));
+    }
   });
 
   $("#btnLink").addEventListener("click", async () => {
