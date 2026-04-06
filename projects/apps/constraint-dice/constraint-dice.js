@@ -85,6 +85,7 @@ function currentLink(){
 }
 
 const HISTORY_KEY = "houbi_constraint_dice_history_v1";
+const FAVS_KEY = "houbi_constraint_dice_favs_v1";
 
 function loadHistory(){
   try {
@@ -116,6 +117,50 @@ function upsertHistory(entry){
   const next = [entry].concat(deduped).slice(0, 12);
   saveHistory(next);
   return next;
+}
+
+function briefId(entry){
+  return String(entry.seed || "") + "|" + String(entry.topic || "") + "|" + String(entry.minutes || "") + "|" + String(entry.variant || "") + "|" + String(entry.difficulty || "") + "|" + String(entry.mode || "");
+}
+
+function loadFavs(){
+  try {
+    const raw = window.localStorage.getItem(FAVS_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return [];
+    return arr.filter((x) => x && typeof x === "object");
+  } catch {
+    return [];
+  }
+}
+
+function saveFavs(items){
+  try {
+    window.localStorage.setItem(FAVS_KEY, JSON.stringify(items));
+  } catch {
+    // ignore
+  }
+}
+
+function isFav(entry){
+  const id = briefId(entry);
+  const favs = loadFavs();
+  return favs.some((it) => briefId(it) === id);
+}
+
+function toggleFav(entry){
+  const id = briefId(entry);
+  const favs = loadFavs();
+  const exists = favs.some((it) => briefId(it) === id);
+  let next;
+  if (exists){
+    next = favs.filter((it) => briefId(it) !== id);
+  } else {
+    next = [Object.assign({ ts: Date.now() }, entry)].concat(favs).slice(0, 24);
+  }
+  saveFavs(next);
+  return { exists, favs: next };
 }
 
 const BANK = {
@@ -349,9 +394,13 @@ const $nextVariant = document.getElementById("nextVariant");
 const $copy = document.getElementById("copy");
 const $copyLink = document.getElementById("copyLink");
 const $download = document.getElementById("download");
+const $fav = document.getElementById("fav");
 
 const $historyList = document.getElementById("historyList");
 const $clearHistory = document.getElementById("clearHistory");
+
+const $favsList = document.getElementById("favsList");
+const $clearFavs = document.getElementById("clearFavs");
 
 const $batchList = document.getElementById("batchList");
 
@@ -518,6 +567,16 @@ function ensureSeed(){
   return s;
 }
 
+function currentEntryFromControls(){
+  const seed = ensureSeed();
+  const topic = normalizeTopic($topic && $topic.value);
+  const minutes = clampInt($minutes.value, 10, 180, 45);
+  const variant = clampInt($variant.value, 0, 99, 0);
+  const difficulty = normalizeDifficulty($difficulty.value || "standard");
+  const mode = normalizeMode($mode.value || "mixed");
+  return { seed, topic, minutes, variant, difficulty, mode, ts: Date.now() };
+}
+
 function renderHistory(items){
   const arr = Array.isArray(items) ? items : [];
   if (!$historyList) return;
@@ -539,6 +598,34 @@ function renderHistory(items){
     const qs = new URLSearchParams(params).toString();
     return "<li><a href=\"?" + qs + "\">" + label + "</a></li>";
   }).join("");
+}
+
+function renderFavs(){
+  if (!$favsList) return;
+  const arr = loadFavs();
+  if (!arr.length){
+    $favsList.innerHTML = "<li><a href=\"#\"><span class=\"meta\">No favorites yet. Click Favorite on a brief you want to build.</span></a></li>";
+    return;
+  }
+  $favsList.innerHTML = arr.map((it) => {
+    const seed = String(it.seed || "");
+    const topic = normalizeTopic(it.topic);
+    const minutes = String(it.minutes || "");
+    const variant = String(it.variant || "0");
+    const difficulty = normalizeDifficulty(it.difficulty);
+    const mode = normalizeMode(it.mode);
+    const head = topic ? (seed + " / " + topic) : seed;
+    const label = head + "  (" + minutes + "m, v" + variant + ", " + difficulty + ", " + mode + ")";
+    const params = { seed, minutes, v: variant, d: difficulty, mode };
+    if (topic) params.topic = topic;
+    const qs = new URLSearchParams(params).toString();
+    return "<li><a href=\"?" + qs + "\">" + label + "</a></li>";
+  }).join("");
+}
+
+function setFavButton(entry){
+  if (!$fav) return;
+  $fav.textContent = isFav(entry) ? "Unfavorite" : "Favorite";
 }
 
 function renderBatch(){
@@ -659,8 +746,11 @@ function roll(){
   $out.value = md;
   setKpi(picks);
 
-  const items = upsertHistory({ seed, topic, minutes, variant, difficulty, mode, ts: Date.now() });
+  const entry = { seed, topic, minutes, variant, difficulty, mode, ts: Date.now() };
+  const items = upsertHistory(entry);
   renderHistory(items);
+  setFavButton(entry);
+  renderFavs();
 
   renderBatch();
   setStatus($status, "Rolled. Build it before the heat fades.", "ok");
@@ -741,6 +831,25 @@ $download.addEventListener("click", () => {
   setStatus($status, "Downloaded: " + fn, "ok");
 });
 
+if ($fav){
+  $fav.addEventListener("click", () => {
+    const entry = currentEntryFromControls();
+    const res = toggleFav(entry);
+    renderFavs();
+    setFavButton(entry);
+    setStatus($status, res.exists ? "Removed from favorites." : "Saved to favorites.", "ok");
+  });
+}
+
+if ($clearFavs){
+  $clearFavs.addEventListener("click", () => {
+    saveFavs([]);
+    renderFavs();
+    setStatus($status, "Cleared favorites.", "ok");
+    setFavButton(currentEntryFromControls());
+  });
+}
+
 if ($btnTimerSet) $btnTimerSet.addEventListener("click", () => {
   setTimerFromMinutes();
   setStatus($status, "Timer set.", "ok");
@@ -785,6 +894,7 @@ window.addEventListener("keydown", (e) => {
   if (k === "c"){ e.preventDefault(); $copy.click(); return; }
   if (k === "l"){ e.preventDefault(); $copyLink.click(); return; }
   if (k === "d"){ e.preventDefault(); $download.click(); return; }
+  if (k === "f"){ e.preventDefault(); if ($fav) $fav.click(); return; }
   if (k === "t"){ e.preventDefault(); toggleTimer(); return; }
 });
 
@@ -800,6 +910,8 @@ window.addEventListener("keydown", (e) => {
   if (q.mode) $mode.value = normalizeMode(q.mode);
 
   renderHistory(loadHistory());
+  renderFavs();
+  setFavButton(currentEntryFromControls());
 
   const tp = loadTimerPrefs();
   if ($timerSound) $timerSound.checked = !!tp.sound;

@@ -199,10 +199,11 @@
           <button id="copy">Copy Markdown</button>
           <button id="copyLink">Copy link</button>
           <button id="download">Download .md</button>
+          <button id="fav">Favorite</button>
         </div>
 
         <div class="status" id="status">Ready.</div>
-        <div class="hint">Tip: Keep the seed if you want to iterate. Change the mode if you feel stuck. Remix creates a new seed based on time. Shortcuts: R roll, N next, C copy, L link, D download, T timer start/pause (when not typing).</div>
+        <div class="hint">Tip: Keep the seed if you want to iterate. Change the mode if you feel stuck. Remix creates a new seed based on time. Shortcuts: R roll, N next, C copy, L link, D download, F favorite, T timer start/pause (when not typing).</div>
 
         <div class="history" id="history">
           <div class="history-head">
@@ -211,6 +212,15 @@
           </div>
           <ul id="historyList"></ul>
           <div class="hint">These are stored locally in your browser (localStorage). Click one to reload that brief.</div>
+        </div>
+
+        <div class="history" id="favs">
+          <div class="history-head">
+            <h3>Favorites</h3>
+            <button id="clearFavs" type="button">Clear</button>
+          </div>
+          <ul id="favsList"></ul>
+          <div class="hint">Favorites are stored locally in your browser. Use them as a small library of briefs you want to actually build.</div>
         </div>
       </div>
 
