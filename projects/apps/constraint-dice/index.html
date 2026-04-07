@@ -190,6 +190,31 @@
           </div>
         </div>
 
+        <div class="history" id="customBank" style="margin-top:12px">
+          <div class="history-head">
+            <h3>Custom bank (local)</h3>
+            <button id="btnCustomToggle" type="button">Hide</button>
+          </div>
+          <div id="customBankBody">
+            <label class="hint" style="margin:0 0 8px">Add your own topics/constraints. One item per line. Stored locally (localStorage).</label>
+
+            <label for="customTopics">Custom topics</label>
+            <textarea id="customTopics" spellcheck="false" placeholder="e.g. build fewer features\nwrite the README first\nmake a tiny archive"></textarea>
+
+            <label for="customConstraints">Custom constraints</label>
+            <textarea id="customConstraints" spellcheck="false" placeholder="e.g. must include a print stylesheet\nno scrolling\nexport JSON as well as Markdown"></textarea>
+
+            <div class="row" style="align-items:center">
+              <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); margin:0"><input id="chkIncludeCustom" type="checkbox" checked /> Include custom items</label>
+              <div style="text-align:right">
+                <button id="btnCustomSave" type="button">Save</button>
+                <button id="btnCustomClear" class="ghost" type="button">Clear</button>
+              </div>
+            </div>
+            <div class="hint" style="margin-top:8px">Tip: Use custom constraints to steer the output toward your current project. Keep them short.</div>
+          </div>
+        </div>
+
         <div class="btns">
           <button id="roll" class="primary">Roll brief</button>
           <button id="roll3">Roll batch</button>

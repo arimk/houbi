@@ -86,6 +86,7 @@ function currentLink(){
 
 const HISTORY_KEY = "houbi_constraint_dice_history_v1";
 const FAVS_KEY = "houbi_constraint_dice_favs_v1";
+const CUSTOM_KEY = "houbi_constraint_dice_custom_v1";
 
 function loadHistory(){
   try {
@@ -237,22 +238,23 @@ const BANK = {
   ]
 };
 
-function buildBrief({ seed, topic, variant, minutes, mode, difficulty }){
+function buildBrief({ seed, topic, variant, minutes, mode, difficulty, bank }){
+  const B = bank || BANK;
   const v = clampInt(variant, 0, 99, 0);
   const diff = normalizeDifficulty(difficulty);
   const t = normalizeTopic(topic);
   const combinedSeed = String(seed) + "::t" + (t || "-") + "::v" + String(v) + "::d" + diff;
   const rng = mulberry32(hashStringToUint32(combinedSeed));
 
-  const medium = pick(rng, BANK.mediums[mode] || BANK.mediums.mixed);
-  const pickedTopic = pick(rng, BANK.topics);
-  const lens = pick(rng, BANK.lenses);
-  const deliverable = pick(rng, BANK.deliverables[mode] || BANK.deliverables.mixed);
+  const medium = pick(rng, B.mediums[mode] || B.mediums.mixed);
+  const pickedTopic = pick(rng, B.topics);
+  const lens = pick(rng, B.lenses);
+  const deliverable = pick(rng, B.deliverables[mode] || B.deliverables.mixed);
   const finalTopic = t || pickedTopic;
 
-  const baseConstraints = BANK.constraints.slice();
-  if (diff === "easy") baseConstraints.push.apply(baseConstraints, BANK.constraints_easy);
-  if (diff === "hard") baseConstraints.push.apply(baseConstraints, BANK.constraints_hard);
+  const baseConstraints = B.constraints.slice();
+  if (diff === "easy") baseConstraints.push.apply(baseConstraints, B.constraints_easy);
+  if (diff === "hard") baseConstraints.push.apply(baseConstraints, B.constraints_hard);
 
   const constraintCount = (diff === "easy") ? 2 : (diff === "hard") ? 4 : 3;
   const twistCount = (diff === "easy") ? 0 : (diff === "hard") ? 2 : 1;
@@ -265,7 +267,7 @@ function buildBrief({ seed, topic, variant, minutes, mode, difficulty }){
 
   const twists = [];
   while (twists.length < twistCount){
-    const t = pick(rng, BANK.twists);
+    const t = pick(rng, B.twists);
     if (!twists.includes(t)) twists.push(t);
   }
 
@@ -412,6 +414,15 @@ const $btnTimerReset = document.getElementById("btnTimerReset");
 const $timerSound = document.getElementById("timerSound");
 const $timerNotify = document.getElementById("timerNotify");
 
+const $customBank = document.getElementById("customBank");
+const $customBankBody = document.getElementById("customBankBody");
+const $btnCustomToggle = document.getElementById("btnCustomToggle");
+const $customTopics = document.getElementById("customTopics");
+const $customConstraints = document.getElementById("customConstraints");
+const $chkIncludeCustom = document.getElementById("chkIncludeCustom");
+const $btnCustomSave = document.getElementById("btnCustomSave");
+const $btnCustomClear = document.getElementById("btnCustomClear");
+
 const TIMER_PREF_KEY = "houbi_constraint_dice_timer_prefs_v1";
 
 function loadTimerPrefs(){
@@ -437,6 +448,72 @@ function saveTimerPrefs(p){
   } catch {
     // ignore
   }
+}
+
+function parseLines(text){
+  const raw = String(text || "");
+  return raw
+    .split("\n")
+    .map((s) => String(s || "").trim())
+    .filter((s) => s && s.length <= 120)
+    .slice(0, 80);
+}
+
+function loadCustomBank(){
+  try {
+    const raw = window.localStorage.getItem(CUSTOM_KEY);
+    if (!raw) return { include: true, collapsed: false, topicsText: "", constraintsText: "" };
+    const obj = JSON.parse(raw);
+    return {
+      include: (obj && typeof obj.include === "boolean") ? obj.include : true,
+      collapsed: (obj && typeof obj.collapsed === "boolean") ? obj.collapsed : false,
+      topicsText: (obj && typeof obj.topicsText === "string") ? obj.topicsText : "",
+      constraintsText: (obj && typeof obj.constraintsText === "string") ? obj.constraintsText : ""
+    };
+  } catch {
+    return { include: true, collapsed: false, topicsText: "", constraintsText: "" };
+  }
+}
+
+function saveCustomBank(p){
+  try {
+    window.localStorage.setItem(CUSTOM_KEY, JSON.stringify({
+      include: !!p.include,
+      collapsed: !!p.collapsed,
+      topicsText: String(p.topicsText || ""),
+      constraintsText: String(p.constraintsText || "")
+    }));
+  } catch {
+    // ignore
+  }
+}
+
+function uiCustomBankState(){
+  const include = $chkIncludeCustom ? !!$chkIncludeCustom.checked : true;
+  const topicsText = $customTopics ? String($customTopics.value || "") : "";
+  const constraintsText = $customConstraints ? String($customConstraints.value || "") : "";
+  const collapsed = $customBankBody ? ($customBankBody.getAttribute("data-collapsed") === "1") : false;
+  return { include, collapsed, topicsText, constraintsText };
+}
+
+function effectiveBank(){
+  const st = uiCustomBankState();
+  if (!st.include) return BANK;
+
+  const extraTopics = parseLines(st.topicsText);
+  const extraConstraints = parseLines(st.constraintsText);
+  if (!extraTopics.length && !extraConstraints.length) return BANK;
+
+  return {
+    mediums: BANK.mediums,
+    lenses: BANK.lenses,
+    twists: BANK.twists,
+    deliverables: BANK.deliverables,
+    constraints_easy: BANK.constraints_easy,
+    constraints_hard: BANK.constraints_hard,
+    topics: BANK.topics.concat(extraTopics),
+    constraints: BANK.constraints.concat(extraConstraints)
+  };
 }
 
 function playBeep(){
@@ -643,10 +720,12 @@ function renderBatch(){
   const variants = [];
   for (let i = 0; i < batchCount; i++) variants.push((baseVariant + i) % 100);
 
+  const bank = effectiveBank();
+
   $batchList.innerHTML = "";
   for (let i = 0; i < variants.length; i++){
     const v = variants[i];
-    const { picks, md } = buildBrief({ seed, topic, variant: v, minutes, difficulty, mode });
+    const { picks, md } = buildBrief({ seed, topic, variant: v, minutes, difficulty, mode, bank });
 
     const li = document.createElement("li");
 
@@ -742,7 +821,8 @@ function roll(){
 
   setQuery({ seed, topic, minutes, variant, batchCount, difficulty, mode });
 
-  const { picks, md } = buildBrief({ seed, topic, variant, minutes, difficulty, mode });
+  const bank = effectiveBank();
+  const { picks, md } = buildBrief({ seed, topic, variant, minutes, difficulty, mode, bank });
   $out.value = md;
   setKpi(picks);
 
@@ -925,6 +1005,51 @@ window.addEventListener("keydown", (e) => {
       Notification.requestPermission().catch(() => {});
     }
   });
+
+  // custom bank
+  if ($customBank && $customBankBody && $btnCustomToggle){
+    const st = loadCustomBank();
+    if ($customTopics) $customTopics.value = st.topicsText;
+    if ($customConstraints) $customConstraints.value = st.constraintsText;
+    if ($chkIncludeCustom) $chkIncludeCustom.checked = !!st.include;
+
+    const applyCollapsed = (collapsed) => {
+      $customBankBody.hidden = !!collapsed;
+      $customBankBody.setAttribute("data-collapsed", collapsed ? "1" : "0");
+      $btnCustomToggle.textContent = collapsed ? "Show" : "Hide";
+    };
+
+    applyCollapsed(!!st.collapsed);
+
+    $btnCustomToggle.addEventListener("click", () => {
+      const next = !($customBankBody.getAttribute("data-collapsed") === "1");
+      applyCollapsed(next);
+      const now = uiCustomBankState();
+      saveCustomBank(now);
+    });
+
+    const saveNow = () => {
+      const now = uiCustomBankState();
+      saveCustomBank(now);
+    };
+
+    if ($btnCustomSave) $btnCustomSave.addEventListener("click", () => {
+      saveNow();
+      setStatus($status, "Saved custom bank.", "ok");
+      roll();
+    });
+
+    if ($btnCustomClear) $btnCustomClear.addEventListener("click", () => {
+      if ($customTopics) $customTopics.value = "";
+      if ($customConstraints) $customConstraints.value = "";
+      if ($chkIncludeCustom) $chkIncludeCustom.checked = true;
+      saveNow();
+      setStatus($status, "Cleared custom bank.", "ok");
+      roll();
+    });
+
+    if ($chkIncludeCustom) $chkIncludeCustom.addEventListener("change", () => { saveNow(); roll(); });
+  }
 
   setTimerFromMinutes();
   roll();
