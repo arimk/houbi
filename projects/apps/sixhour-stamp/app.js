@@ -38,6 +38,46 @@ function utcNowTs() {
   return `${y}${mo}${da}T${hh}${mm}Z`;
 }
 
+function parseSeedTs(ts) {
+  // Expected format: YYYYMMDDTHHMMZ
+  const m = /^([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2})Z$/.exec(String(ts || "").trim());
+  if (!m) return null;
+  const y = Number(m[1]);
+  const mo = Number(m[2]);
+  const da = Number(m[3]);
+  const hh = Number(m[4]);
+  const mm = Number(m[5]);
+  if (!(mo >= 1 && mo <= 12)) return null;
+  if (!(da >= 1 && da <= 31)) return null;
+  if (!(hh >= 0 && hh <= 23)) return null;
+  if (!(mm >= 0 && mm <= 59)) return null;
+  return new Date(Date.UTC(y, mo - 1, da, hh, mm, 0, 0));
+}
+
+function seedTsFromDate(d) {
+  const y = d.getUTCFullYear();
+  const mo = pad2(d.getUTCMonth() + 1);
+  const da = pad2(d.getUTCDate());
+  const hh = pad2(d.getUTCHours());
+  const mm = pad2(d.getUTCMinutes());
+  return `${y}${mo}${da}T${hh}${mm}Z`;
+}
+
+function floorTo6hSlot(d) {
+  const out = new Date(d.getTime());
+  const hh = out.getUTCHours();
+  const slot = Math.floor(hh / 6) * 6;
+  out.setUTCHours(slot, 0, 0, 0);
+  return out;
+}
+
+function shiftSeed(ts, hours) {
+  const d = parseSeedTs(ts);
+  if (!d) return null;
+  const out = new Date(d.getTime() + hours * 60 * 60 * 1000);
+  return seedTsFromDate(out);
+}
+
 function escapeXml(s) {
   return String(s)
     .replaceAll("&", "&amp;")
@@ -287,6 +327,34 @@ function init() {
     $("#seed").value = utcNowTs();
     render();
   });
+
+  $("#btnSlot").addEventListener("click", async () => {
+    const d = floorTo6hSlot(new Date());
+    $("#seed").value = seedTsFromDate(d);
+    render();
+  });
+
+  $("#btnPrev6").addEventListener("click", async () => {
+    const cur = $("#seed").value.trim();
+    const next = shiftSeed(cur, -6);
+    if (!next) return;
+    $("#seed").value = next;
+    render();
+  });
+
+  $("#btnNext6").addEventListener("click", async () => {
+    const cur = $("#seed").value.trim();
+    const next = shiftSeed(cur, 6);
+    if (!next) return;
+    $("#seed").value = next;
+    render();
+  });
+
+  // Live preview.
+  $("#seed").addEventListener("input", render);
+  $("#note").addEventListener("input", render);
+  $("#style").addEventListener("change", render);
+  $("#size").addEventListener("change", render);
 
   $("#btnCopySvg").addEventListener("click", async () => {
     const t = $("#outSvg").value;
