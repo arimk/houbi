@@ -1307,6 +1307,107 @@ function main(){
     });
   }
 
+  // Export/import a shareable "set" for the current output hash.
+  // A set is: settings + pinned indices + their notes (only for this hash).
+  function buildCurrentSet(st){
+    const pins = Array.isArray(st.pinnedIdx) ? st.pinnedIdx : [];
+    const notes = {};
+    for (const idx of pins){
+      notes[String(idx)] = loadNote(st.hashHex, idx);
+    }
+    return {
+      kind: "oqd-set",
+      version: 1,
+      exportedUtc: nowUtcCompact(),
+      topic: st.topic || "",
+      seed: st.seed || "",
+      variant: clampInt(st.variant, 0, 99, 0),
+      tone: st.tone || "gentle",
+      count: clampInt(st.count, 3, 24, 9),
+      hashHex: st.hashHex,
+      pinnedIdx: pins,
+      notes
+    };
+  }
+
+  function isValidSet(obj){
+    if (!obj || typeof obj !== "object") return false;
+    if (String(obj.kind || "") !== "oqd-set") return false;
+    if (Number(obj.version) !== 1) return false;
+    if (!obj.hashHex) return false;
+    if (!Array.isArray(obj.pinnedIdx)) return false;
+    if (!obj.notes || typeof obj.notes !== "object") return false;
+    return true;
+  }
+
+  const btnExportSet = document.getElementById("btnExportSet");
+  if (btnExportSet){
+    btnExportSet.addEventListener("click", () => {
+      const st = render({ updateUrl: true });
+      const setObj = buildCurrentSet(st);
+      const safe = (st.topic || "open-question-dial").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const name = `oqd-set-${safe || "topic"}-${st.hashHex}-${setObj.exportedUtc}.json`;
+      downloadText(name, JSON.stringify(setObj, null, 2), "application/json");
+    });
+  }
+
+  const fileImportSet = document.getElementById("fileImportSet");
+  const btnImportSet = document.getElementById("btnImportSet");
+  if (btnImportSet && fileImportSet){
+    btnImportSet.addEventListener("click", () => {
+      fileImportSet.value = "";
+      fileImportSet.click();
+    });
+
+    fileImportSet.addEventListener("change", () => {
+      const f = fileImportSet.files && fileImportSet.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          const txt = String(r.result || "");
+          const obj = JSON.parse(txt);
+          if (!isValidSet(obj)){
+            alert("Import failed: not a valid oqd-set file.");
+            return;
+          }
+
+          // Load settings from file so the hash matches, then apply pins+notes.
+          elTopic.value = String(obj.topic || "");
+          elSeed.value = String(obj.seed || "");
+          elVariant.value = String(clampInt(obj.variant, 0, 99, 0));
+          elTone.value = String(obj.tone || "gentle");
+          elCount.value = String(clampInt(obj.count, 3, 24, 9));
+
+          const st = render({ updateUrl: true });
+
+          const pins = Array.isArray(obj.pinnedIdx) ? obj.pinnedIdx : [];
+          const ps = new Set();
+          for (const v of pins){
+            const n = clampInt(v, 0, 255, -1);
+            if (n >= 0) ps.add(n);
+          }
+          savePins(st.hashHex, ps);
+
+          // Notes.
+          const notes = obj.notes || {};
+          for (const k of Object.keys(notes)){
+            const idx = clampInt(k, 0, 255, -1);
+            if (idx < 0) continue;
+            saveNote(st.hashHex, idx, String(notes[k] || ""));
+          }
+
+          render({ updateUrl: true });
+          alert("Imported set for hash " + String(st.hashHex) + ".");
+        } catch {
+          alert("Import failed: invalid JSON.");
+        }
+      };
+      r.onerror = () => { alert("Import failed: could not read file."); };
+      r.readAsText(f);
+    });
+  }
+
   document.getElementById("btnClearPins").addEventListener("click", () => {
     const st = render({ updateUrl: true });
     try {
