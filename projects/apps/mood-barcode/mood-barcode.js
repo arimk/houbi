@@ -79,8 +79,10 @@ const PALETTES = {
   }
 };
 
-function buildBarcodeSvg({ seedText, paletteKey, bars, width, height }){
+function buildBarcodeSvg({ seedText, paletteKey, bars, width, height, gapPct, showCaption }){
   const pal = PALETTES[paletteKey] || PALETTES.nocturne;
+  const gapP = clamp01((Number(gapPct) || 0) / 100);
+  const capOn = (showCaption !== false);
 
   const hash = fnv1a32(seedText);
   const rand = xorshift32(hash ^ 0x9e3779b9);
@@ -131,7 +133,7 @@ function buildBarcodeSvg({ seedText, paletteKey, bars, width, height }){
 
     // Occasionally add "gaps" (quiet moments)
     const gapRoll = (r & 0xff) / 255;
-    const isGap = gapRoll < 0.07;
+    const isGap = gapRoll < gapP;
 
     const bw = barWs[i];
     const hNoise = ((r >>> 24) & 0xff) / 255;
@@ -172,8 +174,8 @@ function buildBarcodeSvg({ seedText, paletteKey, bars, width, height }){
     ${rects.join("\n    ")}
   </g>
 
-  <text x="${pad}" y="${Math.round(height - pad * 0.55)}" fill="${pal.text}" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" opacity="0.92">${escapeXml(title)}</text>
-  <text x="${pad}" y="${Math.round(height - pad * 0.22)}" fill="rgba(190,210,255,0.85)" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">${escapeXml(subtitle)}</text>
+  ${capOn ? `<text x="${pad}" y="${Math.round(height - pad * 0.55)}" fill="${pal.text}" font-size="14" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" opacity="0.92">${escapeXml(title)}</text>
+  <text x="${pad}" y="${Math.round(height - pad * 0.22)}" fill="rgba(190,210,255,0.85)" font-size="12" font-family="ui-monospace, SFMono-Regular, Menlo, monospace">${escapeXml(subtitle)}</text>` : ""}
 </svg>`;
 
   return { svg, hashHex: u32ToHex(hash) };
@@ -251,12 +253,16 @@ function readQueryState(){
   const bars = p.get("bars");
   const w = p.get("w");
   const h = p.get("h");
+  const gap = p.get("gap");
+  const cap = p.get("cap");
   return {
     seed: seed == null ? null : seed,
     palette: palette == null ? null : palette,
     bars: bars == null ? null : bars,
     w: w == null ? null : w,
-    h: h == null ? null : h
+    h: h == null ? null : h,
+    gap: gap == null ? null : gap,
+    cap: cap == null ? null : cap
   };
 }
 
@@ -269,6 +275,8 @@ function buildShareUrl(state){
   if (state.bars) p.set("bars", String(state.bars));
   if (state.w) p.set("w", String(state.w));
   if (state.h) p.set("h", String(state.h));
+  if (state.gap != null && state.gap !== "") p.set("gap", String(state.gap));
+  if (state.cap != null && state.cap !== "") p.set("cap", String(state.cap));
   return u.toString();
 }
 
@@ -303,16 +311,18 @@ function main(){
     const bars = Number(elBars.value) || 64;
     const width = getInt("w", 900);
     const height = getInt("h", 240);
+    const gap = getInt("gap", 7);
+    const showCaption = !!document.getElementById("showCaption").checked;
 
-    const { svg, hashHex } = buildBarcodeSvg({ seedText, paletteKey, bars, width, height });
+    const { svg, hashHex } = buildBarcodeSvg({ seedText, paletteKey, bars, width, height, gapPct: gap, showCaption });
     svgMount.innerHTML = svg;
     outHash.textContent = `hash: ${hashHex}`;
 
     if (o.updateUrl){
-      updateUrl({ seed: seedText, palette: paletteKey, bars, w: width, h: height });
+      updateUrl({ seed: seedText, palette: paletteKey, bars, w: width, h: height, gap, cap: showCaption ? 1 : 0 });
     }
 
-    return { svg, hashHex, width, height, paletteKey, bars, seedText };
+    return { svg, hashHex, width, height, paletteKey, bars, seedText, gap, showCaption };
   }
 
   function renderSoon(){
@@ -327,6 +337,8 @@ function main(){
   if (q.bars != null && q.bars !== "") elBars.value = String(q.bars);
   if (q.w != null && q.w !== "") document.getElementById("w").value = String(q.w);
   if (q.h != null && q.h !== "") document.getElementById("h").value = String(q.h);
+  if (q.gap != null && q.gap !== "") document.getElementById("gap").value = String(q.gap);
+  if (q.cap != null && q.cap !== "") document.getElementById("showCaption").checked = (String(q.cap) !== "0");
 
   document.getElementById("btnGen").addEventListener("click", () => { render({ updateUrl: true }); });
 
@@ -347,7 +359,7 @@ function main(){
 
   document.getElementById("btnLink").addEventListener("click", async () => {
     const st = render({ updateUrl: true });
-    const url = buildShareUrl({ seed: st.seedText, palette: st.paletteKey, bars: st.bars, w: st.width, h: st.height });
+    const url = buildShareUrl({ seed: st.seedText, palette: st.paletteKey, bars: st.bars, w: st.width, h: st.height, gap: st.gap, cap: st.showCaption ? 1 : 0 });
     try {
       await copyToClipboard(url);
     } catch {
@@ -376,6 +388,20 @@ function main(){
   elBars.addEventListener("change", renderSoon);
   document.getElementById("w").addEventListener("input", renderSoon);
   document.getElementById("h").addEventListener("input", renderSoon);
+  document.getElementById("gap").addEventListener("input", renderSoon);
+  document.getElementById("showCaption").addEventListener("change", renderSoon);
+
+  document.getElementById("btnPresetBanner").addEventListener("click", () => {
+    document.getElementById("w").value = "900";
+    document.getElementById("h").value = "240";
+    render({ updateUrl: true });
+  });
+
+  document.getElementById("btnPresetSquare").addEventListener("click", () => {
+    document.getElementById("w").value = "600";
+    document.getElementById("h").value = "600";
+    render({ updateUrl: true });
+  });
 
   // Auto-render on load.
   render({ updateUrl: true });
