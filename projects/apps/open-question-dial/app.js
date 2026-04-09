@@ -92,6 +92,24 @@ function nowUtcCompact(){
   );
 }
 
+function nowUtcSixHourSeed(){
+  // Floor UTC time to a 6-hour bucket, minutes=00.
+  // Output: YYYYMMDDTHH00Z
+  const d = new Date();
+  const pad2 = (n) => String(n).padStart(2, "0");
+  const h = d.getUTCHours();
+  const hh = h - (h % 6);
+  return (
+    d.getUTCFullYear() +
+    pad2(d.getUTCMonth() + 1) +
+    pad2(d.getUTCDate()) +
+    "T" +
+    pad2(hh) +
+    "00" +
+    "Z"
+  );
+}
+
 function pick(rng, arr){
   return arr[Math.floor((rng() / 4294967296) * arr.length)];
 }
@@ -1263,6 +1281,16 @@ function main(){
     const st = render({ updateUrl: true });
     recordHistoryIfEnabled(st);
   });
+
+  const btnSnap6h = document.getElementById("btnSnap6h");
+  if (btnSnap6h){
+    btnSnap6h.addEventListener("click", () => {
+      elSeed.value = nowUtcSixHourSeed();
+      const st = render({ updateUrl: true });
+      recordHistoryIfEnabled(st);
+      kpiFlash("seed 6h");
+    });
+  }
 
   document.getElementById("btnCopy").addEventListener("click", async () => {
     const st = render({ updateUrl: true });
