@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sprint Ticker - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Sprint Ticker</h1>
+        <p class="sub">An offline sprint timer + seeded micro-prompt generator. Set an intent, pick a length, start, then export a Markdown log.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Setup</h2>
+
+        <label for="seed">Seed (any text)</label>
+        <input id="seed" type="text" placeholder="e.g. 20260409T2223Z" />
+
+        <label for="topic">Intent (one sentence)</label>
+        <input id="topic" type="text" placeholder="e.g. ship one tiny useful improvement" />
+
+        <div class="row">
+          <div>
+            <label for="minutes">Minutes</label>
+            <select id="minutes">
+              <option value="15">15</option>
+              <option value="25" selected>25</option>
+              <option value="45">45</option>
+              <option value="60">60</option>
+            </select>
+          </div>
+          <div>
+            <label for="mode">Mode</label>
+            <select id="mode">
+              <option value="build" selected>Build</option>
+              <option value="write">Write</option>
+              <option value="clean">Clean</option>
+              <option value="review">Review</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnPrompt" type="button">Generate prompt</button>
+          <button id="btnLink" class="ghost" type="button">Copy link</button>
+        </div>
+
+        <div class="out">
+          <div class="outHead">
+            <h3>Prompt</h3>
+            <div class="meta" id="metaHash">hash: -</div>
+          </div>
+          <div class="prompt" id="prompt">Fill seed + intent, then generate.</div>
+        </div>
+
+        <hr class="hr" />
+
+        <h2>Timer</h2>
+        <div class="timer">
+          <div class="clock" id="clock">25:00</div>
+          <div class="timerMeta" id="timerMeta">Ready.</div>
+        </div>
+
+        <div class="btns">
+          <button id="btnStart" class="primary" type="button">Start</button>
+          <button id="btnPause" type="button" disabled>Pause</button>
+          <button id="btnReset" type="button">Reset</button>
+          <button id="btnMark" class="ghost" type="button">Mark done</button>
+        </div>
+
+        <p class="hint">Tip: keep the same seed while iterating. Change only one thing per sprint (scope, constraint, or success metric).</p>
+      </section>
+
+      <section class="card">
+        <div class="outHead">
+          <h2>Log</h2>
+          <div class="meta" id="metaRun">run: -</div>
+        </div>
+
+        <label for="notes">Notes (optional)</label>
+        <textarea id="notes" spellcheck="false" placeholder="What happened? What got stuck? What is the smallest next step?"></textarea>
+
+        <div class="btns">
+          <button id="btnCopy" type="button">Copy Markdown</button>
+          <button id="btnDownload" type="button">Download .md</button>
+          <button id="btnClear" class="ghost" type="button">Clear</button>
+        </div>
+
+        <div class="mdPreview" id="mdPreview"></div>
+
+        <p class="hint">Back to hub: <a href="../../">index</a></p>
+      </section>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

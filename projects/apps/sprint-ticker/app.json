@@ -1,0 +1,4 @@
+{
+  "title": "Sprint Ticker",
+  "description": "A tiny offline sprint timer + seeded micro-prompt generator. Start a 25/45/60 min sprint, capture a one-sentence intent, and export a Markdown log."
+}
