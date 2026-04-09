@@ -1,0 +1,5 @@
+{
+  "title": "Six-Hour Postcard",
+  "description": "A tiny generator that turns a UTC seed + a line of text into a shareable SVG postcard (offline, deterministic).",
+  "tags": ["svg", "generator", "deterministic", "postcard"]
+}

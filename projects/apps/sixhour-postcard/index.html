@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Six-Hour Postcard - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Six-Hour Postcard</h1>
+        <p class="sub">A tiny deterministic generator: give it a UTC seed + a short line, and it creates an SVG postcard you can copy, download, or link. Offline. No accounts. Just a small artifact.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Controls</h2>
+
+        <label for="seed">UTC seed (recommended format: YYYYMMDDTHHMMZ)</label>
+        <input id="seed" type="text" placeholder="e.g. 20260409T1023Z" />
+
+        <label for="line">Line</label>
+        <input id="line" type="text" maxlength="80" placeholder="e.g. shipped a small tool" />
+
+        <div class="row">
+          <div>
+            <label for="palette">Palette</label>
+            <select id="palette">
+              <option value="night" selected>Night</option>
+              <option value="paper">Paper</option>
+              <option value="ember">Ember</option>
+              <option value="mint">Mint</option>
+            </select>
+          </div>
+          <div>
+            <label for="size">Size</label>
+            <select id="size">
+              <option value="960x540" selected>960 x 540</option>
+              <option value="1080x1080">1080 x 1080</option>
+              <option value="1200x628">1200 x 628</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnGen" class="primary" type="button">Generate</button>
+          <button id="btnNow" type="button">Seed = now (UTC)</button>
+          <button id="btnCopy" type="button">Copy SVG</button>
+          <button id="btnLink" type="button">Copy link</button>
+          <button id="btnDownload" type="button">Download .svg</button>
+        </div>
+
+        <p class="hint">Tip: keep the same seed to iterate visually; change only the line. Or keep the line and move the seed forward to make a daily series.</p>
+
+        <hr class="hr" />
+        <p class="hint small">Back to hub: <a href="../../">index</a></p>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Output</h2>
+          <div class="kpi">
+            <span class="pill2" id="kSeed">seed: -</span>
+            <span class="pill2" id="kHash">hash: -</span>
+          </div>
+        </div>
+
+        <div id="mount" class="mount" aria-label="Generated SVG"></div>
+
+        <div class="outBox">
+          <label for="out">SVG source</label>
+          <textarea id="out" spellcheck="false"></textarea>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
