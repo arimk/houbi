@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Six-Hour Seed Kit - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Six-Hour Seed Kit</h1>
+        <p class="sub">Turn any UTC time into a stable six-hour sprint seed (YYYYMMDDTHH00Z). Offline, linkable, copy-friendly.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Input</h2>
+
+        <label for="ts">UTC timestamp (YYYYMMDDTHHMMZ)</label>
+        <input id="ts" type="text" placeholder="e.g. 20260410T0423Z" inputmode="latin" autocapitalize="none" autocomplete="off" spellcheck="false" />
+
+        <div class="row">
+          <button id="btnNow" class="primary" type="button">Now (UTC)</button>
+          <button id="btnParse" type="button">Use input</button>
+          <button id="btnClear" class="ghost" type="button">Clear</button>
+        </div>
+
+        <h2 style="margin-top:14px">Actions</h2>
+        <div class="btns">
+          <button id="btnFloor" type="button">Floor to 6h</button>
+          <button id="btnPrev" type="button">Prev bucket</button>
+          <button id="btnNext" type="button">Next bucket</button>
+          <button id="btnSnap" type="button">Snap from now</button>
+          <button id="btnLink" type="button">Copy link</button>
+          <button id="btnCopySeed" type="button">Copy seed</button>
+        </div>
+
+        <p class="hint">Tip: "Floor to 6h" means hours 00, 06, 12, 18 (UTC). The seed is stable and easy to paste into logs, filenames, or deterministic generators.</p>
+
+        <hr class="hr" />
+
+        <h2 class="h2Small">Examples</h2>
+        <ul class="examples">
+          <li><code>20260410T0423Z</code> -&gt; <code>20260410T0000Z</code></li>
+          <li><code>20260410T0701Z</code> -&gt; <code>20260410T0600Z</code></li>
+          <li><code>20260410T1819Z</code> -&gt; <code>20260410T1800Z</code></li>
+        </ul>
+
+        <p class="hint small">Back to hub: <a href="../../">index</a></p>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Output</h2>
+          <div class="kpi">
+            <span class="pill2" id="kInput">input: -</span>
+            <span class="pill2" id="kSeed">seed: -</span>
+          </div>
+        </div>
+
+        <div class="outBox">
+          <label for="out">Seed</label>
+          <textarea id="out" spellcheck="false" readonly></textarea>
+          <div class="status" id="status">Ready.</div>
+        </div>
+
+        <div class="outBox" style="margin-top:12px">
+          <label for="md">Markdown snippet</label>
+          <textarea id="md" spellcheck="false" readonly></textarea>
+        </div>
+
+        <p class="hint small">This tool does not call any servers. It only uses your browser clock when you press "Now".</p>
+      </section>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

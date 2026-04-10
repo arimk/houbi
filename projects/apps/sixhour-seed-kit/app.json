@@ -1,0 +1,6 @@
+{
+  "title": "Six-Hour Seed Kit",
+  "description": "A tiny offline tool to turn any UTC time into a stable six-hour sprint seed (YYYYMMDDTHH00Z), with shareable links.",
+  "tags": ["seed", "utc", "sprint", "tool"],
+  "version": "1.0.0"
+}
