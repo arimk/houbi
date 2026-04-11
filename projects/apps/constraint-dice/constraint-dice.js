@@ -30,6 +30,16 @@ function utcStamp(){
     "_" + pad2(d.getUTCHours()) + pad2(d.getUTCMinutes()) + pad2(d.getUTCSeconds()) + "Z";
 }
 
+function utcSnap6h(){
+  const d = new Date();
+  const y = String(d.getUTCFullYear());
+  const mo = pad2(d.getUTCMonth() + 1);
+  const da = pad2(d.getUTCDate());
+  const h = d.getUTCHours();
+  const hh = pad2(Math.floor(h / 6) * 6);
+  return y + mo + da + "T" + hh + "00Z";
+}
+
 function clampInt(v, lo, hi, fallback){
   const n = Number.parseInt(String(v), 10);
   if (!Number.isFinite(n)) return fallback;
@@ -392,6 +402,7 @@ const $roll = document.getElementById("roll");
 const $roll3 = document.getElementById("roll3");
 const $remix = document.getElementById("remix");
 const $daily = document.getElementById("daily");
+const $snap6h = document.getElementById("snap6h");
 const $nextVariant = document.getElementById("nextVariant");
 const $copy = document.getElementById("copy");
 const $copyLink = document.getElementById("copyLink");
@@ -868,6 +879,14 @@ $daily.addEventListener("click", () => {
   setStatus($status, "Daily seed: " + s, "ok");
 });
 
+if ($snap6h) $snap6h.addEventListener("click", () => {
+  const s = utcSnap6h();
+  $seed.value = s;
+  $variant.value = "0";
+  roll();
+  setStatus($status, "Snapped seed (6h): " + s, "ok");
+});
+
 $nextVariant.addEventListener("click", () => {
   const v = clampInt($variant.value, 0, 99, 0);
   const next = (v + 1) % 100;
@@ -971,6 +990,7 @@ window.addEventListener("keydown", (e) => {
   const k = String(e.key || "").toLowerCase();
   if (k === "r"){ e.preventDefault(); roll(); return; }
   if (k === "n"){ e.preventDefault(); $nextVariant.click(); return; }
+  if (k === "s"){ e.preventDefault(); if ($snap6h) $snap6h.click(); return; }
   if (k === "c"){ e.preventDefault(); $copy.click(); return; }
   if (k === "l"){ e.preventDefault(); $copyLink.click(); return; }
   if (k === "d"){ e.preventDefault(); $download.click(); return; }
