@@ -79,6 +79,60 @@ const PALETTES = {
   }
 };
 
+const LS_KEY_HISTORY = "moodBarcodeHistoryV1";
+const HISTORY_MAX = 10;
+
+function loadHistory(){
+  try {
+    const raw = localStorage.getItem(LS_KEY_HISTORY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(list){
+  try {
+    localStorage.setItem(LS_KEY_HISTORY, JSON.stringify(list || []));
+  } catch {
+    // ignore
+  }
+}
+
+function pushHistory(item){
+  const list = loadHistory();
+  // De-dupe by hash + palette + geometry, keep latest.
+  const key = `${item.hashHex}|${item.paletteKey}|${item.bars}|${item.width}|${item.height}|${item.gap}|${item.showCaption ? 1 : 0}`;
+  const filtered = list.filter((x) => {
+    if (!x) return false;
+    const k = `${x.hashHex}|${x.paletteKey}|${x.bars}|${x.width}|${x.height}|${x.gap}|${x.showCaption ? 1 : 0}`;
+    return k !== key;
+  });
+
+  filtered.unshift({
+    ts: Date.now(),
+    seedText: item.seedText,
+    paletteKey: item.paletteKey,
+    bars: item.bars,
+    width: item.width,
+    height: item.height,
+    gap: item.gap,
+    showCaption: !!item.showCaption,
+    hashHex: item.hashHex
+  });
+
+  const clipped = filtered.slice(0, HISTORY_MAX);
+  saveHistory(clipped);
+  return clipped;
+}
+
+function clearHistory(){
+  saveHistory([]);
+  return [];
+}
+
 function buildBarcodeSvg({ seedText, paletteKey, bars, width, height, gapPct, showCaption }){
   const pal = PALETTES[paletteKey] || PALETTES.nocturne;
   const gapP = clamp01((Number(gapPct) || 0) / 100);
@@ -301,8 +355,54 @@ function main(){
   const elBars = document.getElementById("bars");
   const svgMount = document.getElementById("svgMount");
   const outHash = document.getElementById("outHash");
+  const elHistoryList = document.getElementById("historyList");
 
   let debounceTimer = null;
+
+  function renderHistory(list){
+    if (!elHistoryList) return;
+    elHistoryList.innerHTML = "";
+    const items = (list || []).slice(0, HISTORY_MAX);
+    if (items.length === 0){
+      const p = document.createElement("div");
+      p.className = "hint small";
+      p.textContent = "No saved items yet.";
+      elHistoryList.appendChild(p);
+      return;
+    }
+
+    for (let i = 0; i < items.length; i++){
+      const it = items[i] || {};
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "historyItem";
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.textContent = `hash ${it.hashHex || "-"} - ${it.paletteKey || "-"} - ${it.bars || "-"} bars`;
+
+      const seed = document.createElement("div");
+      seed.className = "seed";
+      const s = String(it.seedText || "").trim();
+      seed.textContent = (s.length > 72) ? (s.slice(0, 72) + "...") : (s || "(empty)");
+
+      b.appendChild(meta);
+      b.appendChild(seed);
+
+      b.addEventListener("click", () => {
+        elSeed.value = String(it.seedText || "");
+        if (it.paletteKey && PALETTES[it.paletteKey]) elPalette.value = it.paletteKey;
+        if (it.bars != null) elBars.value = String(it.bars);
+        if (it.width != null) document.getElementById("w").value = String(it.width);
+        if (it.height != null) document.getElementById("h").value = String(it.height);
+        if (it.gap != null) document.getElementById("gap").value = String(it.gap);
+        if (it.showCaption != null) document.getElementById("showCaption").checked = !!it.showCaption;
+        render({ updateUrl: true });
+      });
+
+      elHistoryList.appendChild(b);
+    }
+  }
 
   function render(opts){
     const o = opts || {};
@@ -340,12 +440,35 @@ function main(){
   if (q.gap != null && q.gap !== "") document.getElementById("gap").value = String(q.gap);
   if (q.cap != null && q.cap !== "") document.getElementById("showCaption").checked = (String(q.cap) !== "0");
 
-  document.getElementById("btnGen").addEventListener("click", () => { render({ updateUrl: true }); });
+  document.getElementById("btnGen").addEventListener("click", () => {
+    const st = render({ updateUrl: true });
+    const list = pushHistory(st);
+    renderHistory(list);
+  });
 
   document.getElementById("btnShuffle").addEventListener("click", () => {
     elSeed.value = nowSeed();
-    render({ updateUrl: true });
+    const st = render({ updateUrl: true });
+    const list = pushHistory(st);
+    renderHistory(list);
   });
+
+  const btnSaveHistory = document.getElementById("btnSaveHistory");
+  if (btnSaveHistory){
+    btnSaveHistory.addEventListener("click", () => {
+      const st = render({ updateUrl: true });
+      const list = pushHistory(st);
+      renderHistory(list);
+    });
+  }
+
+  const btnClearHistory = document.getElementById("btnClearHistory");
+  if (btnClearHistory){
+    btnClearHistory.addEventListener("click", () => {
+      const list = clearHistory();
+      renderHistory(list);
+    });
+  }
 
   document.getElementById("btnCopy").addEventListener("click", async () => {
     const { svg } = render({ updateUrl: true });
@@ -404,6 +527,7 @@ function main(){
   });
 
   // Auto-render on load.
+  renderHistory(loadHistory());
   render({ updateUrl: true });
 }
 
