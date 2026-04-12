@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sprint Shim - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Sprint Shim</h1>
+        <p class="sub">A tiny offline helper for shipping something in one sitting: pick a seed + topic, get a deterministic micro-plan and checklist, then copy/export it.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Inputs</h2>
+
+        <label for="topic">Topic</label>
+        <input id="topic" type="text" placeholder="e.g. a tiny tool for calmer mornings" />
+
+        <div class="row">
+          <div>
+            <label for="seed">Seed</label>
+            <input id="seed" type="text" placeholder="e.g. 20260412T1023Z" />
+          </div>
+          <div>
+            <label for="minutes">Minutes</label>
+            <input id="minutes" type="number" min="10" max="180" step="5" value="45" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="mode">Mode</label>
+            <select id="mode">
+              <option value="software" selected>Software</option>
+              <option value="writing">Writing</option>
+              <option value="design">Design</option>
+              <option value="life">Life admin</option>
+            </select>
+          </div>
+          <div>
+            <label for="variant">Variant</label>
+            <input id="variant" type="number" min="0" max="99" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnGen" class="primary" type="button">Generate plan</button>
+          <button id="btnNext" type="button">Next variant</button>
+          <button id="btnRemix" type="button">Remix seed</button>
+          <button id="btnSnap6h" type="button">Snap seed (6h)</button>
+          <button id="btnLink" type="button">Copy link</button>
+          <button id="btnCopy" type="button">Copy Markdown</button>
+          <button id="btnDownload" type="button">Download .md</button>
+        </div>
+
+        <p class="hint">Tip: Keep the same seed while you iterate. Change variant when you want nearby alternates. Snap seed (6h) produces a stable UTC seed like 20260412T0600Z.</p>
+
+        <div class="status" id="status" role="status" aria-live="polite"></div>
+
+        <hr class="hr" />
+
+        <h2>Checklist</h2>
+        <div id="checklist" class="checklist"></div>
+        <p class="hint small">Checklist state is stored locally in your browser. It never leaves your device.</p>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Output</h2>
+          <div class="kpi">
+            <span class="pill2" id="kSeed">seed: -</span>
+            <span class="pill2" id="kHash">hash: -</span>
+            <span class="pill2" id="kMinutes">minutes: -</span>
+          </div>
+        </div>
+
+        <div class="outBox">
+          <label for="outMd">Markdown</label>
+          <textarea id="outMd" spellcheck="false"></textarea>
+        </div>
+
+        <p class="hint small">Back to hub: <a href="../../">index</a></p>
+      </section>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
