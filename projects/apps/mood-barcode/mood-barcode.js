@@ -104,10 +104,10 @@ function saveHistory(list){
 function pushHistory(item){
   const list = loadHistory();
   // De-dupe by hash + palette + geometry, keep latest.
-  const key = `${item.hashHex}|${item.paletteKey}|${item.bars}|${item.width}|${item.height}|${item.gap}|${item.showCaption ? 1 : 0}`;
+  const key = `${item.hashHex}|${item.paletteKey}|${item.bars}|${item.width}|${item.height}|${item.gap}|${item.showCaption ? 1 : 0}|${item.transparentBg ? 1 : 0}`;
   const filtered = list.filter((x) => {
     if (!x) return false;
-    const k = `${x.hashHex}|${x.paletteKey}|${x.bars}|${x.width}|${x.height}|${x.gap}|${x.showCaption ? 1 : 0}`;
+    const k = `${x.hashHex}|${x.paletteKey}|${x.bars}|${x.width}|${x.height}|${x.gap}|${x.showCaption ? 1 : 0}|${x.transparentBg ? 1 : 0}`;
     return k !== key;
   });
 
@@ -120,6 +120,7 @@ function pushHistory(item){
     height: item.height,
     gap: item.gap,
     showCaption: !!item.showCaption,
+    transparentBg: !!item.transparentBg,
     hashHex: item.hashHex
   });
 
@@ -133,10 +134,11 @@ function clearHistory(){
   return [];
 }
 
-function buildBarcodeSvg({ seedText, paletteKey, bars, width, height, gapPct, showCaption }){
+function buildBarcodeSvg({ seedText, paletteKey, bars, width, height, gapPct, showCaption, transparentBg }){
   const pal = PALETTES[paletteKey] || PALETTES.nocturne;
   const gapP = clamp01((Number(gapPct) || 0) / 100);
   const capOn = (showCaption !== false);
+  const bgOn = !transparentBg;
 
   const hash = fnv1a32(seedText);
   const rand = xorshift32(hash ^ 0x9e3779b9);
@@ -221,8 +223,8 @@ function buildBarcodeSvg({ seedText, paletteKey, bars, width, height, gapPct, sh
     </filter>
   </defs>
 
-  <rect x="0" y="0" width="${width}" height="${height}" fill="url(#bg)" />
-  <rect x="${pad}" y="${pad}" width="${innerW}" height="${innerH}" fill="rgba(255,255,255,0.02)" stroke="rgba(140,185,255,0.18)" rx="18" />
+  ${bgOn ? `<rect x="0" y="0" width="${width}" height="${height}" fill="url(#bg)" />
+  <rect x="${pad}" y="${pad}" width="${innerW}" height="${innerH}" fill="rgba(255,255,255,0.02)" stroke="rgba(140,185,255,0.18)" rx="18" />` : ""}
 
   <g filter="url(#glow)">
     ${rects.join("\n    ")}
@@ -309,6 +311,7 @@ function readQueryState(){
   const h = p.get("h");
   const gap = p.get("gap");
   const cap = p.get("cap");
+  const bg = p.get("bg");
   return {
     seed: seed == null ? null : seed,
     palette: palette == null ? null : palette,
@@ -316,7 +319,8 @@ function readQueryState(){
     w: w == null ? null : w,
     h: h == null ? null : h,
     gap: gap == null ? null : gap,
-    cap: cap == null ? null : cap
+    cap: cap == null ? null : cap,
+    bg: bg == null ? null : bg
   };
 }
 
@@ -331,6 +335,7 @@ function buildShareUrl(state){
   if (state.h) p.set("h", String(state.h));
   if (state.gap != null && state.gap !== "") p.set("gap", String(state.gap));
   if (state.cap != null && state.cap !== "") p.set("cap", String(state.cap));
+  if (state.bg != null && state.bg !== "") p.set("bg", String(state.bg));
   return u.toString();
 }
 
@@ -397,6 +402,7 @@ function main(){
         if (it.height != null) document.getElementById("h").value = String(it.height);
         if (it.gap != null) document.getElementById("gap").value = String(it.gap);
         if (it.showCaption != null) document.getElementById("showCaption").checked = !!it.showCaption;
+        if (it.transparentBg != null) document.getElementById("transparentBg").checked = !!it.transparentBg;
         render({ updateUrl: true });
       });
 
@@ -413,16 +419,17 @@ function main(){
     const height = getInt("h", 240);
     const gap = getInt("gap", 7);
     const showCaption = !!document.getElementById("showCaption").checked;
+    const transparentBg = !!document.getElementById("transparentBg").checked;
 
-    const { svg, hashHex } = buildBarcodeSvg({ seedText, paletteKey, bars, width, height, gapPct: gap, showCaption });
+    const { svg, hashHex } = buildBarcodeSvg({ seedText, paletteKey, bars, width, height, gapPct: gap, showCaption, transparentBg });
     svgMount.innerHTML = svg;
     outHash.textContent = `hash: ${hashHex}`;
 
     if (o.updateUrl){
-      updateUrl({ seed: seedText, palette: paletteKey, bars, w: width, h: height, gap, cap: showCaption ? 1 : 0 });
+      updateUrl({ seed: seedText, palette: paletteKey, bars, w: width, h: height, gap, cap: showCaption ? 1 : 0, bg: transparentBg ? 0 : 1 });
     }
 
-    return { svg, hashHex, width, height, paletteKey, bars, seedText, gap, showCaption };
+    return { svg, hashHex, width, height, paletteKey, bars, seedText, gap, showCaption, transparentBg };
   }
 
   function renderSoon(){
@@ -439,6 +446,7 @@ function main(){
   if (q.h != null && q.h !== "") document.getElementById("h").value = String(q.h);
   if (q.gap != null && q.gap !== "") document.getElementById("gap").value = String(q.gap);
   if (q.cap != null && q.cap !== "") document.getElementById("showCaption").checked = (String(q.cap) !== "0");
+  if (q.bg != null && q.bg !== "") document.getElementById("transparentBg").checked = (String(q.bg) === "0");
 
   document.getElementById("btnGen").addEventListener("click", () => {
     const st = render({ updateUrl: true });
@@ -482,7 +490,7 @@ function main(){
 
   document.getElementById("btnLink").addEventListener("click", async () => {
     const st = render({ updateUrl: true });
-    const url = buildShareUrl({ seed: st.seedText, palette: st.paletteKey, bars: st.bars, w: st.width, h: st.height, gap: st.gap, cap: st.showCaption ? 1 : 0 });
+    const url = buildShareUrl({ seed: st.seedText, palette: st.paletteKey, bars: st.bars, w: st.width, h: st.height, gap: st.gap, cap: st.showCaption ? 1 : 0, bg: st.transparentBg ? 0 : 1 });
     try {
       await copyToClipboard(url);
     } catch {
@@ -513,6 +521,7 @@ function main(){
   document.getElementById("h").addEventListener("input", renderSoon);
   document.getElementById("gap").addEventListener("input", renderSoon);
   document.getElementById("showCaption").addEventListener("change", renderSoon);
+  document.getElementById("transparentBg").addEventListener("change", renderSoon);
 
   document.getElementById("btnPresetBanner").addEventListener("click", () => {
     document.getElementById("w").value = "900";
