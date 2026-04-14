@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sprint Splitter - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <h1>Sprint Splitter</h1>
+        <p class="sub">One goal in, a small shippable plan out. Deterministic (seeded), offline, linkable, and exportable.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Inputs</h2>
+
+        <label for="goal">Goal</label>
+        <textarea id="goal" placeholder="e.g. Add a new tiny app to Houbi site that helps me ship more often"></textarea>
+
+        <div class="row">
+          <div>
+            <label for="seed">Seed</label>
+            <input id="seed" type="text" spellcheck="false" placeholder="e.g. 20260414T2223Z" />
+          </div>
+          <div>
+            <label for="variant">Variant</label>
+            <input id="variant" type="number" min="0" max="99" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="minutes">Timebox (minutes)</label>
+            <input id="minutes" type="number" min="10" max="180" step="5" value="45" />
+          </div>
+          <div>
+            <label for="steps">Steps</label>
+            <select id="steps">
+              <option value="5">5</option>
+              <option value="6" selected>6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnGen" class="primary">Generate</button>
+          <button id="btnRemix">Remix seed (UTC now)</button>
+          <button id="btnCopy">Copy Markdown</button>
+          <button id="btnLink">Copy link</button>
+          <button id="btnDownload">Download .md</button>
+        </div>
+
+        <p class="hint">Tip: Keep the same seed while iterating. Bump variant to explore nearby plans.</p>
+
+        <div class="kpi">
+          <span class="pill2" id="kSeed">seed: -</span>
+          <span class="pill2" id="kHash">hash: -</span>
+          <span class="pill2" id="kMins">mins: -</span>
+        </div>
+
+        <p class="hint small">Back to hub: <a href="../../">index</a></p>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Plan</h2>
+          <div class="small muted" id="status"></div>
+        </div>
+
+        <div class="out">
+          <ol id="outList"></ol>
+        </div>
+
+        <div class="outBox">
+          <label for="outMd">Markdown</label>
+          <textarea id="outMd" spellcheck="false"></textarea>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
