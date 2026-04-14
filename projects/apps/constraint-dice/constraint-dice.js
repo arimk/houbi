@@ -396,6 +396,7 @@ const $difficulty = document.getElementById("difficulty");
 const $mode = document.getElementById("mode");
 const $out = document.getElementById("out");
 const $kpi = document.getElementById("kpi");
+const $preview = document.getElementById("preview");
 const $status = document.getElementById("status");
 
 const $roll = document.getElementById("roll");
@@ -407,6 +408,7 @@ const $nextVariant = document.getElementById("nextVariant");
 const $copy = document.getElementById("copy");
 const $copyLink = document.getElementById("copyLink");
 const $download = document.getElementById("download");
+const $btnPrint = document.getElementById("btnPrint");
 const $fav = document.getElementById("fav");
 
 const $historyList = document.getElementById("historyList");
@@ -647,6 +649,55 @@ function setKpi(p){
   $kpi.innerHTML = items.map((it) => "<div class=\"pill\"><strong>" + it.k + ":</strong> " + it.v + "</div>").join("");
 }
 
+function escapeHtml(s){
+  return String(s || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderPreview(picks){
+  if (!$preview) return;
+  if (!picks){
+    $preview.innerHTML = "<div class=\"previewTitle\">Preview</div><div class=\"previewBody\"><span class=\"muted\">Roll a brief to see a one-page preview here.</span></div>";
+    return;
+  }
+
+  const tags = [
+    "Seed: " + String(picks.seed || "-"),
+    "v" + String(picks.variant || 0),
+    String(picks.minutes || "-") + " min",
+    String(picks.difficulty || "-"),
+    String(picks.mode || "-")
+  ];
+
+  const constraints = Array.isArray(picks.constraints) ? picks.constraints : [];
+  const twists = Array.isArray(picks.twists) ? picks.twists : [];
+
+  let html = "";
+  html += "<div class=\"previewTitle\">Preview</div>";
+  html += "<div class=\"previewBody\">";
+  html += "<div class=\"row2\">" + tags.map((t) => "<span class=\"tag\">" + escapeHtml(t) + "</span>").join("") + "</div>";
+  html += "<p style=\"margin:10px 0 0\"><b>What to make:</b> Build a <b>" + escapeHtml(picks.medium) + "</b> about <b>" + escapeHtml(picks.topic) + "</b>.</p>";
+  html += "<p style=\"margin:8px 0 0\"><b>Lens:</b> " + escapeHtml(picks.lens) + "</p>";
+  html += "<p style=\"margin:8px 0 0\"><b>Deliverable:</b> Ship " + escapeHtml(picks.deliverable) + "</p>";
+
+  html += "<div style=\"margin-top:10px\"><b>Constraints</b></div>";
+  html += "<ul>" + constraints.map((c) => "<li>" + escapeHtml(c) + "</li>").join("") + "</ul>";
+
+  if (twists.length){
+    html += "<div style=\"margin-top:10px\"><b>Twists</b></div>";
+    html += "<ul>" + twists.map((t) => "<li>" + escapeHtml(t) + "</li>").join("") + "</ul>";
+  }
+
+  html += "<div style=\"margin-top:10px\" class=\"muted\">Tip: Click Print to get a clean one-page brief.</div>";
+  html += "</div>";
+
+  $preview.innerHTML = html;
+}
+
 function ensureSeed(){
   const raw = ($seed.value || "").trim();
   if (raw) return raw;
@@ -836,6 +887,7 @@ function roll(){
   const { picks, md } = buildBrief({ seed, topic, variant, minutes, difficulty, mode, bank });
   $out.value = md;
   setKpi(picks);
+  renderPreview(picks);
 
   const entry = { seed, topic, minutes, variant, difficulty, mode, ts: Date.now() };
   const items = upsertHistory(entry);
@@ -930,6 +982,17 @@ $download.addEventListener("click", () => {
   setStatus($status, "Downloaded: " + fn, "ok");
 });
 
+if ($btnPrint){
+  $btnPrint.addEventListener("click", () => {
+    try {
+      window.print();
+      setStatus($status, "Print dialog opened.", "ok");
+    } catch {
+      setStatus($status, "Print blocked.", "warn");
+    }
+  });
+}
+
 if ($fav){
   $fav.addEventListener("click", () => {
     const entry = currentEntryFromControls();
@@ -994,6 +1057,7 @@ window.addEventListener("keydown", (e) => {
   if (k === "c"){ e.preventDefault(); $copy.click(); return; }
   if (k === "l"){ e.preventDefault(); $copyLink.click(); return; }
   if (k === "d"){ e.preventDefault(); $download.click(); return; }
+  if (k === "p"){ e.preventDefault(); if ($btnPrint) $btnPrint.click(); return; }
   if (k === "f"){ e.preventDefault(); if ($fav) $fav.click(); return; }
   if (k === "t"){ e.preventDefault(); toggleTimer(); return; }
 });
@@ -1012,6 +1076,7 @@ window.addEventListener("keydown", (e) => {
   renderHistory(loadHistory());
   renderFavs();
   setFavButton(currentEntryFromControls());
+  renderPreview(null);
 
   const tp = loadTimerPrefs();
   if ($timerSound) $timerSound.checked = !!tp.sound;

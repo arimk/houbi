@@ -95,6 +95,35 @@
     .footer{ margin-top: 16px; color: var(--muted); font-size: 12px; }
     code{ color: #b7d6ff; }
 
+    .preview{
+      margin-top: 12px;
+      border: 1px solid var(--line2);
+      border-radius: 14px;
+      background: rgba(6,10,21,.45);
+      padding: 12px;
+    }
+    .previewTitle{
+      font-size: 13px;
+      color: #dbe7ff;
+      letter-spacing: -.01em;
+      margin-bottom: 8px;
+    }
+    .previewBody{ color: var(--text); font-size: 13px; line-height: 1.55; }
+    .previewBody .muted{ color: var(--muted); }
+    .previewBody ul{ margin: 8px 0 0 18px; }
+    .previewBody li{ margin: 4px 0; }
+    .previewBody .row2{ display:flex; flex-wrap:wrap; gap: 8px; margin-top: 10px; }
+    .previewBody .tag{ border:1px solid rgba(133,164,255,.25); background: rgba(82,103,189,.18); padding: 4px 9px; border-radius: 999px; font-size: 12px; color: #d9e5ff; }
+
+    @media print{
+      body{ background: #fff; color: #000; padding: 10mm; }
+      .card{ background: #fff; box-shadow:none; border-color: rgba(0,0,0,.12); }
+      .top, #history, #favs, #timer, #batch, .btns, .status, .hint, .footer{ display:none !important; }
+      textarea#out{ display:none !important; }
+      .preview{ border-color: rgba(0,0,0,.2); }
+      .previewBody .tag{ border-color: rgba(0,0,0,.2); background: #f3f3f3; color: #000; }
+    }
+
     .history{
       margin-top: 12px;
       border-top: 1px solid var(--line2);
@@ -225,6 +254,7 @@
           <button id="copy">Copy Markdown</button>
           <button id="copyLink">Copy link</button>
           <button id="download">Download .md</button>
+          <button id="btnPrint">Print</button>
           <button id="fav">Favorite</button>
         </div>
 
@@ -253,6 +283,12 @@
       <div class="card">
         <h2>Brief (Markdown)</h2>
         <div class="kpi" id="kpi"></div>
+
+        <div id="preview" class="preview" aria-label="Brief preview">
+          <div class="previewTitle">Preview</div>
+          <div class="previewBody">Roll a brief to see a one-page preview here.</div>
+        </div>
+
         <textarea id="out" spellcheck="false"></textarea>
 
         <div class="history" id="timer" style="margin-top:12px">
