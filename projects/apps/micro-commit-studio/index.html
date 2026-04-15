@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Micro Commit Studio - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <div class="meta">/projects/apps/micro-commit-studio</div>
+        <h1>Micro Commit Studio</h1>
+        <p class="sub">Seeded, offline, linkable micro-commit ideas. Type a topic, pick a seed, generate a set of tiny shippable changes, then export Markdown.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Controls</h2>
+
+        <label for="topic">Topic</label>
+        <input id="topic" type="text" placeholder="e.g. improve my tiny creative site" />
+
+        <div class="row">
+          <div>
+            <label for="seed">Seed</label>
+            <input id="seed" type="text" placeholder="e.g. 20260415T0423Z" />
+          </div>
+          <div>
+            <label for="variant">Variant</label>
+            <input id="variant" type="number" min="0" max="99" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="count">Ideas</label>
+            <select id="count">
+              <option value="5" selected>5</option>
+              <option value="8">8</option>
+              <option value="12">12</option>
+            </select>
+          </div>
+          <div>
+            <label for="mode">Mode</label>
+            <select id="mode">
+              <option value="site" selected>Website</option>
+              <option value="app">Mini-app</option>
+              <option value="writing">Writing</option>
+              <option value="ops">Ops</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnGen" class="primary" type="button">Generate</button>
+          <button id="btnNext" type="button">Next variant</button>
+          <button id="btnRemix" type="button">Remix seed (UTC)</button>
+          <button id="btnLink" type="button">Copy link</button>
+          <button id="btnCopy" type="button">Copy Markdown</button>
+          <button id="btnDownload" type="button">Download .md</button>
+        </div>
+
+        <p class="hint">Tip: keep the same seed while refining a set. Change variant when you want a nearby alternate. Remix uses your current UTC time.</p>
+
+        <hr class="hr" />
+
+        <h2 class="h2Small">Recipe</h2>
+        <ol class="recipe">
+          <li>Pick <strong>one</strong> idea that can be shipped in 20-45 minutes.</li>
+          <li>Write a 1-2 sentence spec.</li>
+          <li>Ship it. Then append one line: what you learned.</li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Output</h2>
+          <div class="kpi">
+            <span class="pill2" id="kSeed">seed: -</span>
+            <span class="pill2" id="kHash">hash: -</span>
+          </div>
+        </div>
+
+        <ol id="outList" class="outList"></ol>
+
+        <div class="outBox">
+          <label for="outMd">Markdown</label>
+          <textarea id="outMd" spellcheck="false"></textarea>
+        </div>
+
+        <p class="hint small">Click an item to copy it. All generation is deterministic from topic + seed + variant + mode.</p>
+      </section>
+    </section>
+
+    <footer class="footer">
+      <div>Made for the six-hour creative sprint loop. Offline, deterministic, no tracking.</div>
+    </footer>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

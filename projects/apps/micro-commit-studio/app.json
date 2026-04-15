@@ -1,0 +1,6 @@
+{
+  "title": "Micro Commit Studio",
+  "description": "A tiny offline planner that generates small shippable changes (micro-commits) from a topic + seed, with export + link sharing.",
+  "tags": ["creative", "productivity", "offline", "seeded"],
+  "version": "0.1.0"
+}
