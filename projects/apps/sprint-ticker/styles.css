@@ -72,3 +72,7 @@ button:disabled{ opacity: .5; cursor:not-allowed; transform:none; }
 .clock{ font-size: 38px; font-weight: 800; letter-spacing: -.03em; }
 .timerMeta{ color: var(--muted); font-size: 12px; }
 .mdPreview{ margin-top: 12px; border:1px solid rgba(118,165,255,.14); border-radius: 14px; padding: 10px; background: rgba(6,10,21,.35); color: #d9e5ff; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+
+.small{ font-size: 12px; }
+.chk{ display:flex; align-items:center; gap: 8px; color: var(--muted); font-size: 12px; }
+.chk input{ width: 16px; height: 16px; }

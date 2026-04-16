@@ -29,6 +29,36 @@ function utcNowStamp(){
     "T" + pad2(d.getUTCHours()) + ":" + pad2(d.getUTCMinutes()) + ":" + pad2(d.getUTCSeconds()) + "Z";
 }
 
+function utcSixHourSeed(){
+  const d = new Date();
+  const y = d.getUTCFullYear();
+  const mo = pad2(d.getUTCMonth() + 1);
+  const da = pad2(d.getUTCDate());
+  const hh = Math.floor(d.getUTCHours() / 6) * 6;
+  return String(y) + String(mo) + String(da) + "T" + pad2(hh) + "00Z";
+}
+
+function tryNotifyDone(){
+  if (!els.chkNotify || !els.chkNotify.checked) return;
+  if (!("Notification" in window)) return;
+
+  const st = getState();
+  const body = st.topic ? ("Intent: " + st.topic) : "Sprint finished.";
+
+  if (Notification.permission === "granted"){
+    try { new Notification("Sprint done", { body }); } catch {}
+    return;
+  }
+
+  if (Notification.permission === "default"){
+    Notification.requestPermission().then((p) => {
+      if (p === "granted"){
+        try { new Notification("Sprint done", { body }); } catch {}
+      }
+    }).catch(() => {});
+  }
+}
+
 function readQuery(){
   const sp = new URLSearchParams(window.location.search || "");
   return {
@@ -68,6 +98,7 @@ const els = {
   minutes: $("minutes"),
   mode: $("mode"),
   btnPrompt: $("btnPrompt"),
+  btnSnap6h: $("btnSnap6h"),
   btnLink: $("btnLink"),
   prompt: $("prompt"),
   metaHash: $("metaHash"),
@@ -77,6 +108,7 @@ const els = {
   btnPause: $("btnPause"),
   btnReset: $("btnReset"),
   btnMark: $("btnMark"),
+  chkNotify: $("chkNotify"),
   notes: $("notes"),
   btnCopy: $("btnCopy"),
   btnDownload: $("btnDownload"),
@@ -163,6 +195,7 @@ function startTick(){
       timer.finishedAt = now;
       stopTick();
       tryBeep();
+      tryNotifyDone();
     }
     renderTimer();
     renderMarkdown();
@@ -305,11 +338,35 @@ function bootFromQuery(){
   }
   timer.totalMs = Number(els.minutes.value) * 60 * 1000;
   timer.remainingMs = timer.totalMs;
+
+  try {
+    const v = window.localStorage.getItem("sprintTicker.notify");
+    if (els.chkNotify) els.chkNotify.checked = (v === "1");
+  } catch {}
+
   renderTimer();
   renderMarkdown();
 }
 
 els.btnPrompt.addEventListener("click", () => genPrompt());
+
+if (els.btnSnap6h){
+  els.btnSnap6h.addEventListener("click", () => {
+    els.seed.value = utcSixHourSeed();
+    genPrompt();
+  });
+}
+
+if (els.chkNotify){
+  els.chkNotify.addEventListener("change", () => {
+    try { window.localStorage.setItem("sprintTicker.notify", els.chkNotify.checked ? "1" : "0"); } catch {}
+    if (els.chkNotify.checked && ("Notification" in window) && Notification.permission === "default"){
+      try {
+        Notification.requestPermission().then(() => {}).catch(() => {});
+      } catch {}
+    }
+  });
+}
 
 els.btnLink.addEventListener("click", async () => {
   genPrompt();
