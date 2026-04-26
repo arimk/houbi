@@ -189,7 +189,41 @@ const BANK = {
     "compress",
     "sequence",
     "make visible"
-  ]
+  ],
+  followUps: {
+    base: [
+      "What is the smallest experiment that would answer it?",
+      "What would have to be true for the opposite to be better?",
+      "Which assumption is doing the most work here?",
+      "What would you do if you could not use your usual tool?",
+      "What part of this is reversible, and what is not?",
+      "What is the constraint you are pretending you do not have?",
+      "What is the most boring version that still works?",
+      "What would you remove first, and why?",
+      "What would you measure in 7 days to know you are right?",
+      "What would make this feel 10 percent lighter?"
+    ],
+    gentle: [
+      "What would make this feel safe enough to try?",
+      "Where can you add a little kindness without adding fragility?",
+      "What would be a good enough first draft?"
+    ],
+    sharp: [
+      "What would you do if you had to ship in 24 hours?",
+      "What is the decision you are delaying?",
+      "What would you stop doing today to make room for this?"
+    ],
+    noir: [
+      "Who benefits if you never answer this?",
+      "What is the story you tell yourself to stay stuck?",
+      "Where is the shadow cost hiding?"
+    ],
+    systems: [
+      "Which feedback loop would amplify the outcome?",
+      "What incentive would make the wrong behavior inevitable?",
+      "Where is the coupling that will bite you later?"
+    ]
+  }
 };
 
 function buildQuestions({ topic, seed, variant, tone, count }){
@@ -226,6 +260,44 @@ function buildQuestions({ topic, seed, variant, tone, count }){
   }
 
   return { questions: out, hashHex: u32ToHex(hash), key };
+}
+
+function buildFollowUps(st, idx){
+  const hashHex = String((st && st.hashHex) || "");
+  const toneKey = String((st && st.tone) || "gentle");
+  const q = String((st && st.questions && st.questions[idx | 0]) || "").trim();
+  const topic = String((st && st.topic) || "").trim();
+
+  const seedStr = hashHex + "::fu::" + String(idx | 0) + "::" + toneKey;
+  const seed = fnv1a32(seedStr);
+  const rng = xorshift32(seed ^ 0xa5a5a5a5);
+
+  const base = (BANK.followUps && BANK.followUps.base) ? BANK.followUps.base.slice() : [];
+  const tone = (BANK.followUps && BANK.followUps[toneKey]) ? BANK.followUps[toneKey].slice() : [];
+
+  const pool = base.concat(tone);
+  if (!pool.length) return [];
+
+  // Deterministic pick without repeats.
+  const out = [];
+  const seen = new Set();
+  const want = 5;
+  for (let tries = 0; tries < 64 && out.length < want; tries++){
+    const t = pick(rng, pool);
+    const txt = String(t || "").trim();
+    if (!txt) continue;
+    if (seen.has(txt)) continue;
+    seen.add(txt);
+    out.push(txt);
+  }
+
+  // Lightly contextualize the first follow-up.
+  if (out.length && (q || topic)){
+    const lead = q ? q : topic;
+    out[0] = out[0] + " (" + lead.slice(0, 80) + (lead.length > 80 ? "..." : "") + ")";
+  }
+
+  return out;
 }
 
 function readQuery(){
@@ -709,6 +781,9 @@ function main(){
   const elFocusNote = document.getElementById("focusNote");
   const elNoteStatus = document.getElementById("noteStatus");
 
+  const elFocusFollowUps = document.getElementById("focusFollowUps");
+  const btnCopyFollowUps = document.getElementById("btnCopyFollowUps");
+
   let debounceTimer = null;
   let lastState = null;
 
@@ -802,6 +877,32 @@ function main(){
     }
     if (elFocusQ){
       elFocusQ.textContent = q;
+    }
+
+    // Follow-ups for this question.
+    if (elFocusFollowUps){
+      const fus = buildFollowUps(st, focusIndex);
+      elFocusFollowUps.innerHTML = "";
+      for (let i = 0; i < fus.length; i++){
+        const li = document.createElement("li");
+        li.textContent = fus[i];
+        li.title = "Click to copy";
+        li.addEventListener("click", async () => {
+          try {
+            await copyToClipboard(fus[i]);
+            kpiFlash("copied");
+          } catch {
+            alert(fus[i]);
+          }
+        });
+        elFocusFollowUps.appendChild(li);
+      }
+      if (!fus.length){
+        const li = document.createElement("li");
+        li.textContent = "(No follow-ups.)";
+        li.style.opacity = "0.75";
+        elFocusFollowUps.appendChild(li);
+      }
     }
 
     // Notes for this question.
@@ -1563,6 +1664,33 @@ function main(){
         if (elNoteStatus) elNoteStatus.textContent = "copied";
       } catch {
         alert("Clipboard unavailable. Select and copy manually.");
+      }
+    });
+  }
+
+  if (btnCopyFollowUps){
+    btnCopyFollowUps.addEventListener("click", async () => {
+      const st = lastState;
+      if (!st) return;
+      const fus = buildFollowUps(st, focusIndex);
+      const lines = [];
+      lines.push("# Open Question Dial - Follow-ups");
+      lines.push("");
+      lines.push(`- hash: ${st.hashHex}`);
+      lines.push(`- question: ${focusIndex + 1}/${st.questions.length}`);
+      lines.push("");
+      lines.push("## Follow-ups");
+      lines.push("");
+      for (const fu of fus){
+        lines.push("- " + fu);
+      }
+      lines.push("");
+      const md = lines.join("\n");
+      try {
+        await copyToClipboard(md);
+        kpiFlash("copied");
+      } catch {
+        alert(md);
       }
     });
   }

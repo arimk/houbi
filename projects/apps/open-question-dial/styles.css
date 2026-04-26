@@ -192,6 +192,20 @@ button.ghost{
   line-height: 1.45;
 }
 
+.followUps{
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--line2);
+  background: rgba(6,10,21,.52);
+}
+.followUpsTop{ display:flex; align-items:center; justify-content:space-between; gap: 10px; }
+.followUpsTitle{ font-weight: 800; font-size: 12px; color: #dbe7ff; letter-spacing: -.01em; }
+.followUpsActions button{ padding: 8px 10px; font-size: 12px; }
+.followUpsList{ margin: 10px 0 0 18px; padding:0; display:flex; flex-direction:column; gap: 8px; }
+.followUpsList li{ line-height: 1.5; cursor: pointer; }
+.followUpsList li:hover{ color: #dffcff; }
+
 .focusHelp{
   margin-top: 10px;
   padding: 12px;
