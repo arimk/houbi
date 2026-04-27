@@ -38,6 +38,13 @@ function parseTsToDateUtc(ts){
   return d;
 }
 
+function tsToYmd(ts){
+  const s = String(ts || "").trim();
+  const m = /^([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2})Z$/.exec(s);
+  if (!m) return null;
+  return m[1] + "-" + m[2] + "-" + m[3];
+}
+
 function hash31(str){
   // Same as tools/sixhour-pick-type.cjs
   let x = 0;
@@ -175,6 +182,13 @@ function main(){
   const elN = document.getElementById("n");
   const elStep = document.getElementById("step");
 
+  const elAPost = document.getElementById("aPost");
+  const elATitle = document.getElementById("aTitle");
+  const elAShell = document.getElementById("aShell");
+  const btnCopyPost = document.getElementById("btnCopyPost");
+  const btnCopyTitle = document.getElementById("btnCopyTitle");
+  const btnCopyShell = document.getElementById("btnCopyShell");
+
   function setTs(ts){
     elTs.value = String(ts || "");
     onTsChange();
@@ -190,6 +204,9 @@ function main(){
       elKHash.textContent = "hash31: -";
       elKR.textContent = "r: -";
       elBuckets.innerHTML = "";
+      if (elAPost) elAPost.textContent = "-";
+      if (elATitle) elATitle.textContent = "-";
+      if (elAShell) elAShell.textContent = "-";
       return;
     }
 
@@ -202,6 +219,17 @@ function main(){
     elKR.textContent = "r: " + String(p.r.toFixed(4));
 
     renderBuckets(elBuckets, p.buckets, p.type);
+
+    const ymd = tsToYmd(ts);
+    const post = ymd ? ("content/posts/" + ymd + "-sprint-" + p.type + "-" + ts + ".md") : "-";
+    const title = "Creative sprint " + ts + " (" + p.type + ")";
+    const shell = "TS=" + ts + "\n" +
+      "TYPE=$(node tools/sixhour-pick-type.cjs --ts \"$TS\")\n" +
+      "echo $TYPE";
+
+    if (elAPost) elAPost.textContent = post;
+    if (elATitle) elATitle.textContent = title;
+    if (elAShell) elAShell.textContent = shell;
   }
 
   function renderSchedule(items){
@@ -250,11 +278,35 @@ function main(){
     setClipboard(scheduleToMarkdown(items));
   });
 
-  // Initialize with current time.
-  const d = new Date();
-  d.setUTCSeconds(0);
-  d.setUTCMilliseconds(0);
-  setTs(fmtTsFromDateUtc(d));
+  if (btnCopyPost){
+    btnCopyPost.addEventListener("click", () => {
+      setClipboard(String(elAPost ? elAPost.textContent : "").trim());
+    });
+  }
+
+  if (btnCopyTitle){
+    btnCopyTitle.addEventListener("click", () => {
+      setClipboard(String(elATitle ? elATitle.textContent : "").trim());
+    });
+  }
+
+  if (btnCopyShell){
+    btnCopyShell.addEventListener("click", () => {
+      setClipboard(String(elAShell ? elAShell.textContent : "").trim());
+    });
+  }
+
+  // Initialize with query param or current time.
+  const p = new URLSearchParams(window.location.search || "");
+  const qts = String(p.get("ts") || "").trim();
+  if (qts && parseTsToDateUtc(qts)){
+    setTs(qts);
+  } else {
+    const d = new Date();
+    d.setUTCSeconds(0);
+    d.setUTCMilliseconds(0);
+    setTs(fmtTsFromDateUtc(d));
+  }
 }
 
 main();
