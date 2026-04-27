@@ -55,6 +55,24 @@
           </div>
         </div>
 
+        <h2 class="h2Small">Presets</h2>
+        <p class="hint small">Save a reusable setup (topic + seed + mode + count + variant) locally in your browser.</p>
+
+        <label for="presetName">Preset name</label>
+        <input id="presetName" type="text" placeholder="e.g. houbi creative sprint" />
+
+        <div class="row">
+          <div>
+            <label for="presetSelect">Saved</label>
+            <select id="presetSelect"></select>
+          </div>
+          <div class="presetBtns">
+            <button id="btnPresetLoad" type="button">Load</button>
+            <button id="btnPresetSave" type="button">Save</button>
+            <button id="btnPresetDelete" type="button">Delete</button>
+          </div>
+        </div>
+
         <div class="btns">
           <button id="btnGen" class="primary" type="button">Generate</button>
           <button id="btnNext" type="button">Next variant</button>

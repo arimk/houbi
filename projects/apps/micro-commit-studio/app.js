@@ -164,6 +164,71 @@
   var kSeed = byId("kSeed");
   var kHash = byId("kHash");
 
+  // Presets (local only)
+  var elPresetName = byId("presetName");
+  var elPresetSelect = byId("presetSelect");
+  var btnPresetLoad = byId("btnPresetLoad");
+  var btnPresetSave = byId("btnPresetSave");
+  var btnPresetDelete = byId("btnPresetDelete");
+
+  var PRESET_KEY = "microCommitStudio.presets.v1";
+
+  function loadPresets(){
+    try{
+      var raw = localStorage.getItem(PRESET_KEY);
+      if(!raw) return [];
+      var arr = JSON.parse(raw);
+      if(!Array.isArray(arr)) return [];
+      return arr.filter(function(p){ return p && typeof p.name === "string" && p.state; });
+    }catch(e){
+      return [];
+    }
+  }
+
+  function savePresets(arr){
+    try{
+      localStorage.setItem(PRESET_KEY, JSON.stringify(arr));
+    }catch(e){}
+  }
+
+  function presetLabel(p){
+    var n = (p && p.name ? String(p.name) : "").trim();
+    return n || "(unnamed)";
+  }
+
+  function refreshPresetSelect(selectedName){
+    var presets = loadPresets();
+    elPresetSelect.innerHTML = "";
+
+    var opt0 = document.createElement("option");
+    opt0.value = "";
+    opt0.textContent = "-- select --";
+    elPresetSelect.appendChild(opt0);
+
+    presets.sort(function(a,b){
+      return presetLabel(a).toLowerCase().localeCompare(presetLabel(b).toLowerCase());
+    });
+
+    presets.forEach(function(p){
+      var opt = document.createElement("option");
+      opt.value = p.name;
+      opt.textContent = presetLabel(p);
+      elPresetSelect.appendChild(opt);
+    });
+
+    if(selectedName){
+      elPresetSelect.value = selectedName;
+    }
+  }
+
+  function getPresetByName(name){
+    var presets = loadPresets();
+    for(var i=0;i<presets.length;i++){
+      if(presets[i].name === name) return presets[i];
+    }
+    return null;
+  }
+
   function readState(){
     return {
       topic: (elTopic.value || "").trim(),
@@ -234,6 +299,55 @@
     var mode = u.searchParams.get("mode") || "site";
     applyState({ topic: topic, seed: seed, variant: variant, count: count, mode: mode });
   }
+
+  // Preset buttons
+  btnPresetLoad.addEventListener("click", function(){
+    var name = elPresetSelect.value || "";
+    if(!name) return;
+    var p = getPresetByName(name);
+    if(!p) return;
+    applyState(p.state || {});
+    if(elPresetName) elPresetName.value = p.name;
+    render();
+  });
+
+  btnPresetSave.addEventListener("click", function(){
+    var name = (elPresetName.value || "").trim();
+    if(!name){
+      var s = readState();
+      name = (s.mode || "mode") + ": " + clampText(s.topic || "topic", 24);
+      elPresetName.value = name;
+    }
+    var state = readState();
+    var presets = loadPresets();
+    var found = false;
+    for(var i=0;i<presets.length;i++){
+      if(presets[i].name === name){
+        presets[i].state = state;
+        found = true;
+        break;
+      }
+    }
+    if(!found){
+      presets.push({ name: name, state: state });
+    }
+    savePresets(presets);
+    refreshPresetSelect(name);
+  });
+
+  btnPresetDelete.addEventListener("click", function(){
+    var name = elPresetSelect.value || "";
+    if(!name) return;
+    var presets = loadPresets();
+    var kept = [];
+    for(var i=0;i<presets.length;i++){
+      if(presets[i].name !== name) kept.push(presets[i]);
+    }
+    savePresets(kept);
+    refreshPresetSelect("");
+  });
+
+  refreshPresetSelect("");
 
   byId("btnGen").addEventListener("click", function(){ render(); });
   byId("btnNext").addEventListener("click", function(){

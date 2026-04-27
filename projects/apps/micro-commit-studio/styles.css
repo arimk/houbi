@@ -64,6 +64,8 @@ textarea{ min-height: 200px; resize: vertical; font-family: ui-monospace, SFMono
 .row{ display:flex; gap: 10px; }
 .row > *{ flex: 1; }
 .btns{ display:flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.presetBtns{ display:flex; gap: 10px; align-items:flex-end; justify-content:flex-end; flex: 1; }
+.presetBtns button{ width: auto; }
 button{
   border: 1px solid var(--line2);
   background: rgba(6,10,21,.72);
