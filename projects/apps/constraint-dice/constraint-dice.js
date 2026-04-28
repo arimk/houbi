@@ -406,6 +406,7 @@ const $daily = document.getElementById("daily");
 const $snap6h = document.getElementById("snap6h");
 const $nextVariant = document.getElementById("nextVariant");
 const $copy = document.getElementById("copy");
+const $copyBatch = document.getElementById("copyBatch");
 const $copyLink = document.getElementById("copyLink");
 const $download = document.getElementById("download");
 const $btnPrint = document.getElementById("btnPrint");
@@ -767,6 +768,8 @@ function setFavButton(entry){
   $fav.textContent = isFav(entry) ? "Unfavorite" : "Favorite";
 }
 
+let lastBatchMd = "";
+
 function renderBatch(){
   if (!$batchList) return;
 
@@ -785,9 +788,11 @@ function renderBatch(){
   const bank = effectiveBank();
 
   $batchList.innerHTML = "";
+  const batchParts = [];
   for (let i = 0; i < variants.length; i++){
     const v = variants[i];
     const { picks, md } = buildBrief({ seed, topic, variant: v, minutes, difficulty, mode, bank });
+    batchParts.push(md.trim());
 
     const li = document.createElement("li");
 
@@ -863,6 +868,8 @@ function renderBatch(){
     li.appendChild(box);
     $batchList.appendChild(li);
   }
+
+  lastBatchMd = batchParts.filter(Boolean).join("\n\n---\n\n") + "\n";
 }
 
 function roll(){
@@ -956,6 +963,20 @@ $copy.addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(text);
     setStatus($status, "Copied Markdown to clipboard.", "ok");
+  } catch {
+    setStatus($status, "Clipboard blocked. Use manual copy.", "warn");
+  }
+});
+
+if ($copyBatch) $copyBatch.addEventListener("click", async () => {
+  const text = String(lastBatchMd || "");
+  if (!text.trim()){
+    setStatus($status, "No batch yet. Use Roll batch first.", "warn");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    setStatus($status, "Copied batch Markdown to clipboard.", "ok");
   } catch {
     setStatus($status, "Clipboard blocked. Use manual copy.", "warn");
   }
