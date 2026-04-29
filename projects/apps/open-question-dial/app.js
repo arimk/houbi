@@ -4,6 +4,41 @@
 // Plus local History (saved states).
 // ASCII only.
 
+const THEME_KEY = "oqd_theme"; // auto|light|dark
+
+function getPreferredTheme(){
+  const saved = String(localStorage.getItem(THEME_KEY) || "auto");
+  if (saved === "light" || saved === "dark") return saved;
+  return "auto";
+}
+
+function resolveTheme(mode){
+  if (mode === "light" || mode === "dark") return mode;
+  try{
+    const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return prefersDark ? "dark" : "light";
+  }catch{
+    return "light";
+  }
+}
+
+function applyTheme(mode){
+  const root = document.documentElement;
+  const resolved = resolveTheme(mode);
+  if (resolved === "dark") root.setAttribute("data-theme", "dark");
+  else root.removeAttribute("data-theme");
+  const btn = document.getElementById("btnTheme");
+  if (btn){
+    btn.textContent = "Theme: " + mode;
+  }
+}
+
+function cycleTheme(mode){
+  if (mode === "auto") return "light";
+  if (mode === "light") return "dark";
+  return "auto";
+}
+
 function fnv1a32(str){
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++){
@@ -751,6 +786,29 @@ function main(){
   const elVariant = document.getElementById("variant");
   const elTone = document.getElementById("tone");
   const elCount = document.getElementById("count");
+
+  // Theme.
+  const btnTheme = document.getElementById("btnTheme");
+  let themeMode = "auto";
+  try { themeMode = getPreferredTheme(); } catch { themeMode = "auto"; }
+  applyTheme(themeMode);
+
+  if (btnTheme){
+    btnTheme.addEventListener("click", () => {
+      themeMode = cycleTheme(themeMode);
+      try { localStorage.setItem(THEME_KEY, themeMode); } catch {}
+      applyTheme(themeMode);
+    });
+  }
+
+  try{
+    if (window.matchMedia){
+      const mm = window.matchMedia("(prefers-color-scheme: dark)");
+      mm.addEventListener("change", () => {
+        if (themeMode === "auto") applyTheme(themeMode);
+      });
+    }
+  }catch{}
 
   const elFilter = document.getElementById("filter");
   const btnFilterClear = document.getElementById("btnFilterClear");
@@ -1841,6 +1899,17 @@ function main(){
     savePins(st0.hashHex, ps);
     st0 = render({ updateUrl: true });
   }
+
+  // Global shortcut: t toggles theme.
+  window.addEventListener("keydown", (e) => {
+    if (e.key !== "t" && e.key !== "T") return;
+    if (isTypingTarget(e.target)) return;
+    // If focus is open, focus-mode already uses several keys; keep theme toggle global.
+    e.preventDefault();
+    themeMode = cycleTheme(themeMode);
+    try { localStorage.setItem(THEME_KEY, themeMode); } catch {}
+    applyTheme(themeMode);
+  });
 
   renderHistory();
   renderSavedPresetsUi();

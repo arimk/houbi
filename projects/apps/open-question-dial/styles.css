@@ -1,4 +1,16 @@
 :root{
+  color-scheme: light;
+  --bg0:#f6f8ff;
+  --bg1:#eef2ff;
+  --card:rgba(255,255,255,.78);
+  --line:rgba(45,86,170,.22);
+  --line2:rgba(45,86,170,.14);
+  --text:#0b1220;
+  --muted:#425a86;
+  --cyan:#0aa3b5;
+}
+
+:root[data-theme="dark"]{
   color-scheme: dark;
   --bg0:#05060a;
   --bg1:#0b0f1a;
@@ -24,6 +36,8 @@ body{
 a{ color: #8cb9ff; }
 .wrap{ max-width: 1020px; margin: 0 auto; }
 .top{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin-bottom: 12px; }
+.topRight{ display:flex; align-items:center; gap:10px; }
+.pillBtn{ border-radius: 999px; padding: 6px 10px; font-size: 12px; }
 h1{ margin: 0; font-size: clamp(26px, 4vw, 42px); letter-spacing:-.03em; }
 .sub{ margin: 8px 0 0; color: var(--muted); line-height: 1.6; max-width: 78ch; }
 .grid{ margin-top: 16px; display:grid; grid-template-columns: 1fr; gap: 14px; }
