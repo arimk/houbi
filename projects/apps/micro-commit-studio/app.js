@@ -164,6 +164,9 @@
   var kSeed = byId("kSeed");
   var kHash = byId("kHash");
 
+  var elHistList = byId("histList");
+  var btnHistClear = byId("btnHistClear");
+
   // Presets (local only)
   var elPresetName = byId("presetName");
   var elPresetSelect = byId("presetSelect");
@@ -172,6 +175,8 @@
   var btnPresetDelete = byId("btnPresetDelete");
 
   var PRESET_KEY = "microCommitStudio.presets.v1";
+  var HIST_KEY = "microCommitStudio.history.v1";
+  var HIST_MAX = 12;
 
   function loadPresets(){
     try{
@@ -189,6 +194,84 @@
     try{
       localStorage.setItem(PRESET_KEY, JSON.stringify(arr));
     }catch(e){}
+  }
+
+  function loadHistory(){
+    try{
+      var raw = localStorage.getItem(HIST_KEY);
+      if(!raw) return [];
+      var arr = JSON.parse(raw);
+      if(!Array.isArray(arr)) return [];
+      return arr.filter(function(h){ return h && h.state && typeof h.hash === "string"; });
+    }catch(e){
+      return [];
+    }
+  }
+
+  function saveHistory(arr){
+    try{
+      localStorage.setItem(HIST_KEY, JSON.stringify(arr));
+    }catch(e){}
+  }
+
+  function sameState(a,b){
+    if(!a || !b) return false;
+    return String(a.topic||"") === String(b.topic||"")
+      && String(a.seed||"") === String(b.seed||"")
+      && String(a.variant||0) === String(b.variant||0)
+      && String(a.count||0) === String(b.count||0)
+      && String(a.mode||"") === String(b.mode||"");
+  }
+
+  function pushHistory(entry){
+    if(!entry || !entry.state) return;
+    var s = entry.state;
+    if(!(s.topic && s.seed)) return;
+
+    var hist = loadHistory();
+    if(hist.length && sameState(hist[0].state, s)) return;
+
+    hist.unshift(entry);
+    if(hist.length > HIST_MAX) hist = hist.slice(0, HIST_MAX);
+    saveHistory(hist);
+  }
+
+  function renderHistory(){
+    if(!elHistList) return;
+    var hist = loadHistory();
+    elHistList.innerHTML = "";
+
+    if(!hist.length){
+      var li0 = document.createElement("li");
+      li0.textContent = "No saved sets yet. Generate once to start.";
+      elHistList.appendChild(li0);
+      return;
+    }
+
+    hist.forEach(function(h){
+      var li = document.createElement("li");
+      var row = document.createElement("div");
+      row.className = "hRow";
+
+      var main = document.createElement("div");
+      main.className = "hMain";
+      main.textContent = clampText(h.state.topic || "", 42);
+
+      var meta = document.createElement("div");
+      meta.className = "hMeta";
+      meta.textContent = (h.state.seed || "-") + " v" + String(h.state.variant || 0);
+
+      row.appendChild(main);
+      row.appendChild(meta);
+      li.appendChild(row);
+
+      li.addEventListener("click", function(){
+        applyState(h.state);
+        render();
+      });
+
+      elHistList.appendChild(li);
+    });
   }
 
   function presetLabel(p){
@@ -288,6 +371,13 @@
     url = setQueryParam(url, "count", String(s.count));
     url = setQueryParam(url, "mode", s.mode);
     window.history.replaceState({}, "", url);
+
+    pushHistory({
+      ts: nowUtcTs(),
+      hash: String(hash),
+      state: { topic: s.topic, seed: s.seed, variant: s.variant, count: s.count, mode: s.mode }
+    });
+    renderHistory();
   }
 
   function loadFromUrl(){
@@ -348,6 +438,14 @@
   });
 
   refreshPresetSelect("");
+  renderHistory();
+
+  if(btnHistClear){
+    btnHistClear.addEventListener("click", function(){
+      saveHistory([]);
+      renderHistory();
+    });
+  }
 
   byId("btnGen").addEventListener("click", function(){ render(); });
   byId("btnNext").addEventListener("click", function(){
