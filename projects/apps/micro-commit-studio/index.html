@@ -105,6 +105,29 @@
 
         <ol id="outList" class="outList"></ol>
 
+        <section class="selBox">
+          <div class="selTop">
+            <h3>Selected</h3>
+            <div class="selBtns">
+              <button id="btnSelClear" type="button">Clear</button>
+              <button id="btnSelCopy" type="button">Copy selected</button>
+            </div>
+          </div>
+          <div id="selIdea" class="selIdea">Pick an idea above to pin it here.</div>
+
+          <div class="row">
+            <div>
+              <label for="spec">Spec (1-2 sentences)</label>
+              <textarea id="spec" class="smallTa" spellcheck="false" placeholder="What will you ship? Keep it concrete."></textarea>
+            </div>
+            <div>
+              <label for="learned">Learned (1 line)</label>
+              <textarea id="learned" class="smallTa" spellcheck="false" placeholder="What did you learn while shipping?"></textarea>
+            </div>
+          </div>
+          <p class="hint small">These fields are saved locally. Exported Markdown includes your selected idea + spec + learned.</p>
+        </section>
+
         <div class="history">
           <div class="historyTop">
             <h3>History</h3>

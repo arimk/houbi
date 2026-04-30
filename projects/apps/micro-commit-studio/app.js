@@ -119,6 +119,24 @@
     lines.push("- variant: " + String(meta.variant));
     lines.push("- hash: " + meta.hash);
     lines.push("");
+
+    if(meta.selected){
+      lines.push("## Selected");
+      lines.push("");
+      lines.push("- [ ] " + meta.selected);
+      lines.push("");
+      if(meta.spec){
+        lines.push("Spec: " + meta.spec);
+        lines.push("");
+      }
+      if(meta.learned){
+        lines.push("Learned: " + meta.learned);
+        lines.push("");
+      }
+      lines.push("---");
+      lines.push("");
+    }
+
     lines.push("Pick ONE. Write a 1-2 sentence spec. Ship it.");
     lines.push("");
     for(var i=0;i<items.length;i++){
@@ -167,6 +185,12 @@
   var elHistList = byId("histList");
   var btnHistClear = byId("btnHistClear");
 
+  var elSelIdea = byId("selIdea");
+  var elSpec = byId("spec");
+  var elLearned = byId("learned");
+  var btnSelClear = byId("btnSelClear");
+  var btnSelCopy = byId("btnSelCopy");
+
   // Presets (local only)
   var elPresetName = byId("presetName");
   var elPresetSelect = byId("presetSelect");
@@ -176,6 +200,7 @@
 
   var PRESET_KEY = "microCommitStudio.presets.v1";
   var HIST_KEY = "microCommitStudio.history.v1";
+  var SEL_KEY = "microCommitStudio.selected.v1";
   var HIST_MAX = 12;
 
   function loadPresets(){
@@ -211,6 +236,28 @@
   function saveHistory(arr){
     try{
       localStorage.setItem(HIST_KEY, JSON.stringify(arr));
+    }catch(e){}
+  }
+
+  function loadSelected(){
+    try{
+      var raw = localStorage.getItem(SEL_KEY);
+      if(!raw) return { text: "", spec: "", learned: "" };
+      var s = JSON.parse(raw);
+      if(!s || typeof s !== "object") return { text: "", spec: "", learned: "" };
+      return {
+        text: String(s.text || ""),
+        spec: String(s.spec || ""),
+        learned: String(s.learned || "")
+      };
+    }catch(e){
+      return { text: "", spec: "", learned: "" };
+    }
+  }
+
+  function saveSelected(s){
+    try{
+      localStorage.setItem(SEL_KEY, JSON.stringify(s));
     }catch(e){}
   }
 
@@ -330,6 +377,20 @@
     if(s.mode !== undefined) elMode.value = s.mode;
   }
 
+  function setSelected(text){
+    var cur = loadSelected();
+    cur.text = String(text || "");
+    saveSelected(cur);
+    renderSelected();
+  }
+
+  function renderSelected(){
+    var cur = loadSelected();
+    if(elSelIdea) elSelIdea.textContent = cur.text ? cur.text : "Pick an idea above to pin it here.";
+    if(elSpec && (elSpec.value || "") !== cur.spec) elSpec.value = cur.spec;
+    if(elLearned && (elLearned.value || "") !== cur.learned) elLearned.value = cur.learned;
+  }
+
   function render(){
     var s = readState();
     var topic = s.topic || "(your topic here)";
@@ -342,13 +403,18 @@
     kSeed.textContent = "seed: " + clampText(seed, 40);
     kHash.textContent = "hash: " + String(hash);
 
+    var sel = loadSelected();
+
     elOutList.innerHTML = "";
     for(var i=0;i<ideas.length;i++){
       (function(text){
         var li = document.createElement("li");
         li.textContent = text;
+        if(sel.text && sel.text === text) li.className = "isSel";
         li.addEventListener("click", function(){
+          setSelected(text);
           copyText(text).catch(function(){});
+          render();
         });
         elOutList.appendChild(li);
       })(ideas[i]);
@@ -359,7 +425,10 @@
       mode: s.mode,
       seed: seed,
       variant: s.variant,
-      hash: String(hash)
+      hash: String(hash),
+      selected: sel.text,
+      spec: (sel.spec || "").trim(),
+      learned: (sel.learned || "").trim()
     });
     elOutMd.value = md;
 
@@ -439,11 +508,46 @@
 
   refreshPresetSelect("");
   renderHistory();
+  renderSelected();
 
   if(btnHistClear){
     btnHistClear.addEventListener("click", function(){
       saveHistory([]);
       renderHistory();
+    });
+  }
+
+  if(btnSelClear){
+    btnSelClear.addEventListener("click", function(){
+      saveSelected({ text: "", spec: "", learned: "" });
+      renderSelected();
+      render();
+    });
+  }
+
+  if(btnSelCopy){
+    btnSelCopy.addEventListener("click", function(){
+      var s = loadSelected();
+      if(!s.text) return;
+      copyText(s.text).catch(function(){});
+    });
+  }
+
+  if(elSpec){
+    elSpec.addEventListener("input", function(){
+      var cur = loadSelected();
+      cur.spec = elSpec.value || "";
+      saveSelected(cur);
+      render();
+    });
+  }
+
+  if(elLearned){
+    elLearned.addEventListener("input", function(){
+      var cur = loadSelected();
+      cur.learned = elLearned.value || "";
+      saveSelected(cur);
+      render();
     });
   }
 
