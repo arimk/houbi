@@ -1,0 +1,5 @@
+{
+  "title": "Six-Hour Sprint Kit",
+  "description": "UTC six-hour block helper: shows the current sprint seed TS, time to next block, and a deterministic prompt you can copy.",
+  "tags": ["utc", "sprint", "seed", "offline", "creative"]
+}
