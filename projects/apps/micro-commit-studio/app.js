@@ -110,7 +110,34 @@
   }
 
   function toMarkdown(items, meta){
+    var fmt = String(meta.mdfmt || "checklist");
     var lines = [];
+
+    if(fmt === "commit"){
+      lines.push("feat: ship a micro-commit");
+      lines.push("");
+      lines.push("topic: " + meta.topic);
+      lines.push("seed: " + meta.seed + " v" + String(meta.variant) + " (" + meta.mode + ")");
+      lines.push("hash: " + meta.hash);
+      lines.push("");
+      lines.push("Plan:");
+      lines.push("");
+      for(var i0=0;i0<items.length;i0++){
+        lines.push("- " + items[i0]);
+      }
+      lines.push("");
+      if(meta.selected){
+        lines.push("Selected: " + meta.selected);
+      }
+      if(meta.spec){
+        lines.push("Spec: " + meta.spec);
+      }
+      if(meta.learned){
+        lines.push("Learned: " + meta.learned);
+      }
+      return lines.join("\n");
+    }
+
     lines.push("# Micro Commit Set");
     lines.push("");
     lines.push("- topic: " + meta.topic);
@@ -118,12 +145,14 @@
     lines.push("- seed: " + meta.seed);
     lines.push("- variant: " + String(meta.variant));
     lines.push("- hash: " + meta.hash);
+    lines.push("- markdown: " + fmt);
     lines.push("");
 
     if(meta.selected){
       lines.push("## Selected");
       lines.push("");
-      lines.push("- [ ] " + meta.selected);
+      if(fmt === "plain") lines.push("- " + meta.selected);
+      else lines.push("- [ ] " + meta.selected);
       lines.push("");
       if(meta.spec){
         lines.push("Spec: " + meta.spec);
@@ -140,7 +169,8 @@
     lines.push("Pick ONE. Write a 1-2 sentence spec. Ship it.");
     lines.push("");
     for(var i=0;i<items.length;i++){
-      lines.push("- [ ] " + items[i]);
+      if(fmt === "plain") lines.push("- " + items[i]);
+      else lines.push("- [ ] " + items[i]);
     }
     lines.push("");
     lines.push("Learned: ");
@@ -176,6 +206,9 @@
   var elVariant = byId("variant");
   var elCount = byId("count");
   var elMode = byId("mode");
+  var elMdfmt = byId("mdfmt");
+  var elPermalink = byId("permalink");
+  var btnPermalink = byId("btnPermalink");
 
   var elOutList = byId("outList");
   var elOutMd = byId("outMd");
@@ -365,7 +398,8 @@
       seed: (elSeed.value || "").trim(),
       variant: Number(elVariant.value || 0) || 0,
       count: Number(elCount.value || 5) || 5,
-      mode: elMode.value || "site"
+      mode: elMode.value || "site",
+      mdfmt: (elMdfmt && elMdfmt.value ? elMdfmt.value : "checklist")
     };
   }
 
@@ -375,6 +409,7 @@
     if(s.variant !== undefined) elVariant.value = String(s.variant);
     if(s.count !== undefined) elCount.value = String(s.count);
     if(s.mode !== undefined) elMode.value = s.mode;
+    if(elMdfmt && s.mdfmt !== undefined) elMdfmt.value = s.mdfmt;
   }
 
   function setSelected(text){
@@ -426,6 +461,7 @@
       seed: seed,
       variant: s.variant,
       hash: String(hash),
+      mdfmt: s.mdfmt,
       selected: sel.text,
       spec: (sel.spec || "").trim(),
       learned: (sel.learned || "").trim()
@@ -439,7 +475,18 @@
     url = setQueryParam(url, "variant", String(s.variant));
     url = setQueryParam(url, "count", String(s.count));
     url = setQueryParam(url, "mode", s.mode);
+    url = setQueryParam(url, "mdfmt", s.mdfmt);
     window.history.replaceState({}, "", url);
+
+    // Render permalink (canonical: same path, current query)
+    if(elPermalink){
+      try{
+        var u0 = new URL(window.location.href);
+        elPermalink.value = u0.origin + u0.pathname + u0.search;
+      }catch(e){
+        elPermalink.value = window.location.href;
+      }
+    }
 
     pushHistory({
       ts: nowUtcTs(),
@@ -456,7 +503,8 @@
     var variant = Number(u.searchParams.get("variant") || "0") || 0;
     var count = Number(u.searchParams.get("count") || "5") || 5;
     var mode = u.searchParams.get("mode") || "site";
-    applyState({ topic: topic, seed: seed, variant: variant, count: count, mode: mode });
+    var mdfmt = u.searchParams.get("mdfmt") || "checklist";
+    applyState({ topic: topic, seed: seed, variant: variant, count: count, mode: mode, mdfmt: mdfmt });
   }
 
   // Preset buttons
@@ -563,6 +611,13 @@
   byId("btnLink").addEventListener("click", function(){
     copyText(window.location.href).catch(function(){});
   });
+
+  if(btnPermalink){
+    btnPermalink.addEventListener("click", function(){
+      if(!elPermalink) return;
+      copyText(elPermalink.value || "").catch(function(){});
+    });
+  }
   byId("btnCopy").addEventListener("click", function(){
     copyText(elOutMd.value || "").catch(function(){});
   });
@@ -573,7 +628,8 @@
   });
 
   // Auto-render on input changes (gentle)
-  [elTopic, elSeed, elVariant, elCount, elMode].forEach(function(el){
+  [elTopic, elSeed, elVariant, elCount, elMode, elMdfmt].forEach(function(el){
+    if(!el) return;
     el.addEventListener("change", function(){ render(); });
   });
 

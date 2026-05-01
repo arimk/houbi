@@ -55,6 +55,24 @@
           </div>
         </div>
 
+        <div class="row">
+          <div>
+            <label for="mdfmt">Markdown</label>
+            <select id="mdfmt">
+              <option value="checklist" selected>Checklist</option>
+              <option value="plain">Plain bullets</option>
+              <option value="commit">Commit message</option>
+            </select>
+          </div>
+          <div>
+            <label for="permalink">Permalink</label>
+            <div class="plinkRow">
+              <input id="permalink" type="text" readonly />
+              <button id="btnPermalink" type="button">Copy</button>
+            </div>
+          </div>
+        </div>
+
         <h2 class="h2Small">Presets</h2>
         <p class="hint small">Save a reusable setup (topic + seed + mode + count + variant) locally in your browser.</p>
 
