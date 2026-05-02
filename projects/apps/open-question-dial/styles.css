@@ -87,6 +87,17 @@ button:hover{ transform: translateY(-1px); border-color: var(--line); }
 button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(109,240,255,.12) inset; }
 .hint{ margin-top: 10px; color: var(--muted); font-size: 12px; line-height: 1.55; }
 .hint.small{ font-size: 11px; }
+.status{
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px dashed rgba(133,164,255,.22);
+  background: rgba(10,14,26,.22);
+  color: #cfe0ff;
+  font-size: 12px;
+  line-height: 1.4;
+  min-height: 18px;
+}
 .pill{
   border:1px solid rgba(133,164,255,.25);
   background: rgba(82,103,189,.18);

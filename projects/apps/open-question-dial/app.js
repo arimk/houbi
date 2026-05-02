@@ -1455,6 +1455,7 @@ function main(){
     const st = render({ updateUrl: true });
     try {
       await copyToClipboard(st.md);
+      setStatus("Copied markdown");
     } catch {
       alert("Clipboard unavailable. Use download.");
     }
@@ -1465,6 +1466,7 @@ function main(){
     const pm = buildPinnedMarkdown(st);
     try {
       await copyToClipboard(pm);
+      setStatus("Copied pinned markdown");
     } catch {
       alert("Clipboard unavailable. Use download.");
     }
@@ -1477,6 +1479,7 @@ function main(){
       const pm = buildPinnedNotesMarkdown(st);
       try {
         await copyToClipboard(pm);
+        setStatus("Copied pinned + notes");
       } catch {
         alert("Clipboard unavailable. Use download.");
       }
@@ -1610,6 +1613,7 @@ function main(){
     const url = currentLink();
     try {
       await copyToClipboard(url);
+      setStatus("Copied link");
     } catch {
       alert(url);
     }
@@ -1631,6 +1635,7 @@ function main(){
       });
       try {
         await copyToClipboard(url);
+        setStatus("Copied link (pinned)");
       } catch {
         alert(url);
       }
@@ -1775,6 +1780,17 @@ function main(){
     return false;
   }
 
+  const elStatus = document.getElementById("status");
+  let statusTimer = null;
+  function setStatus(msg){
+    if (!elStatus) return;
+    elStatus.textContent = String(msg || "");
+    if (statusTimer) clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => {
+      if (elStatus) elStatus.textContent = "";
+    }, 4200);
+  }
+
   function toggleFocusHelp(force){
     const el = document.getElementById("focusHelp");
     if (!el) return;
@@ -1900,15 +1916,63 @@ function main(){
     st0 = render({ updateUrl: true });
   }
 
-  // Global shortcut: t toggles theme.
-  window.addEventListener("keydown", (e) => {
-    if (e.key !== "t" && e.key !== "T") return;
+  // Global shortcuts (ignore while typing; focus modal has its own shortcuts).
+  // t: theme, g: generate, m: copy markdown, l: copy link, /: focus filter
+  window.addEventListener("keydown", async (e) => {
+    if (focusIsOpen()) return;
     if (isTypingTarget(e.target)) return;
-    // If focus is open, focus-mode already uses several keys; keep theme toggle global.
-    e.preventDefault();
-    themeMode = cycleTheme(themeMode);
-    try { localStorage.setItem(THEME_KEY, themeMode); } catch {}
-    applyTheme(themeMode);
+
+    if (e.key === "t" || e.key === "T"){
+      e.preventDefault();
+      themeMode = cycleTheme(themeMode);
+      try { localStorage.setItem(THEME_KEY, themeMode); } catch {}
+      applyTheme(themeMode);
+      setStatus("Theme: " + themeMode);
+      return;
+    }
+
+    if (e.key === "g" || e.key === "G"){
+      e.preventDefault();
+      render({ updateUrl: true });
+      setStatus("Generated");
+      return;
+    }
+
+    if (e.key === "/"){
+      e.preventDefault();
+      if (elFilter){
+        elFilter.focus();
+        setStatus("Filter focused");
+      }
+      return;
+    }
+
+    if (e.key === "m" || e.key === "M"){
+      e.preventDefault();
+      const st = lastState;
+      if (!st) return;
+      const md = buildMarkdown(st, { includePinned: false });
+      try {
+        await copyToClipboard(md);
+        setStatus("Copied markdown");
+      } catch {
+        alert(md);
+      }
+      return;
+    }
+
+    if (e.key === "l" || e.key === "L"){
+      e.preventDefault();
+      const st = lastState;
+      if (!st) return;
+      try {
+        await copyToClipboard(currentLink());
+        setStatus("Copied link");
+      } catch {
+        alert(currentLink());
+      }
+      return;
+    }
   });
 
   renderHistory();
