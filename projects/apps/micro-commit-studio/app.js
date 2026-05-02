@@ -14,6 +14,19 @@
     return String(y) + String(mo) + String(da) + "T" + String(hh) + String(mm) + "Z";
   }
 
+  // Round the current UTC time down to the nearest 6-hour boundary.
+  // Example: 04:23 -> 00:00, 10:59 -> 06:00, 23:01 -> 18:00.
+  function snap6hUtcTs(){
+    var d = new Date();
+    function z(n){ return String(n).padStart(2, "0"); }
+    var y = d.getUTCFullYear();
+    var mo = z(d.getUTCMonth() + 1);
+    var da = z(d.getUTCDate());
+    var hh = d.getUTCHours();
+    var snapped = Math.floor(hh / 6) * 6;
+    return String(y) + String(mo) + String(da) + "T" + z(snapped) + "00" + "Z";
+  }
+
   // FNV-1a 32-bit hash (deterministic, simple, no deps)
   function fnv1a32(str){
     var h = 0x811c9dc5;
@@ -608,6 +621,13 @@
     elSeed.value = nowUtcTs();
     render();
   });
+  var btnSnap6h = byId("btnSnap6h");
+  if(btnSnap6h){
+    btnSnap6h.addEventListener("click", function(){
+      elSeed.value = snap6hUtcTs();
+      render();
+    });
+  }
   byId("btnLink").addEventListener("click", function(){
     copyText(window.location.href).catch(function(){});
   });
