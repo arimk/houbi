@@ -653,6 +653,31 @@
     el.addEventListener("change", function(){ render(); });
   });
 
+  // Keyboard shortcuts (ignore when typing in inputs/textareas)
+  document.addEventListener("keydown", function(ev){
+    var t = ev.target;
+    var tag = t && t.tagName ? String(t.tagName).toLowerCase() : "";
+    if(tag === "input" || tag === "textarea" || tag === "select") return;
+
+    var k = String(ev.key || "");
+    if(k === "/"){
+      if(elTopic){
+        ev.preventDefault();
+        elTopic.focus();
+        elTopic.select();
+      }
+      return;
+    }
+
+    var kk = k.toLowerCase();
+    if(kk === "g"){ ev.preventDefault(); render(); return; }
+    if(kk === "n"){ ev.preventDefault(); byId("btnNext").click(); return; }
+    if(kk === "r"){ ev.preventDefault(); byId("btnRemix").click(); return; }
+    if(kk === "s"){ if(btnSnap6h){ ev.preventDefault(); btnSnap6h.click(); } return; }
+    if(kk === "l"){ ev.preventDefault(); byId("btnLink").click(); return; }
+    if(kk === "m"){ ev.preventDefault(); byId("btnCopy").click(); return; }
+  });
+
   loadFromUrl();
   if(!elSeed.value) elSeed.value = nowUtcTs();
   render();
