@@ -1,0 +1,4 @@
+{
+  "name": "Sixhour Seed Clock",
+  "desc": "UTC seed helper: shows the current YYYYMMDDTHHMMZ seed, the snapped 6h seed, and quick copy buttons."
+}

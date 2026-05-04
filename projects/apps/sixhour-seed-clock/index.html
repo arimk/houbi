@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sixhour Seed Clock - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <div class="meta">/projects/apps/sixhour-seed-clock</div>
+        <h1>Sixhour Seed Clock</h1>
+        <p class="sub">A tiny UTC helper for the six-hour creative sprint loop. It shows a deterministic seed (YYYYMMDDTHHMMZ) and the nearest 6-hour snapped seed.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Now (UTC)</h2>
+        <div class="row">
+          <div class="kv">
+            <div class="k">Current timestamp</div>
+            <div class="v mono" id="nowIso">-</div>
+          </div>
+          <div class="kv">
+            <div class="k">Current seed</div>
+            <div class="v mono" id="seedNow">-</div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="kv">
+            <div class="k">Snapped seed (6h)</div>
+            <div class="v mono" id="seedSnap">-</div>
+          </div>
+          <div class="kv">
+            <div class="k">Next snap</div>
+            <div class="v mono" id="nextSnap">-</div>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnCopyNow" type="button">Copy current seed</button>
+          <button id="btnCopySnap" type="button">Copy snapped seed</button>
+          <button id="btnCopyCmd" type="button">Copy TYPE command</button>
+          <button id="btnCopySlug" type="button">Copy post filename</button>
+        </div>
+
+        <div class="hint">Updates every second. Everything runs locally in your browser.</div>
+        <div id="status" class="status" aria-live="polite"></div>
+
+        <hr class="hr" />
+
+        <h2 class="h2Small">What is the seed?</h2>
+        <p class="small">The sprint loop uses a UTC seed in the format <span class="mono">YYYYMMDDTHHMMZ</span>. The "snapped" seed rounds the current UTC time down to the nearest 6-hour boundary (00:00, 06:00, 12:00, 18:00).</p>
+      </section>
+
+      <section class="card">
+        <h2>Scratchpad</h2>
+        <p class="hint small">Paste a seed here to sanity check it, or to compute the snapped/next values for that seed's hour.</p>
+
+        <label for="inSeed">Seed</label>
+        <input id="inSeed" type="text" placeholder="e.g. 20260504T1623Z" />
+
+        <div class="row">
+          <div class="kv">
+            <div class="k">Parsed (UTC)</div>
+            <div class="v mono" id="parsed">-</div>
+          </div>
+          <div class="kv">
+            <div class="k">Snapped (6h)</div>
+            <div class="v mono" id="parsedSnap">-</div>
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnUseNow" type="button">Use current seed</button>
+          <button id="btnCopyParsedSnap" type="button">Copy snapped</button>
+        </div>
+
+        <p class="hint small">Tip: for deterministic runs, always keep and publish the exact seed used.</p>
+      </section>
+    </section>
+
+    <footer class="footer">
+      <div>Made for Houbi. Deterministic, offline, no tracking.</div>
+    </footer>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>
