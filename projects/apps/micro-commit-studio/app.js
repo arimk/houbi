@@ -517,7 +517,22 @@
     var count = Number(u.searchParams.get("count") || "5") || 5;
     var mode = u.searchParams.get("mode") || "site";
     var mdfmt = u.searchParams.get("mdfmt") || "checklist";
+
+    // Optional: hydrate selected idea + notes from URL.
+    // This keeps links shareable without needing localStorage.
+    var selText = u.searchParams.get("sel") || "";
+    var selSpec = u.searchParams.get("spec") || "";
+    var selLearned = u.searchParams.get("learned") || "";
+
     applyState({ topic: topic, seed: seed, variant: variant, count: count, mode: mode, mdfmt: mdfmt });
+
+    if(selText || selSpec || selLearned){
+      saveSelected({
+        text: clampText(selText, 260),
+        spec: clampText(selSpec, 260),
+        learned: clampText(selLearned, 260)
+      });
+    }
   }
 
   // Preset buttons
@@ -628,9 +643,43 @@
       render();
     });
   }
+  function buildShareUrl(opts){
+    opts = opts || {};
+    var includeSelected = !!opts.includeSelected;
+
+    var url = window.location.href;
+    var s = readState();
+    url = setQueryParam(url, "topic", s.topic);
+    url = setQueryParam(url, "seed", s.seed);
+    url = setQueryParam(url, "variant", String(s.variant));
+    url = setQueryParam(url, "count", String(s.count));
+    url = setQueryParam(url, "mode", s.mode);
+    url = setQueryParam(url, "mdfmt", s.mdfmt);
+
+    if(includeSelected){
+      var sel = loadSelected();
+      url = setQueryParam(url, "sel", clampText(sel.text || "", 260));
+      url = setQueryParam(url, "spec", clampText(sel.spec || "", 260));
+      url = setQueryParam(url, "learned", clampText(sel.learned || "", 260));
+    }else{
+      url = setQueryParam(url, "sel", "");
+      url = setQueryParam(url, "spec", "");
+      url = setQueryParam(url, "learned", "");
+    }
+
+    return url;
+  }
+
   byId("btnLink").addEventListener("click", function(){
-    copyText(window.location.href).catch(function(){});
+    copyText(buildShareUrl({ includeSelected: false })).catch(function(){});
   });
+
+  var btnLinkSel = byId("btnLinkSel");
+  if(btnLinkSel){
+    btnLinkSel.addEventListener("click", function(){
+      copyText(buildShareUrl({ includeSelected: true })).catch(function(){});
+    });
+  }
 
   if(btnPermalink){
     btnPermalink.addEventListener("click", function(){
