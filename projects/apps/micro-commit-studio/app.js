@@ -247,6 +247,7 @@
   var PRESET_KEY = "microCommitStudio.presets.v1";
   var HIST_KEY = "microCommitStudio.history.v1";
   var SEL_KEY = "microCommitStudio.selected.v1";
+  var LAST_KEY = "microCommitStudio.lastState.v1";
   var HIST_MAX = 12;
 
   function loadPresets(){
@@ -304,6 +305,31 @@
   function saveSelected(s){
     try{
       localStorage.setItem(SEL_KEY, JSON.stringify(s));
+    }catch(e){}
+  }
+
+  function loadLastState(){
+    try{
+      var raw = localStorage.getItem(LAST_KEY);
+      if(!raw) return null;
+      var s = JSON.parse(raw);
+      if(!s || typeof s !== "object") return null;
+      return {
+        topic: String(s.topic || ""),
+        seed: String(s.seed || ""),
+        variant: Number(s.variant || 0) || 0,
+        count: Number(s.count || 5) || 5,
+        mode: String(s.mode || "site"),
+        mdfmt: String(s.mdfmt || "checklist")
+      };
+    }catch(e){
+      return null;
+    }
+  }
+
+  function saveLastState(s){
+    try{
+      localStorage.setItem(LAST_KEY, JSON.stringify(s));
     }catch(e){}
   }
 
@@ -441,6 +467,7 @@
 
   function render(){
     var s = readState();
+    saveLastState(s);
     var topic = s.topic || "(your topic here)";
     var seed = s.seed || "(seed)";
     var hash = fnv1a32([topic, seed, s.variant, s.mode].join("|")) >>> 0;
@@ -517,6 +544,19 @@
     var count = Number(u.searchParams.get("count") || "5") || 5;
     var mode = u.searchParams.get("mode") || "site";
     var mdfmt = u.searchParams.get("mdfmt") || "checklist";
+
+    // If the URL has no state params, fall back to the last locally-used state.
+    if(!u.searchParams.toString()){
+      var last = loadLastState();
+      if(last){
+        topic = last.topic;
+        seed = last.seed;
+        variant = last.variant;
+        count = last.count;
+        mode = last.mode;
+        mdfmt = last.mdfmt;
+      }
+    }
 
     // Optional: hydrate selected idea + notes from URL.
     // This keeps links shareable without needing localStorage.
@@ -695,6 +735,18 @@
     var filename = "micro-commit-set-" + (s.seed || "seed") + "-v" + String(s.variant) + ".md";
     downloadText(filename, elOutMd.value || "");
   });
+
+  var btnResetLocal = byId("btnResetLocal");
+  if(btnResetLocal){
+    btnResetLocal.addEventListener("click", function(){
+      try{ localStorage.removeItem(LAST_KEY); }catch(e){}
+      saveSelected({ text: "", spec: "", learned: "" });
+      renderSelected();
+      applyState({ topic: "", seed: "", variant: 0, count: 5, mode: "site", mdfmt: "checklist" });
+      if(!elSeed.value) elSeed.value = nowUtcTs();
+      render();
+    });
+  }
 
   // Auto-render on input changes (gentle)
   [elTopic, elSeed, elVariant, elCount, elMode, elMdfmt].forEach(function(el){
