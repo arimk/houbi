@@ -754,6 +754,173 @@
     el.addEventListener("change", function(){ render(); });
   });
 
+  // Sprint timer (local, offline)
+  var TIMER_KEY = "mcs_timer_v1";
+  var elTimerMin = byId("timerMin");
+  var elTimerDisplay = byId("timerDisplay");
+  var btnTimerStart = byId("btnTimerStart");
+  var btnTimerPause = byId("btnTimerPause");
+  var btnTimerReset = byId("btnTimerReset");
+  var timerTick = null;
+
+  function fmtMmSs(totalSec){
+    totalSec = Math.max(0, Number(totalSec) || 0);
+    var mm = Math.floor(totalSec / 60);
+    var ss = totalSec % 60;
+    return String(mm).padStart(2, "0") + ":" + String(ss).padStart(2, "0");
+  }
+
+  function loadTimer(){
+    try{
+      var raw = localStorage.getItem(TIMER_KEY);
+      if(!raw) return null;
+      return JSON.parse(raw);
+    }catch(e){
+      return null;
+    }
+  }
+
+  function saveTimer(t){
+    try{ localStorage.setItem(TIMER_KEY, JSON.stringify(t || {})); }catch(e){}
+  }
+
+  function computeRemaining(t){
+    if(!t) return 0;
+    var dur = Number(t.durSec) || 0;
+    var start = Number(t.startMs) || 0;
+    var paused = Number(t.pausedMs) || 0;
+    var running = !!t.running;
+    var now = Date.now();
+    var elapsed;
+    if(running) elapsed = Math.max(0, now - start - paused);
+    else elapsed = Math.max(0, (t.stopMs ? (t.stopMs - start - paused) : 0));
+    return Math.max(0, dur - Math.floor(elapsed / 1000));
+  }
+
+  function setDisplayFromTimer(t){
+    if(!elTimerDisplay) return;
+    elTimerDisplay.value = fmtMmSs(computeRemaining(t));
+  }
+
+  function stopTicker(){
+    if(timerTick){
+      clearInterval(timerTick);
+      timerTick = null;
+    }
+  }
+
+  function startTicker(){
+    stopTicker();
+    timerTick = setInterval(function(){
+      var t = loadTimer();
+      setDisplayFromTimer(t);
+      if(t && t.running && computeRemaining(t) === 0){
+        t.running = false;
+        t.stopMs = Date.now();
+        saveTimer(t);
+        stopTicker();
+        try{ document.title = "Done - Micro Commit Studio"; }catch(e){}
+      }
+    }, 250);
+  }
+
+  function resetTimer(){
+    if(!elTimerMin) return;
+    var durMin = Math.max(1, Math.min(120, Number(elTimerMin.value || 25) || 25));
+    elTimerMin.value = String(durMin);
+    var t = { durSec: durMin * 60, startMs: 0, stopMs: 0, pausedMs: 0, pauseAtMs: 0, running: false };
+    saveTimer(t);
+    setDisplayFromTimer(t);
+    stopTicker();
+    try{ document.title = "Micro Commit Studio"; }catch(e){}
+  }
+
+  function startTimer(){
+    if(!elTimerMin) return;
+    var durMin = Math.max(1, Math.min(120, Number(elTimerMin.value || 25) || 25));
+    var t = loadTimer() || {};
+    if(!t.durSec) t.durSec = durMin * 60;
+    t.durSec = durMin * 60;
+    t.startMs = Date.now();
+    t.stopMs = 0;
+    t.pausedMs = 0;
+    t.pauseAtMs = 0;
+    t.running = true;
+    saveTimer(t);
+    setDisplayFromTimer(t);
+    startTicker();
+    try{ document.title = "Running - Micro Commit Studio"; }catch(e){}
+  }
+
+  function pauseTimer(){
+    var t = loadTimer();
+    if(!t || !t.running) return;
+    if(!t.pauseAtMs) t.pauseAtMs = Date.now();
+    t.running = false;
+    t.stopMs = Date.now();
+    if(t.pauseAtMs) t.pausedMs = (Number(t.pausedMs) || 0) + (t.stopMs - t.pauseAtMs);
+    t.pauseAtMs = 0;
+    saveTimer(t);
+    setDisplayFromTimer(t);
+    stopTicker();
+    try{ document.title = "Paused - Micro Commit Studio"; }catch(e){}
+  }
+
+  function resumeTimer(){
+    var t = loadTimer();
+    if(!t || t.running) return;
+    if(computeRemaining(t) === 0) return;
+    var now = Date.now();
+    var elapsedBefore = (Number(t.stopMs) || now) - (Number(t.startMs) || now);
+    t.startMs = now - elapsedBefore;
+    t.stopMs = 0;
+    t.running = true;
+    saveTimer(t);
+    startTicker();
+    setDisplayFromTimer(t);
+    try{ document.title = "Running - Micro Commit Studio"; }catch(e){}
+  }
+
+  function initTimerUi(){
+    if(!elTimerMin || !elTimerDisplay) return;
+
+    var t = loadTimer();
+    if(t && t.durSec){
+      elTimerMin.value = String(Math.round((Number(t.durSec) || 1500) / 60));
+      setDisplayFromTimer(t);
+      if(t.running) startTicker();
+    }else{
+      resetTimer();
+    }
+
+    elTimerMin.addEventListener("change", function(){
+      var cur = loadTimer();
+      if(cur && cur.running) return;
+      resetTimer();
+    });
+
+    if(btnTimerStart){
+      btnTimerStart.addEventListener("click", function(){
+        var cur = loadTimer();
+        if(cur && !cur.running && cur.startMs && computeRemaining(cur) > 0){
+          resumeTimer();
+          return;
+        }
+        startTimer();
+      });
+    }
+
+    if(btnTimerPause){
+      btnTimerPause.addEventListener("click", function(){ pauseTimer(); });
+    }
+
+    if(btnTimerReset){
+      btnTimerReset.addEventListener("click", function(){ resetTimer(); });
+    }
+  }
+
+  initTimerUi();
+
   // Keyboard shortcuts (ignore when typing in inputs/textareas)
   document.addEventListener("keydown", function(ev){
     var t = ev.target;

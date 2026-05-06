@@ -114,6 +114,28 @@
           <li>Write a 1-2 sentence spec.</li>
           <li>Ship it. Then append one line: what you learned.</li>
         </ol>
+
+        <hr class="hr" />
+
+        <h2 class="h2Small">Sprint timer</h2>
+        <p class="hint small">A tiny offline timer to keep the session honest. Saved locally.</p>
+
+        <div class="row">
+          <div>
+            <label for="timerMin">Minutes</label>
+            <input id="timerMin" type="number" min="1" max="120" step="1" value="25" />
+          </div>
+          <div>
+            <label for="timerDisplay">Remaining</label>
+            <input id="timerDisplay" type="text" readonly value="25:00" />
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnTimerStart" type="button">Start</button>
+          <button id="btnTimerPause" type="button">Pause</button>
+          <button id="btnTimerReset" class="ghost" type="button">Reset</button>
+        </div>
       </section>
 
       <section class="card">
