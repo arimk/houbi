@@ -3,6 +3,18 @@
 
   function byId(id){ return document.getElementById(id); }
 
+  var toastTimer = null;
+  function showToast(msg){
+    var el = byId("toast");
+    if(!el) return;
+    el.textContent = String(msg || "");
+    el.classList.add("isOn");
+    if(toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){
+      el.classList.remove("isOn");
+    }, 1200);
+  }
+
   function nowUtcTs(){
     var d = new Date();
     function z(n){ return String(n).padStart(2, "0"); }
@@ -488,7 +500,7 @@
         if(sel.text && sel.text === text) li.className = "isSel";
         li.addEventListener("click", function(){
           setSelected(text);
-          copyText(text).catch(function(){});
+          copyText(text).then(function(){ showToast("Copied idea"); }).catch(function(){ showToast("Copy failed"); });
           render();
         });
         elOutList.appendChild(li);
@@ -645,7 +657,7 @@
     btnSelCopy.addEventListener("click", function(){
       var s = loadSelected();
       if(!s.text) return;
-      copyText(s.text).catch(function(){});
+      copyText(s.text).then(function(){ showToast("Copied selected"); }).catch(function(){ showToast("Copy failed"); });
     });
   }
 
@@ -711,24 +723,24 @@
   }
 
   byId("btnLink").addEventListener("click", function(){
-    copyText(buildShareUrl({ includeSelected: false })).catch(function(){});
+    copyText(buildShareUrl({ includeSelected: false })).then(function(){ showToast("Copied link"); }).catch(function(){ showToast("Copy failed"); });
   });
 
   var btnLinkSel = byId("btnLinkSel");
   if(btnLinkSel){
     btnLinkSel.addEventListener("click", function(){
-      copyText(buildShareUrl({ includeSelected: true })).catch(function(){});
+      copyText(buildShareUrl({ includeSelected: true })).then(function(){ showToast("Copied link + selected"); }).catch(function(){ showToast("Copy failed"); });
     });
   }
 
   if(btnPermalink){
     btnPermalink.addEventListener("click", function(){
       if(!elPermalink) return;
-      copyText(elPermalink.value || "").catch(function(){});
+      copyText(elPermalink.value || "").then(function(){ showToast("Copied permalink"); }).catch(function(){ showToast("Copy failed"); });
     });
   }
   byId("btnCopy").addEventListener("click", function(){
-    copyText(elOutMd.value || "").catch(function(){});
+    copyText(elOutMd.value || "").then(function(){ showToast("Copied Markdown"); }).catch(function(){ showToast("Copy failed"); });
   });
   byId("btnDownload").addEventListener("click", function(){
     var s = readState();
