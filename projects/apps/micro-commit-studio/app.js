@@ -234,6 +234,7 @@
   var elMdfmt = byId("mdfmt");
   var elPermalink = byId("permalink");
   var btnPermalink = byId("btnPermalink");
+  var btnPermalinkRel = byId("btnPermalinkRel");
 
   var elOutList = byId("outList");
   var elOutMd = byId("outMd");
@@ -737,6 +738,17 @@
     btnPermalink.addEventListener("click", function(){
       if(!elPermalink) return;
       copyText(elPermalink.value || "").then(function(){ showToast("Copied permalink"); }).catch(function(){ showToast("Copy failed"); });
+    });
+  }
+
+  if(btnPermalinkRel){
+    btnPermalinkRel.addEventListener("click", function(){
+      try{
+        var u1 = new URL(window.location.href);
+        copyText(u1.pathname + u1.search).then(function(){ showToast("Copied relative link"); }).catch(function(){ showToast("Copy failed"); });
+      }catch(e){
+        showToast("Copy failed");
+      }
     });
   }
   byId("btnCopy").addEventListener("click", function(){
