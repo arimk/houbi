@@ -63,6 +63,22 @@ button{
 }
 button:hover{ transform: translateY(-1px); border-color: var(--line); }
 button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(109,240,255,.12) inset; }
+
+/* Link styled like a button (for share/open). */
+a.linkBtn{
+  border: 1px solid var(--line2);
+  background: rgba(6,10,21,.72);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform .12s ease, border-color .12s ease;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-block;
+}
+a.linkBtn:hover{ transform: translateY(-1px); border-color: var(--line); }
+
 .pill{
   border:1px solid rgba(133,164,255,.25);
   background: rgba(82,103,189,.18);

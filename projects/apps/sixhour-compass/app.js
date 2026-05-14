@@ -185,9 +185,12 @@ function main(){
   const elAPost = document.getElementById("aPost");
   const elATitle = document.getElementById("aTitle");
   const elAShell = document.getElementById("aShell");
+  const elALink = document.getElementById("aLink");
   const btnCopyPost = document.getElementById("btnCopyPost");
   const btnCopyTitle = document.getElementById("btnCopyTitle");
   const btnCopyShell = document.getElementById("btnCopyShell");
+  const btnCopyLink = document.getElementById("btnCopyLink");
+  const btnOpenLink = document.getElementById("btnOpenLink");
 
   function setTs(ts){
     elTs.value = String(ts || "");
@@ -207,6 +210,11 @@ function main(){
       if (elAPost) elAPost.textContent = "-";
       if (elATitle) elATitle.textContent = "-";
       if (elAShell) elAShell.textContent = "-";
+      if (elALink) elALink.textContent = "-";
+      if (btnOpenLink){
+        btnOpenLink.href = "#";
+        btnOpenLink.setAttribute("aria-disabled", "true");
+      }
       return;
     }
 
@@ -227,9 +235,19 @@ function main(){
       "TYPE=$(node tools/sixhour-pick-type.cjs --ts \"$TS\")\n" +
       "echo $TYPE";
 
+    const share = (function(){
+      const base = window.location.origin + window.location.pathname;
+      return base + "?ts=" + encodeURIComponent(ts);
+    })();
+
     if (elAPost) elAPost.textContent = post;
     if (elATitle) elATitle.textContent = title;
     if (elAShell) elAShell.textContent = shell;
+    if (elALink) elALink.textContent = share;
+    if (btnOpenLink){
+      btnOpenLink.href = share;
+      btnOpenLink.removeAttribute("aria-disabled");
+    }
   }
 
   function renderSchedule(items){
@@ -293,6 +311,12 @@ function main(){
   if (btnCopyShell){
     btnCopyShell.addEventListener("click", () => {
       setClipboard(String(elAShell ? elAShell.textContent : "").trim());
+    });
+  }
+
+  if (btnCopyLink){
+    btnCopyLink.addEventListener("click", () => {
+      setClipboard(String(elALink ? elALink.textContent : "").trim());
     });
   }
 
