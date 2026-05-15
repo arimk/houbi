@@ -177,7 +177,10 @@
       lines.push("## Selected");
       lines.push("");
       if(fmt === "plain") lines.push("- " + meta.selected);
-      else lines.push("- [ ] " + meta.selected);
+      else {
+        var selDone = meta.doneMap && meta.doneMap[meta.selected] ? true : false;
+        lines.push("- [" + (selDone ? "x" : " ") + "] " + meta.selected);
+      }
       lines.push("");
       if(meta.spec){
         lines.push("Spec: " + meta.spec);
@@ -195,7 +198,10 @@
     lines.push("");
     for(var i=0;i<items.length;i++){
       if(fmt === "plain") lines.push("- " + items[i]);
-      else lines.push("- [ ] " + items[i]);
+      else {
+        var isDone = meta.doneMap && meta.doneMap[items[i]] ? true : false;
+        lines.push("- [" + (isDone ? "x" : " ") + "] " + items[i]);
+      }
     }
     lines.push("");
     lines.push("Learned: ");
@@ -240,6 +246,8 @@
   var elOutMd = byId("outMd");
   var kSeed = byId("kSeed");
   var kHash = byId("kHash");
+  var kDone = byId("kDone");
+  var btnClearDone = byId("btnClearDone");
 
   var elHistList = byId("histList");
   var btnHistClear = byId("btnHistClear");
@@ -261,7 +269,30 @@
   var HIST_KEY = "microCommitStudio.history.v1";
   var SEL_KEY = "microCommitStudio.selected.v1";
   var LAST_KEY = "microCommitStudio.lastState.v1";
+  var DONE_PREFIX = "microCommitStudio.doneByHash.v1.";
   var HIST_MAX = 12;
+
+  function doneKeyForHash(hash){
+    return DONE_PREFIX + String(hash);
+  }
+
+  function loadDone(hash){
+    try{
+      var raw = localStorage.getItem(doneKeyForHash(hash));
+      if(!raw) return {};
+      var m = JSON.parse(raw);
+      if(!m || typeof m !== "object") return {};
+      return m;
+    }catch(e){
+      return {};
+    }
+  }
+
+  function saveDone(hash, m){
+    try{
+      localStorage.setItem(doneKeyForHash(hash), JSON.stringify(m || {}));
+    }catch(e){}
+  }
 
   function loadPresets(){
     try{
@@ -493,12 +524,38 @@
 
     var sel = loadSelected();
 
+    var doneMap = loadDone(hash);
+
     elOutList.innerHTML = "";
     for(var i=0;i<ideas.length;i++){
       (function(text){
         var li = document.createElement("li");
-        li.textContent = text;
-        if(sel.text && sel.text === text) li.className = "isSel";
+        li.className = "ideaRow";
+
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "doneBtn";
+        btn.textContent = (doneMap && doneMap[text]) ? "[x]" : "[ ]";
+        btn.title = "Toggle done";
+        btn.addEventListener("click", function(ev){
+          ev.preventDefault();
+          ev.stopPropagation();
+          doneMap[text] = !doneMap[text];
+          if(!doneMap[text]) delete doneMap[text];
+          saveDone(hash, doneMap);
+          render();
+        });
+
+        var span = document.createElement("span");
+        span.className = "ideaText";
+        span.textContent = text;
+
+        li.appendChild(btn);
+        li.appendChild(span);
+
+        if(sel.text && sel.text === text) li.className += " isSel";
+        if(doneMap && doneMap[text]) li.className += " isDone";
+
         li.addEventListener("click", function(){
           setSelected(text);
           copyText(text).then(function(){ showToast("Copied idea"); }).catch(function(){ showToast("Copy failed"); });
@@ -506,6 +563,12 @@
         });
         elOutList.appendChild(li);
       })(ideas[i]);
+    }
+
+    if(kDone){
+      var doneCount = 0;
+      for(var dk in doneMap){ if(doneMap.hasOwnProperty(dk)) doneCount++; }
+      kDone.textContent = "done: " + String(doneCount);
     }
 
     var md = toMarkdown(ideas, {
@@ -517,7 +580,8 @@
       mdfmt: s.mdfmt,
       selected: sel.text,
       spec: (sel.spec || "").trim(),
-      learned: (sel.learned || "").trim()
+      learned: (sel.learned || "").trim(),
+      doneMap: doneMap
     });
     elOutMd.value = md;
 
@@ -643,6 +707,17 @@
     btnHistClear.addEventListener("click", function(){
       saveHistory([]);
       renderHistory();
+    });
+  }
+
+  if(btnClearDone){
+    btnClearDone.addEventListener("click", function(){
+      var s = readState();
+      var topic = s.topic || "(your topic here)";
+      var seed = s.seed || "(seed)";
+      var hash = fnv1a32([topic, seed, s.variant, s.mode].join("|")) >>> 0;
+      saveDone(hash, {});
+      render();
     });
   }
 

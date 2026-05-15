@@ -82,6 +82,8 @@ button{
 }
 button:hover{ transform: translateY(-1px); border-color: var(--line); }
 button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(109,240,255,.12) inset; }
+button.ghost{ background: transparent; border-color: rgba(133,164,255,.22); }
+.kpi button{ padding: 6px 10px; font-size: 12px; border-radius: 999px; }
 .pill{
   border:1px solid rgba(133,164,255,.25);
   background: rgba(82,103,189,.18);
@@ -112,6 +114,17 @@ button.primary{ border-color: rgba(109,240,255,.28); box-shadow: 0 0 0 1px rgba(
   line-height: 1.45;
   cursor: pointer;
 }
+.outList li.ideaRow{ display:flex; gap:10px; align-items:flex-start; }
+.outList li .doneBtn{
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  background: rgba(82,103,189,.10);
+  border-color: rgba(133,164,255,.18);
+  flex: 0 0 auto;
+}
+.outList li .ideaText{ display:block; flex: 1 1 auto; padding-top: 2px; }
+.outList li.isDone .ideaText{ text-decoration: line-through; opacity: .8; }
 .outList li:hover{ border-color: var(--line); }
 .outList li.isSel{
   border-color: rgba(109,240,255,.35);
