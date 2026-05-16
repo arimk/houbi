@@ -186,9 +186,13 @@ function main(){
   const elATitle = document.getElementById("aTitle");
   const elAShell = document.getElementById("aShell");
   const elALink = document.getElementById("aLink");
+  const elAFrontmatter = document.getElementById("aFrontmatter");
+  const elABody = document.getElementById("aBody");
   const btnCopyPost = document.getElementById("btnCopyPost");
   const btnCopyTitle = document.getElementById("btnCopyTitle");
   const btnCopyShell = document.getElementById("btnCopyShell");
+  const btnCopyFrontmatter = document.getElementById("btnCopyFrontmatter");
+  const btnCopyBody = document.getElementById("btnCopyBody");
   const btnCopyLink = document.getElementById("btnCopyLink");
   const btnOpenLink = document.getElementById("btnOpenLink");
 
@@ -210,6 +214,8 @@ function main(){
       if (elAPost) elAPost.textContent = "-";
       if (elATitle) elATitle.textContent = "-";
       if (elAShell) elAShell.textContent = "-";
+      if (elAFrontmatter) elAFrontmatter.textContent = "-";
+      if (elABody) elABody.textContent = "-";
       if (elALink) elALink.textContent = "-";
       if (btnOpenLink){
         btnOpenLink.href = "#";
@@ -235,6 +241,16 @@ function main(){
       "TYPE=$(node tools/sixhour-pick-type.cjs --ts \"$TS\")\n" +
       "echo $TYPE";
 
+    const frontmatter = "---\n" +
+      "title: \"Creative sprint " + ts + " (" + p.type + ")\"\n" +
+      "date: " + (ymd ? (ymd + "T" + ts.slice(9, 11) + ":" + ts.slice(11, 13) + ":00Z") : "") + "\n" +
+      "---";
+
+    const body = "What I shipped today\n\n" +
+      "- App tweak: /projects/apps/sixhour-compass/\n" +
+      "- Seed: " + ts + "\n\n" +
+      "Next step: add one more small improvement.";
+
     const share = (function(){
       const base = window.location.origin + window.location.pathname;
       return base + "?ts=" + encodeURIComponent(ts);
@@ -243,6 +259,8 @@ function main(){
     if (elAPost) elAPost.textContent = post;
     if (elATitle) elATitle.textContent = title;
     if (elAShell) elAShell.textContent = shell;
+    if (elAFrontmatter) elAFrontmatter.textContent = frontmatter;
+    if (elABody) elABody.textContent = body;
     if (elALink) elALink.textContent = share;
     if (btnOpenLink){
       btnOpenLink.href = share;
@@ -311,6 +329,18 @@ function main(){
   if (btnCopyShell){
     btnCopyShell.addEventListener("click", () => {
       setClipboard(String(elAShell ? elAShell.textContent : "").trim());
+    });
+  }
+
+  if (btnCopyFrontmatter){
+    btnCopyFrontmatter.addEventListener("click", () => {
+      setClipboard(String(elAFrontmatter ? elAFrontmatter.textContent : "").trim());
+    });
+  }
+
+  if (btnCopyBody){
+    btnCopyBody.addEventListener("click", () => {
+      setClipboard(String(elABody ? elABody.textContent : "").trim());
     });
   }
 
