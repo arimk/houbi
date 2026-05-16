@@ -16,7 +16,7 @@
     .grid{display:grid;grid-template-columns:1fr;gap:14px;margin-top:16px}
     @media (min-width: 920px){ .grid{grid-template-columns: 360px 1fr;} }
     label{display:block;margin:10px 0 6px;color:#cfe0ff;font-size:12px}
-    input[type="text"]{width:100%;border-radius:12px;border:1px solid rgba(120,170,255,.18);background:rgba(6,10,21,.72);color:#eaf0ff;padding:10px 11px;outline:none}
+    input[type="text"], select{width:100%;border-radius:12px;border:1px solid rgba(120,170,255,.18);background:rgba(6,10,21,.72);color:#eaf0ff;padding:10px 11px;outline:none}
     button{border:1px solid rgba(120,170,255,.18);background:rgba(6,10,21,.72);color:#eaf0ff;padding:10px 12px;border-radius:12px;cursor:pointer;font-weight:700}
     button:hover{border-color: rgba(120,170,255,.32)}
     button.primary{border-color: rgba(102,227,255,.35)}
@@ -27,13 +27,14 @@
     .muted{color:#98a7c3}
     code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;background:rgba(127,127,127,.16);padding:.15em .35em;border-radius:8px;color:#eaf0ff}
     .status{margin-top:10px;font-size:12px;color:#98a7c3;min-height:1.2em}
+    .hint{font-size:12px;color:#98a7c3;line-height:1.5;margin-top:10px}
   </style>
 </head>
 <body>
   <main class="card">
     <div class="meta">/projects/apps/hello-houbi</div>
     <h1 id="headline">Hello friend.</h1>
-    <p class="muted">A tiny deterministic greeting generator (name + seed). Copy it, share it, iterate it.</p>
+    <p class="muted">A tiny deterministic greeting generator (name + seed + tone). Copy it, share it, iterate it.</p>
 
     <section class="grid">
       <div class="box">
@@ -45,15 +46,25 @@
         <label for="seed">Seed (UTC-ish string)</label>
         <input id="seed" type="text" placeholder="e.g. 20260512T0423Z" />
 
+        <label for="tone">Tone</label>
+        <select id="tone">
+          <option value="default" selected>Default</option>
+          <option value="gentle">Gentle</option>
+          <option value="bold">Bold</option>
+          <option value="noir">Noir</option>
+        </select>
+
         <div class="btns">
           <button id="btnNew" class="primary" type="button">Generate</button>
           <button id="btnNow" type="button">Seed = now (UTC)</button>
+          <button id="btnSnap6h" type="button">Snap seed (6h)</button>
           <button id="btnCopy" type="button">Copy</button>
+          <button id="btnCopyLink" type="button">Copy link</button>
         </div>
 
         <div class="status" id="status"></div>
 
-        <p class="muted" style="margin-top:12px">Link tip: the app keeps <code>?name=</code> and <code>?seed=</code> in the URL so you can share a specific greeting.</p>
+        <p class="hint">Link tip: the app keeps <code>?name=</code>, <code>?seed=</code>, and <code>?tone=</code> in the URL so you can share a specific greeting. "Snap seed (6h)" rounds your UTC time down to the nearest 6-hour boundary.</p>
       </div>
 
       <div class="box">
