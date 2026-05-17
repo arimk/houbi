@@ -265,12 +265,87 @@
   var btnPresetSave = byId("btnPresetSave");
   var btnPresetDelete = byId("btnPresetDelete");
 
+  // Backup/export/import
+  var btnBackupExport = byId("btnBackupExport");
+  var btnBackupCopy = byId("btnBackupCopy");
+  var btnBackupImport = byId("btnBackupImport");
+  var elBackupText = byId("backupText");
+  var elBackupFile = byId("backupFile");
+
   var PRESET_KEY = "microCommitStudio.presets.v1";
   var HIST_KEY = "microCommitStudio.history.v1";
   var SEL_KEY = "microCommitStudio.selected.v1";
   var LAST_KEY = "microCommitStudio.lastState.v1";
   var DONE_PREFIX = "microCommitStudio.doneByHash.v1.";
   var HIST_MAX = 12;
+
+  function buildBackupObject(){
+    var last = loadLastState();
+    var selected = loadSelected();
+    var presets = loadPresets();
+    var history = loadHistory();
+    var timer = null;
+    try{ timer = JSON.parse(localStorage.getItem("mcs_timer_v1") || "null"); }catch(e){ timer = null; }
+
+    // Collect done maps for hashes present in history.
+    var doneByHash = {};
+    for(var i=0;i<history.length;i++){
+      var h = history[i];
+      if(h && h.hash){
+        doneByHash[String(h.hash)] = loadDone(String(h.hash));
+      }
+    }
+
+    return {
+      kind: "microCommitStudioBackup",
+      version: 1,
+      exportedAt: nowUtcTs(),
+      lastState: last,
+      selected: selected,
+      presets: presets,
+      history: history,
+      doneByHash: doneByHash,
+      timer: timer
+    };
+  }
+
+  function applyBackupObject(obj){
+    if(!obj || typeof obj !== "object") throw new Error("Invalid backup JSON");
+    if(String(obj.kind || "") !== "microCommitStudioBackup") throw new Error("Not a Micro Commit Studio backup");
+
+    if(Array.isArray(obj.presets)) savePresets(obj.presets);
+    if(Array.isArray(obj.history)) saveHistory(obj.history);
+    if(obj.selected && typeof obj.selected === "object"){
+      saveSelected({
+        text: String(obj.selected.text || ""),
+        spec: String(obj.selected.spec || ""),
+        learned: String(obj.selected.learned || "")
+      });
+    }
+    if(obj.lastState && typeof obj.lastState === "object"){
+      saveLastState(obj.lastState);
+      applyState(obj.lastState);
+    }
+
+    // Restore done maps
+    if(obj.doneByHash && typeof obj.doneByHash === "object"){
+      for(var k in obj.doneByHash){
+        if(!obj.doneByHash.hasOwnProperty(k)) continue;
+        try{ localStorage.setItem(doneKeyForHash(k), JSON.stringify(obj.doneByHash[k] || {})); }catch(e){}
+      }
+    }
+
+    // Restore timer
+    if(obj.timer && typeof obj.timer === "object"){
+      try{ localStorage.setItem("mcs_timer_v1", JSON.stringify(obj.timer)); }catch(e){}
+    }
+
+    refreshPresetSelect("");
+    renderHistory();
+    renderSelected();
+    initTimerUi();
+    render();
+  }
 
   function doneKeyForHash(hash){
     return DONE_PREFIX + String(hash);
@@ -608,7 +683,7 @@
     pushHistory({
       ts: nowUtcTs(),
       hash: String(hash),
-      state: { topic: s.topic, seed: s.seed, variant: s.variant, count: s.count, mode: s.mode }
+      state: { topic: s.topic, seed: s.seed, variant: s.variant, count: s.count, mode: s.mode, mdfmt: s.mdfmt }
     });
     renderHistory();
   }
@@ -698,6 +773,65 @@
     savePresets(kept);
     refreshPresetSelect("");
   });
+
+  if(btnBackupExport){
+    btnBackupExport.addEventListener("click", function(){
+      var obj = buildBackupObject();
+      var json = JSON.stringify(obj, null, 2);
+      if(elBackupText) elBackupText.value = json;
+      downloadText("micro-commit-studio-backup-" + nowUtcTs() + ".json", json);
+      showToast("Exported JSON");
+    });
+  }
+
+  if(btnBackupCopy){
+    btnBackupCopy.addEventListener("click", function(){
+      var obj = buildBackupObject();
+      var json = JSON.stringify(obj, null, 2);
+      if(elBackupText) elBackupText.value = json;
+      copyText(json).then(function(){ showToast("Copied JSON"); }).catch(function(){ showToast("Copy failed"); });
+    });
+  }
+
+  if(btnBackupImport){
+    btnBackupImport.addEventListener("click", function(){
+      // Prefer text area; if empty, open file picker.
+      var raw = (elBackupText && elBackupText.value ? String(elBackupText.value) : "").trim();
+      if(raw){
+        try{
+          applyBackupObject(JSON.parse(raw));
+          showToast("Imported JSON");
+        }catch(e){
+          showToast("Import failed");
+          alert("Import failed: " + String(e && e.message ? e.message : e));
+        }
+        return;
+      }
+      if(elBackupFile) elBackupFile.click();
+    });
+  }
+
+  if(elBackupFile){
+    elBackupFile.addEventListener("change", function(){
+      var f = elBackupFile.files && elBackupFile.files[0];
+      if(!f) return;
+      var r = new FileReader();
+      r.onload = function(){
+        try{
+          var txt = String(r.result || "");
+          if(elBackupText) elBackupText.value = txt;
+          applyBackupObject(JSON.parse(txt));
+          showToast("Imported JSON");
+        }catch(e){
+          showToast("Import failed");
+          alert("Import failed: " + String(e && e.message ? e.message : e));
+        }
+      };
+      r.readAsText(f);
+      // Allow re-selecting the same file later.
+      elBackupFile.value = "";
+    });
+  }
 
   refreshPresetSelect("");
   renderHistory();

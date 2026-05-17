@@ -190,3 +190,5 @@ button.ghost{ background: transparent; border-color: rgba(133,164,255,.22); }
   opacity: 1;
   transform: translateX(-50%) translateY(-2px);
 }
+
+.hidden{ display:none !important; }

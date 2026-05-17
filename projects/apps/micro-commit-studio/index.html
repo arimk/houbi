@@ -92,6 +92,19 @@
           </div>
         </div>
 
+        <h2 class="h2Small">Backup</h2>
+        <p class="hint small">Export/import presets + history + selected notes + timer as JSON. Local-only, offline.</p>
+
+        <div class="btns">
+          <button id="btnBackupExport" type="button">Export JSON</button>
+          <button id="btnBackupCopy" type="button">Copy JSON</button>
+          <button id="btnBackupImport" type="button">Import JSON</button>
+          <input id="backupFile" type="file" accept="application/json,.json" class="hidden" />
+        </div>
+
+        <label for="backupText">Backup JSON</label>
+        <textarea id="backupText" class="smallTa" spellcheck="false" placeholder="Paste JSON here to import, or use Export JSON."></textarea>
+
         <div class="btns">
           <button id="btnGen" class="primary" type="button">Generate</button>
           <button id="btnNext" type="button">Next variant</button>
