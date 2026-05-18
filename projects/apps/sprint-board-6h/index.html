@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>6h Sprint Board - Houbi</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="top">
+      <div>
+        <div class="meta">/projects/apps/sprint-board-6h</div>
+        <h1>6h Sprint Board</h1>
+        <p class="sub">A tiny offline board: topic + UTC seed -> a concrete 25-minute sprint plan. Deterministic, shareable, copyable.</p>
+      </div>
+      <div class="pill">Static / offline</div>
+    </header>
+
+    <section class="grid">
+      <section class="card">
+        <h2>Inputs</h2>
+
+        <label for="topic">Topic</label>
+        <input id="topic" type="text" placeholder="e.g. improve my site navigation" />
+
+        <div class="row">
+          <div>
+            <label for="seed">UTC seed (YYYYMMDDTHHMMZ)</label>
+            <input id="seed" type="text" placeholder="e.g. 20260518T1023Z" />
+          </div>
+          <div>
+            <label for="variant">Variant</label>
+            <input id="variant" type="number" min="0" max="99" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="btnNow" type="button">Now (UTC)</button>
+          <button id="btnSnap" type="button">Snap (6h)</button>
+          <button id="btnGen" class="primary" type="button">Generate</button>
+          <button id="btnNext" type="button">Next variant</button>
+        </div>
+
+        <h2 class="h2Small">Share</h2>
+        <div class="row">
+          <div>
+            <label for="permalink">Permalink</label>
+            <input id="permalink" type="text" readonly />
+          </div>
+          <div class="shareBtns">
+            <button id="btnCopyLink" type="button">Copy link</button>
+            <button id="btnCopyRel" type="button" title="Copy relative path">Rel</button>
+          </div>
+        </div>
+
+        <h2 class="h2Small">Notes</h2>
+        <p class="hint">Saved locally per board hash. Use it like a scratchpad while you ship.</p>
+        <label for="notes">Scratch</label>
+        <textarea id="notes" rows="6" placeholder="What are you actually going to do? What did you learn?" spellcheck="false"></textarea>
+        <div class="btns">
+          <button id="btnClearNotes" class="ghost" type="button">Clear notes</button>
+          <button id="btnCopyMd" type="button">Copy Markdown</button>
+        </div>
+
+        <hr class="hr" />
+        <h2 class="h2Small">Rules (25 minutes)</h2>
+        <ol class="rules">
+          <li>Pick 1 card. Ship it even if it is small.</li>
+          <li>Do not polish. Prefer visible change.</li>
+          <li>Write 1 line: what surprised you.</li>
+        </ol>
+      </section>
+
+      <section class="card">
+        <div class="outTop">
+          <h2>Board</h2>
+          <div class="kpi">
+            <span class="pill2" id="kSeed">seed: -</span>
+            <span class="pill2" id="kHash">hash: -</span>
+          </div>
+        </div>
+
+        <div id="cards" class="cards"></div>
+
+        <div class="card2">
+          <h3>Commit line</h3>
+          <p class="hint">A tiny commit message you can paste into git. Deterministic from the seed.</p>
+          <div class="commitRow">
+            <input id="commitLine" type="text" readonly value="" />
+            <button id="btnCopyCommit" type="button">Copy</button>
+          </div>
+        </div>
+
+        <div class="card2">
+          <h3>Timer</h3>
+          <p class="hint">A minimal offline timer, saved locally.</p>
+          <div class="row">
+            <div>
+              <label for="timerMin">Minutes</label>
+              <input id="timerMin" type="number" min="1" max="120" step="1" value="25" />
+            </div>
+            <div>
+              <label for="timerDisplay">Remaining</label>
+              <input id="timerDisplay" type="text" readonly value="25:00" />
+            </div>
+          </div>
+          <div class="btns">
+            <button id="btnTimerStart" type="button">Start</button>
+            <button id="btnTimerPause" type="button">Pause</button>
+            <button id="btnTimerReset" class="ghost" type="button">Reset</button>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer class="foot">
+      <span>Deterministic: topic + seed + variant -> board hash.</span>
+      <span class="dot">·</span>
+      <span>ASCII only.</span>
+    </footer>
+  </main>
+
+  <script src="./app.js"></script>
+</body>
+</html>

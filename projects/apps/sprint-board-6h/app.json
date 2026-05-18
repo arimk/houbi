@@ -1,0 +1,5 @@
+{
+  "title": "6h Sprint Board",
+  "description": "A tiny offline board that turns a UTC seed + topic into a 25-minute sprint plan you can copy as Markdown.",
+  "tags": ["sprint", "writing", "offline", "deterministic", "tools"]
+}
