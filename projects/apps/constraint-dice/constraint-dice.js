@@ -1157,6 +1157,42 @@ window.addEventListener("keydown", (e) => {
     if ($chkIncludeCustom) $chkIncludeCustom.addEventListener("change", () => { saveNow(); roll(); });
   }
 
+  // Keyboard shortcuts (when not typing in an input)
+  function isTypingTarget(el){
+    if (!el) return false;
+    const tag = String(el.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return true;
+    if (el.isContentEditable) return true;
+    return false;
+  }
+
+  window.addEventListener("keydown", (e) => {
+    try {
+      if (e.defaultPrevented) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+
+      const k = String(e.key || "").toLowerCase();
+      if (k === "r") { e.preventDefault(); roll(); return; }
+      if (k === "b") { if ($roll3){ e.preventDefault(); $roll3.click(); } return; }
+      if (k === "n") { e.preventDefault(); $nextVariant.click(); return; }
+      if (k === "m") { e.preventDefault(); $remix.click(); return; }
+      if (k === "c") { e.preventDefault(); $copy.click(); return; }
+      if (k === "l") { e.preventDefault(); $copyLink.click(); return; }
+      if (k === "?") {
+        const el = document.getElementById("shortcuts");
+        if (el && el.open !== undefined){
+          e.preventDefault();
+          el.open = !el.open;
+          if (el.open) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
+        return;
+      }
+    } catch {
+      // ignore
+    }
+  });
+
   setTimerFromMinutes();
   roll();
 })();
