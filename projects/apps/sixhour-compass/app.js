@@ -103,6 +103,20 @@ function snapToSixHourBoundary(d){
   return x;
 }
 
+function nextSixHourBoundary(d){
+  // Return the next boundary strictly after d.
+  const x = new Date(d.getTime());
+  x.setUTCSeconds(0);
+  x.setUTCMilliseconds(0);
+  const snapped = snapToSixHourBoundary(x);
+  const same = (snapped.getTime() === x.getTime());
+  if (same){
+    return addHoursUtc(snapped, 6);
+  }
+  // If we are between boundaries, add 6h to the snapped-down time.
+  return addHoursUtc(snapped, 6);
+}
+
 function addHoursUtc(d, hours){
   return new Date(d.getTime() + (hours * 3600 * 1000));
 }
@@ -168,6 +182,14 @@ function renderBuckets(container, buckets, pickedType){
   }
 }
 
+function fmtCountdown(ms){
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const hh = Math.floor(s / 3600);
+  const mm = Math.floor((s % 3600) / 60);
+  const ss = (s % 60);
+  return pad2(hh) + ":" + pad2(mm) + ":" + pad2(ss);
+}
+
 function main(){
   const elTs = document.getElementById("ts");
   const elPickType = document.getElementById("pickType");
@@ -177,6 +199,7 @@ function main(){
   const elKTs = document.getElementById("kTs");
   const elKHash = document.getElementById("kHash");
   const elKR = document.getElementById("kR");
+  const elKNext = document.getElementById("kNext");
 
   const elSchedule = document.getElementById("schedule");
   const elN = document.getElementById("n");
@@ -196,6 +219,37 @@ function main(){
   const btnCopyLink = document.getElementById("btnCopyLink");
   const btnOpenLink = document.getElementById("btnOpenLink");
 
+  let timer = null;
+
+  function setInvalid(isInvalid){
+    if (!elTs) return;
+    if (isInvalid){
+      elTs.classList.add("isInvalid");
+    } else {
+      elTs.classList.remove("isInvalid");
+    }
+  }
+
+  function clearTimer(){
+    if (timer){
+      clearInterval(timer);
+      timer = null;
+    }
+  }
+
+  function startCountdown(baseDate){
+    clearTimer();
+    function tick(){
+      const next = nextSixHourBoundary(baseDate);
+      const now = new Date();
+      const ms = next.getTime() - now.getTime();
+      const tsNext = fmtTsFromDateUtc(next);
+      elKNext.textContent = "next 6h: " + tsNext + " (in " + fmtCountdown(ms) + ")";
+    }
+    tick();
+    timer = setInterval(tick, 1000);
+  }
+
   function setTs(ts){
     elTs.value = String(ts || "");
     onTsChange();
@@ -205,11 +259,14 @@ function main(){
     const ts = String(elTs.value || "").trim();
     const d = parseTsToDateUtc(ts);
     if (!d){
+      setInvalid(ts.length > 0);
+      clearTimer();
       elPickType.textContent = "-";
       elPickMeta.textContent = "Enter a valid TS: YYYYMMDDTHHMMZ";
       elKTs.textContent = "ts: -";
       elKHash.textContent = "hash31: -";
       elKR.textContent = "r: -";
+      elKNext.textContent = "next 6h: -";
       elBuckets.innerHTML = "";
       if (elAPost) elAPost.textContent = "-";
       if (elATitle) elATitle.textContent = "-";
@@ -223,6 +280,8 @@ function main(){
       }
       return;
     }
+
+    setInvalid(false);
 
     const p = pickType(ts);
     elPickType.textContent = p.type;
@@ -242,7 +301,7 @@ function main(){
       "echo $TYPE";
 
     const frontmatter = "---\n" +
-      "title: \"Creative sprint " + ts + " (" + p.type + ")\"\n" +
+      "title: \"Creative sprint " + ts + " (" + p.type + \")\"\n" +
       "date: " + (ymd ? (ymd + "T" + ts.slice(9, 11) + ":" + ts.slice(11, 13) + ":00Z") : "") + "\n" +
       "---";
 
@@ -266,6 +325,8 @@ function main(){
       btnOpenLink.href = share;
       btnOpenLink.removeAttribute("aria-disabled");
     }
+
+    startCountdown(d);
   }
 
   function renderSchedule(items){
@@ -297,6 +358,14 @@ function main(){
 
   document.getElementById("btnSnap6").addEventListener("click", () => {
     const d = new Date();
+    const s = snapToSixHourBoundary(d);
+    setTs(fmtTsFromDateUtc(s));
+  });
+
+  document.getElementById("btnSnapFromInput").addEventListener("click", () => {
+    const ts = String(elTs.value || "").trim();
+    const d = parseTsToDateUtc(ts);
+    if (!d) return;
     const s = snapToSixHourBoundary(d);
     setTs(fmtTsFromDateUtc(s));
   });

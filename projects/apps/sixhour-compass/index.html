@@ -25,11 +25,12 @@
 
         <div class="btns">
           <button id="btnNow" class="primary" type="button">Use now (UTC)</button>
-          <button id="btnSnap6" type="button">Snap to 6h boundary</button>
+          <button id="btnSnap6" type="button">Snap now to 6h boundary</button>
+          <button id="btnSnapFromInput" type="button">Snap entered TS to 6h boundary</button>
           <button id="btnCopy" type="button">Copy TS</button>
         </div>
 
-        <p class="hint">Determinism note: the picker here matches the repo helper (hash31 + weighted buckets). Same TS => same type.</p>
+        <p class="hint">Determinism note: the picker here matches the repo helper (hash31 + weighted buckets). Same TS =&gt; same type.</p>
 
         <hr class="hr" />
 
@@ -68,6 +69,7 @@
             <span class="pill2" id="kTs">ts: -</span>
             <span class="pill2" id="kHash">hash31: -</span>
             <span class="pill2" id="kR">r: -</span>
+            <span class="pill2" id="kNext">next 6h: -</span>
           </div>
         </div>
 
@@ -134,7 +136,8 @@
         <h3 class="h3">Help</h3>
         <ul class="help">
           <li><strong>Use now</strong>: sets TS to current UTC minute.</li>
-          <li><strong>Snap to 6h boundary</strong>: rounds down UTC time to 00:00 / 06:00 / 12:00 / 18:00 (minute = 00).</li>
+          <li><strong>Snap now to 6h boundary</strong>: rounds down UTC time to 00:00 / 06:00 / 12:00 / 18:00 (minute = 00).</li>
+          <li><strong>Snap entered TS</strong>: validates the TS and rounds it down to the nearest 6h boundary.</li>
           <li><strong>Build schedule</strong>: generates a list of future TS values and their types.</li>
         </ul>
 

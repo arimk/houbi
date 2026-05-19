@@ -10,6 +10,7 @@
   --cyan:#6df0ff;
   --ok:#4dffb5;
   --warn:#ffd56d;
+  --bad:#ff6d8e;
 }
 *{ box-sizing:border-box; }
 body{
@@ -47,6 +48,10 @@ input[type="text"], select{
   color: var(--text);
   padding: 10px 11px;
   outline: none;
+}
+input[type="text"].isInvalid{
+  border-color: rgba(255, 109, 142, 0.55);
+  box-shadow: 0 0 0 1px rgba(255, 109, 142, 0.18) inset;
 }
 .row{ display:flex; gap: 10px; }
 .row > *{ flex: 1; }
